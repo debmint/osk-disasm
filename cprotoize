@@ -1,0 +1,19 @@
+#! /bin/sh
+
+# Program to generate protoypes
+
+cat <<"EOP" > proto.h
+/* ************************************************************** *
+ * proto.h - Prototypes for functions in dis68                    $
+ *                                                                $
+ * This file handles both STDC and non-STDC forms                 $
+ * $Id::                                                          $
+ * ************************************************************** */
+
+#ifdef __STDC__
+EOP
+
+cproto *.c >> proto.h
+echo "\n#else\n" >> proto.h
+cproto -f1 *.c >> proto.h
+echo "#endif\n" >> proto.h
