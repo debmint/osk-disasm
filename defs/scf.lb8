@@ -1,0 +1,138 @@
+* SCF.lbl -- Labels unique to SCF files
+
+* Static storage names type D
+* since they are in Data area
+
+
+V_PORT equ $00 D
+V_LPRC equ $04 D
+V_BUSY equ $06 D
+V_WAKE equ $08 D
+V_Paths equ $0a D
+
+V_USER equ $2e D
+
+V_DEV2 equ $2e D
+V_TYPE equ $32 D
+V_LINE equ $33 D
+V_PAUS equ $34 D
+V_INTR equ $35 D
+V_QUIT equ $36 D
+V_PCHR equ $37 D
+V_ERR equ $38 D
+V_XON equ $39 D
+V_XOFF equ $3a D
+V_PResvd equ $3c D
+V_Hangup equ $46 D
+
+V_SCF equ $54 D
+
+V_NPipes equ $3c D
+V_PathHd equ $3e D
+
+* Path Descriptor offsets type Z
+
+*\ Z - Path Descriptor (PD.XX)
+
+PD_UPC equ $81 Z
+PD_BSO equ $82 Z
+PD_DLO equ $83 Z
+PD_EKO equ $84 Z
+PD_ALF equ $85 Z
+PD_NUL equ $86 Z
+PD_PAU equ $87 Z
+PD_PAG equ $88 Z
+PD_BSP equ $89 Z
+PD_DEL equ $8a Z
+PD_EOR equ $8b Z
+PD_EOF equ $8c Z
+PD_RPR equ $8d Z
+PD_DUP equ $8e Z
+PD_PSC equ $8f Z
+PD_INT equ $90 Z
+PD_QUT equ $91 Z
+PD_CTLCH equ $08 Z
+PD_BSE equ $92 Z
+PD_OVF equ $93 Z
+PD_PAR equ $94 Z
+PD_BAU equ $95 Z
+PD_D2P equ $96 Z
+PD_XON equ $98 Z
+PD_XOFF equ $99 Z
+PD_Tab equ $9a Z
+PD_Tabs equ $9b Z
+OPTCNT equ $1c Z
+PD_TBL equ $9c Z
+PD_Col equ $a0 Z
+PD_ERR equ $a2 Z
+
+*OFF equ $00
+*ON equ $01
+*upclock equ $00
+*bsb equ $01
+*linedel equ $00
+*autoecho equ $01
+*autolf equ $01
+*eolnulls equ $00
+*pagpause equ $01
+*pagsize equ $18
+*tabsize equ $04
+
+* Char defs type K
+*\ K - Char defs (C$XX)
+
+C$Null equ $00 K
+C$Rpet equ $01 K
+C$Intr equ $03 K
+C$Rprt equ $04 K
+C$Quit equ $05 K
+C$Bell equ $07 K
+C$Bsp equ $08 K
+C$Tab equ $09 K
+C$LF equ $0a K
+C$CR equ $0d K
+C$Form equ $0c K
+C$XOn equ $11 K
+C$XOff equ $13 K
+C$Paus equ $17 K
+C$Del equ $18 K
+C$EOF equ $1b K
+C$Spac equ $20 K
+C$Perd equ $2e K
+C$Coma equ $2c K
+MAXNAME equ $20 K
+
+* Pipe Path Descriptors
+
+*PD_BufSz equ $82
+*PD_IOBuf equ $86
+*PipeBfSz equ $5a
+*PD_Name equ $e0
+
+* CDFM/UCM Path Descriptors
+*PD_CDFC equ $81
+*PD_ErrSz equ $82
+*PD_NDscs equ $83
+*PD_DNum equ $84
+*PD_BFctr equ $85
+*PD_Did equ $86
+*PD_Track equ $8a
+*PD_XAR equ $8c
+*PD_CNUM equ $8e
+*PD_TOK equ $92
+*PD_PTNUM equ $b2
+*PD_PTOFF equ $b4
+
+* GFM/UCM Path Descriptor Option offsets
+PD_FC equ $9c
+
+*PD_D2N equ $9e
+*PD_D3N equ $a0
+*PD_CNum equ $a2
+*PD_Errs equ $a4
+*PD_CPInt equ $a5
+*PD_D4N equ $a6
+*FC_KEYB equ $01
+*FC_PNTR equ $02
+*FC_VID equ $04
+*FC_AUD equ $08

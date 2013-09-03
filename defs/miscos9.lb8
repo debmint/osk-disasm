@@ -1,0 +1,404 @@
+* ********************************************
+* Dis68 label file for miscellaneous OSK Calls
+* ********************************************
+
+* Define file access codes as Class A
+
+Read_ equ $01 A
+Write_ equ $02 A
+Exec_ equ $04 A
+Updat_ equ $03 A
+PRead_ equ $08 A
+PWrit_ equ $10 A
+PExec_ equ $20 A
+PUpdat_ equ $18 A
+Append_ equ $10 A
+ISize_ equ $20 A
+Share_ equ $40 A
+Dir_ equ $80 A
+
+*ReadBit equ $00
+*WriteBit equ $01
+*ExecBit equ $02
+*AppndBit equ $04
+*ISizBit equ $05
+*ShareBit equ $06
+*DirBit equ $07
+
+* Condition Code masks - Class "C"
+
+TraceBit equ $07 C
+SupvrBit equ $05 C
+Trace equ $8000 C
+Supervis equ $2000 C
+IntMask equ $0700 C
+Extend equ $10 C
+Negative equ $08 C
+Zero equ $04 C
+TwosOvfl equ $02 C
+Carry equ $01 C
+Sign equ $80 C
+SignBit equ $07 C
+
+* Signals
+*S$Kill equ $00
+*S$Wake equ $01
+*S$Abort equ $02
+*S$Intrpt equ $03
+*S$HangUp equ $04
+
+*S$Deadly equ $20
+
+
+* NOTE: We may not define type/Language classes
+*     but rather simply do a lookup if we determine
+*     that these are only needed in the Module Header def.
+
+** Another option (to not use up another class, is to set
+* the Type to the value <<8
+
+* Define module type Class "T"
+
+Prgrm equ $01 T
+Sbrtn equ $02 T
+Multi equ $03 T
+Data equ $04 T
+CSDData equ $05 T
+TrapLib equ $0b T
+Systm equ $0c T
+FlMgr equ $0d T
+Drivr equ $0e T
+Devic equ $0f T
+
+* Language byte - Class "N"
+Objct equ $01 N
+ICode equ $02 N
+PCode equ $03 N
+CCode equ $04 N
+CblCode equ $05 N
+FrtnCode equ $06 N
+
+* Attribute bytes/bits - Class "R"
+ReEnt equ $80 R
+Ghost equ $40 R
+SupStat equ $20 R
+ReEntBit equ $07 R
+GhostBit equ $06 R
+SupStBit equ $05 R
+
+
+* SetStat/GetStat codes Define type S
+
+SS_Opt equ $00 S
+SS_Ready equ $01 S
+SS_Size equ $02 S
+SS_Reset equ $03 S
+SS_WTrk equ $04 S
+SS_Pos equ $05 S
+SS_EOF equ $06 S
+SS_Link equ $07 S
+SS_ULink equ $08 S
+SS_Feed equ $09 S
+SS_Frz equ $0a S
+SS_SPT equ $0b S
+SS_SQD equ $0c S
+SS_DCmd equ $0d S
+SS_DevNm equ $0e S
+SS_FD equ $0f S
+SS_Ticks equ $10 S
+SS_Lock equ $11 S
+SS_DStat equ $12 S
+SS_Joy equ $13 S
+SS_BlkRd equ $14 S
+SS_BlkWr equ $15 S
+SS_Reten equ $16 S
+SS_WFM equ $17 S
+SS_RFM equ $18 S
+SS_ELog equ $19 S
+SS_SSig equ $1a S
+SS_Relea equ $1b S
+SS_Attr equ $1c S
+SS_Break equ $1d S
+SS_RsBit equ $1e S
+SS_RMS equ $1f S
+SS_FDInf equ $20 S
+SS_ACRTC equ $21 S
+SS_IFC equ $22 S
+SS_OFC equ $23 S
+SS_EnRTS equ $24 S
+SS_DsRTS equ $25 S
+SS_DCOn equ $26 S
+SS_DCOff equ $27 S
+SS_Skip equ $28 S
+SS_Mode equ $29 S
+SS_Open equ $2a S
+SS_Close equ $2b S
+SS_Path equ $2c S
+SS_Play equ $2d S
+SS_HEADER equ $2e S
+SS_Raw equ $2f S
+SS_Seek equ $30 S
+SS_Abort equ $31 S
+SS_CDDA equ $32 S
+SS_Pause equ $33 S
+SS_Eject equ $34 S
+SS_Mount equ $35 S
+SS_Stop equ $36 S
+SS_Cont equ $37 S
+SS_Disable equ $38 S
+SS_Enable equ $39 S
+SS_ReadToc equ $3a S
+SS_SM equ $3b S
+SS_SD equ $3c S
+SS_SC equ $3d S
+SS_SEvent equ $3e S
+SS_Sound equ $3f S
+SS_DSize equ $40 S
+SS_Net equ $41 S
+SS_Rename equ $42 S
+SS_Free equ $43 S
+SS_VarSect equ $44 S
+
+SS_UCM equ $4c S
+SS_DM equ $51 S
+SS_GC equ $52 S
+SS_RG equ $53 S
+SS_DP equ $54 S
+SS_DR equ $55 S
+SS_DC equ $56 S
+SS_CO equ $57 S
+SS_VIQ equ $58 S
+SS_PT equ $59 S
+SS_SLink equ $5a S
+SS_KB equ $5b S
+
+SS_Bind equ $6c S
+SS_Listen equ $6d S
+SS_Connect equ $6e S
+SS_Resv equ $6f S
+SS_Accept equ $70 S
+SS_Recv equ $71 S
+SS_Send equ $72 S
+SS_GNam equ $73 S
+SS_SOpt equ $74 S
+SS_GOpt equ $75 S
+SS_Shut equ $76 S
+SS_SendTo equ $77 S
+SS_RecvFr equ $78 S
+SS_Install equ $79 S
+SS_PCmd equ $7a S
+
+* Register Stack Offsets - Class "G"
+
+R$d0 equ $00 G
+R$d1 equ $04 G
+R$d2 equ $08 G
+R$d3 equ $0c G
+R$d4 equ $10 G
+R$d5 equ $14 G
+R$d6 equ $18 G
+R$d7 equ $1c G
+R$a0 equ $20 G
+R$a1 equ $24 G
+R$a2 equ $28 G
+R$a3 equ $2c G
+R$a4 equ $30 G
+R$a5 equ $34 G
+R$a6 equ $38 G
+R$a7 equ $3c G
+R$sr equ $40 G
+R$cc equ $41 G
+R$pc equ $42 G
+R$fmt equ $46 G
+R$Size equ $48 G
+
+* System Error Codes - Class "E"
+
+E$IllFnc equ $40 E
+E$FmtErr equ $41 E
+E$NotNum equ $42 E
+E$IllArg equ $43 E
+
+E$BusErr equ $66 E
+E$AdrErr equ $67 E
+E$IllIns equ $68 E
+E$ZerDiv equ $69 E
+E$Chk equ $6a E
+E$TrapV equ $6b E
+E$Violat equ $6c E
+E$Trace equ $6d E
+E$1010 equ $6e E
+E$1111 equ $6f E
+E$Resrvd equ $70 E
+
+E$Trap equ $85 E
+E$FPUnordC equ $94 E
+E$FPInxact equ $95 E
+E$FPDivZer equ $96 E
+E$FPUndrFl equ $97 E
+E$FPOprErr equ $98 E
+E$FPOverFl equ $99 E
+E$FPNotNum equ $9a E
+
+E$Permit equ $a4 E
+E$Differ equ $a5 E
+E$StkOvf equ $a6 E
+E$EvntID equ $a7 E
+E$EvNF equ $a8 E
+E$EvBusy equ $a9 E
+E$EvParm equ $aa E
+E$Damage equ $ab E
+E$BadRev equ $ac E
+E$PthLost equ $ad E
+E$BadPart equ $ae E
+E$Hardware equ $af E
+E$SectSize equ $b0 E
+
+E$PthFul equ $c8 E
+E$BPNum equ $c9 E
+E$Poll equ $ca E
+E$BMode equ $cb E
+E$DevOvf equ $cc E
+E$BMID equ $cd E
+E$DirFul equ $ce E
+E$MemFul equ $cf E
+E$UnkSvc equ $d0 E
+E$ModBsy equ $d1 E
+E$BPAddr equ $d2 E
+E$EOF equ $d3 E
+E$VctBsy equ $d4 E
+E$NES equ $d5 E
+E$FNA equ $d6 E
+E$BPNam equ $d7 E
+E$PNNF equ $d8 E
+E$SLF equ $d9 E
+E$CEF equ $da E
+E$IBA equ $db E
+E$HangUp equ $dc E
+E$MNF equ $dd E
+E$NoClk equ $de E
+E$DelSP equ $df E
+E$IPrcID equ $e0 E
+E$Param equ $e1 E
+E$NoChld equ $e2 E
+E$ITrap equ $e3 E
+E$PrcAbt equ $e4 E
+E$PrcFul equ $e5 E
+E$IForkP equ $e6 E
+E$KwnMod equ $e7 E
+E$BMCRC equ $e8 E
+E$Signal equ $e9 E
+E$NEMod equ $ea E
+E$BNam equ $eb E
+E$BMHP equ $ec E
+E$NoRAM equ $ed E
+E$DNE equ $ee E
+E$NoTask equ $ef E
+E$Unit equ $f0 E
+E$Sect equ $f1 E
+E$WP equ $f2 E
+E$CRC equ $f3 E
+E$Read equ $f4 E
+E$Write equ $f5 E
+E$NotRdy equ $f6 E
+E$Seek equ $f7 E
+E$Full equ $f8 E
+E$BTyp equ $f9 E
+E$DevBsy equ $fa E
+E$DIDC equ $fb E
+E$Lock equ $fc E
+E$Share equ $fd E
+E$DeadLk equ $fe E
+E$Format equ $ff E
+
+E$IllPrm equ $0600 E
+E$IdFull equ $0601 E
+E$BadSiz equ $0602 E
+E$RgFull equ $0603 E
+E$UnID equ $0604 E
+E$NullRg equ $0605 E
+E$BadMod equ $0606 E
+E$NoFont equ $0607 E
+E$NoDM equ $0608 E
+E$NoPlay equ $0609 E
+E$Abort equ $060a E
+E$QFull equ $060b E
+E$Busy equ $060c E
+
+* Define process descriptor offsets as class P
+
+P$ID equ $00 P
+P$PID equ $02 P
+P$SID equ $04 P
+P$CID equ $06 P
+P$sp equ $08 P
+P$usp equ $0c P
+P$MemSiz equ $10 P
+P$User equ $14 P
+P$Prior equ $18 P
+P$Age equ $1a P
+P$State equ $1c P
+P$Task equ $1e P
+P$QueuID equ $20 P
+P$SCall equ $21 P
+P$Baked equ $22 P
+
+P$DeadLk equ $24 P
+P$Signal equ $26 P
+P$SigVec equ $28 P
+P$SigDat equ $2c P
+P$QueueN equ $30 P
+P$QueueP equ $34 P
+P$PModul equ $38 P
+P$Except equ $3c P
+P$ExStk equ $64 P
+P$Traps equ $8c P
+P$TrpMem equ $c8 P
+P$TrpSiz equ $0104 P
+P$ExcpSP equ $0140 P
+P$ExcpPC equ $0144 P
+P$DIO equ $0148 P
+P$Path equ $0168 P
+P$MemImg equ $01a8 P
+P$BlkSiz equ $0228 P
+P$DbgReg equ $02a8 P
+P$DbgPar equ $02ac P
+P$DbgIns equ $02b0 P
+P$UTicks equ $02b4 P
+P$STicks equ $02b8 P
+P$DatBeg equ $02bc P
+P$TimBeg equ $02c0 P
+P$FCalls equ $02c4 P
+P$ICalls equ $02c8 P
+P$RBytes equ $02cc P
+P$WBytes equ $02d0 P
+P$IOQP equ $02d4 P
+P$IOQN equ $02d6 P
+P$Frags equ $02d8 P
+P$Sched equ $02e0 P
+P$SPUMem equ $02e4 P
+P$BkPtCnt equ $02e8 P
+P$BkPts equ $02ec P
+P$Acct equ $030c P
+P$Data equ $032c P
+P$DataSz equ $0330 P
+P$FPUSave equ $0334 P
+P$FPExcpt equ $0338 P
+P$FPExStk equ $0354 P
+P$SigLvl equ $0370 P
+P$SigFlg equ $0371 P
+P$Sigxs equ $0372 P
+P$SigMask equ $0374 P
+P$SigCnt equ $0378 P
+P$SigQue equ $037c P
+P$DefSig equ $0380 P
+P$Thread equ $0390 P
+P$frag equ $0398 P
+P$MOwn equ $03a0 P
+P$ExpStk equ $03a4 P
+
+P$Last equ $03ac P
+*StackRoom equ $03ac P
+P$Stack equ $0800 P
+P$ProcSz equ $0800 P
+
