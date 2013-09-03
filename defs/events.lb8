@@ -1,0 +1,25 @@
+* Events
+Ev$Link equ $00
+Ev$UnLnk equ $01
+Ev$Creat equ $02
+Ev$Delet equ $03
+Ev$Wait equ $04
+Ev$WaitR equ $05
+Ev$Read equ $06
+Ev$Info equ $07
+Ev$Signl equ $08
+Ev$Pulse equ $09
+Ev$Set equ $0a
+Ev$SetR equ $0b
+Ev$Incr equ $0b
+
+* F$Alarm Function Codes
+A$Delete equ $00
+A$Set equ $01
+A$Cycle equ $02
+A$AtDate equ $03
+A$AtJul equ $04
+
+* Panic Functions
+K$Idle equ $01
+K$PFail equ $02

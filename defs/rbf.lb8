@@ -1,0 +1,136 @@
+
+* RBF-specific Path descriptor offsets type Z
+PD_OPT equ $80 Z
+PD_DTP equ $80 Z
+PD_DRV equ $81 Z
+PD_STP equ $82 Z
+PD_TYP equ $83 Z
+PD_DNS equ $84 Z
+do.b equ $85 Z
+PD_CYL equ $86 Z
+PD_SID equ $88 Z
+PD_VFY equ $89 Z
+PD_SCT equ $8a Z
+PD_T0S equ $8c Z
+PD_SAS equ $8e Z
+PD_ILV equ $90 Z
+PD_TFM equ $91 Z
+PD_TOffs equ $92 Z
+PD_SOffs equ $93 Z
+PD_SSize equ $94 Z
+PD_Cntl equ $96 Z
+PD_Trys equ $98 Z
+PD_LUN equ $99 Z
+PD_WPC equ $9a Z
+PD_RWR equ $9c Z
+PD_Park equ $9e Z
+PD_LSNOffs equ $a0 Z
+PD_TotCyls equ $a4 Z
+PD_CtrlrID equ $a6 Z
+PD_Rate equ $a7 Z
+PD_ScsiOpt equ $a8 Z
+PD_MaxCnt equ $ac Z
+do.b equ $b0 Z
+PD_ATT equ $b5 Z
+PD_FD equ $b6 Z
+PD_DFD equ $ba Z
+PD_DCP equ $be Z
+PD_DVT equ $c2 Z
+do.b equ $c6 Z
+PD_SctSiz equ $c8 Z
+
+PD_NAME equ $e0 Z
+PDSIZE equ $0100 Z
+
+*FmtDis_B equ $00
+*MltSct_B equ $01
+*StabID_B equ $02
+*AutoSz_B equ $03
+*FmtTrk_B equ $04
+*PDelim equ $2f
+*PDir equ $2e
+*PEntir equ $40
+
+* LSN0 offsets type Y
+
+*\ Y - LSN0 offsets (DD.XX)
+
+DD_TOT equ $00 Y
+DD_TKS equ $03 Y
+DD_MAP equ $04 Y
+DD_BIT equ $06 Y
+DD_DIR equ $08 Y
+DD_OWN equ $0b Y
+DD_ATT equ $0d Y
+DD_DSK equ $0e Y
+DD_FMT equ $10 Y
+DD_SPT equ $11 Y
+DD_RES equ $13 Y
+DD_SIZ equ $15 Y
+DD_BT equ $15 Y
+DD_BSZ equ $18 Y
+DD_DAT equ $1a Y
+DD_NAM equ $1f Y
+DD_OPT equ $3f Y
+do.b equ $5f Y
+DD_Sync equ $60 Y
+DD_MapLSN equ $64 Y
+DD_LSNSize equ $68 Y
+DD_VersID equ $6a Y
+
+*\ F - FD offsets (FD.XX)
+* FD offsets type F
+
+FD_ATT equ $00 F
+FD_OWN equ $01 F
+FD_DAT equ $03 F
+FD_LNK equ $08 F
+FD_SIZ equ $09 F
+FD_Creat equ $0d F
+FD_SEG equ $10 F
+
+FDSL_A equ $00
+FDSL_B equ $03
+FDSL_S equ $05
+org equ $00
+DIR_NM equ $00
+DIR_FD equ $1c
+DIR_SZ equ $20
+
+* Static storage names type D
+* since they are in Data area
+* --Universal types
+
+
+V_PORT equ $00 D
+V_LPRC equ $04 D
+V_BUSY equ $06 D
+V_WAKE equ $08 D
+V_Paths equ $0a D
+
+V_USER equ $2e D
+
+V_NDRV equ $2e D
+
+DRVBEG equ $36 D
+
+* These are not on LSN0, but are in the table for
+* each individual Drive Table, so Make Type T
+
+V_TRAK equ $16 T
+V_FileHd equ $18 T
+V_DiskID equ $1c T
+V_BMapSz equ $1e T
+V_MapSct equ $20 T
+V_BMB equ $22 T
+V_ScZero equ $24 T
+V_ZeroRd equ $28 T
+V_Init equ $29 T
+V_ResBit equ $2a T
+V_SoftEr equ $2c T
+V_HardEr equ $30 T
+V_Cache equ $34 T
+V_DTExt equ $38 T
+V_MapMax equ $3c T
+
+DRVMEM equ $54 T
