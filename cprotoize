@@ -2,9 +2,9 @@
 
 # Program to generate protoypes
 
-cat <<"EOP" > proto.h
+cat <<"EOP" > proto_h
 /* ************************************************************** *
- * proto.h - Prototypes for functions in dis68                    $
+ * proto_h - Prototypes for functions in dis68                    $
  *                                                                $
  * This file handles both STDC and non-STDC forms                 $
  * $Id::                                                          $
@@ -13,7 +13,10 @@ cat <<"EOP" > proto.h
 #ifdef __STDC__
 EOP
 
-cproto *.c >> proto.h
-echo "\n#else\n" >> proto.h
-cproto -f1 *.c >> proto.h
-echo "#endif\n" >> proto.h
+cproto *.c >> proto_h
+echo "\n#else\n" >> proto_h
+cproto -f1 *.c >> proto_h
+echo "#endif\n" >> proto_h
+
+rm proto.h
+mv proto_h proto.h

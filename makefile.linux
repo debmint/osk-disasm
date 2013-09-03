@@ -1,5 +1,5 @@
 # ************************************************************* *
-# Linux Makefile for building dis68                             $
+# Linux makefile.linux for building dis68                       $
 #                                                               $
 # $Id::                                                         $
 # ************************************************************* *
@@ -7,12 +7,12 @@
 CFLAGS = -c -g
 LFLAGS = -g
 DISRELS = dis68.o dismain.o
-XTRAS = disglobs.h Makefile
+XTRAS = disglobs.h makefile.linux
 
 dis68: $(DISRELS)
 	cc $(LFLAGS) $(DISRELS) -o $@
 
-#$(DISRELS): $* Makefile
+#$(DISRELS): $* makefile.linux
 #	cc $(CFLAGS) -o $@ $*.c
 
 # I broke down the dependencies for the object files
