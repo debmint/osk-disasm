@@ -9,6 +9,7 @@
 #include "disglobs.h"
 #include "modtypes.h"
 
+
 static int HdrLen;
 
 extern void errexit(
@@ -19,42 +20,32 @@ char *
 
 
 /* ****************************************************** *
- *Get the module header.  We will do this only in Pass 1
+ * Get the module header.  We will do this only in Pass 1 *
  * ****************************************************** */
 
 static int
 get_modhead()
 {
-    int *stdmods[] = {
-        &M_ID, &M_SysRev, &M_Size,  &M_Owner,  &M_SysRev,  &M_Size,
-        &M_Name, &M_Accs, &M_Type, &M_Lang,  &M_Attr,  &M_Revs,
-        &M_Edit,  &M_Usage, &M_Symbol, 0
-    },
-        **modpt;
-    int *mlist1[] = {&M_Exec,&M_Except,0};
-    int *mlist2[] = {&M_Stack, &M_IData, &M_IRefs, 0};
-    int *mlist3[] =  {&M_Init, &M_Term,0};
-
     /* Get standard (common to all modules) header fields */
-    modpt = stdmods;
 
-    while (*modpt)
+    if ((fread_w(&M_ID,ModFP) < 1) || (fread_w(&M_SysRev,ModFP) < 1) ||
+        (fread_l(&M_Size, ModFP) < 1) || (fread_l(&M_Owner, ModFP) < 1) ||
+        (fread_l(&M_Name, ModFP) < 1) || (fread_w(&M_Accs, ModFP) < 1) ||
+        (fread_b(&M_Type, ModFP) < 1) || (fread_b(&M_Lang, ModFP) < 1) ||
+        (fread_b(&M_Attr, ModFP) < 1) || (fread_b(&M_Revs, ModFP) < 1) ||
+        (fread_w(&M_Edit, ModFP) < 1) || (fread_l(&M_Usage, ModFP) < 1) ||
+        (fread_l(&M_Symbol, ModFP) < 1))
     {
-        if (fread_b(*modpt,MFile) < 1)
-        {
-            filereadexit();
-            ++modpt;
-
-        }
+        filereadexit();
     }
 
     /* We have 14 bytes that are not used */
-    if (fseek(MFile, 14, SEEK_CUR) != 0)
+    if (fseek(ModFP, 14, SEEK_CUR) != 0)
     {
         errexit("Cannot Seek to file location");
     }
 
-    if (fread_w(&M_Parity, MFile) < 1)
+    if (fread_w(&M_Parity, ModFP) < 1)
     {
         filereadexit();
     }
@@ -80,41 +71,58 @@ get_modhead()
     case MT_TRAPLIB:
     case MT_FILEMAN:
     case MT_DEVDRVR:
-        modpt = mlist1;
+        if ((fread_l(&M_Exec, ModFP) < 1) ||(fread_l(&M_Except, ModFP) < 1))
+        {
+            filereadexit();
+        }
 
-        while ((*modpt)++) {
-            if (fread_l(*modpt, MFile) < 1)
+        HdrEnd = ftell(ModFP); /* We'll keep changing it if necessary */
+
+        if ((M_Type != MT_SYSTEM) && (M_Type != MT_FILEMAN))
+        {
+
+            if ((fread_l(&M_Stack, ModFP) < 1) ||
+                (fread_l(&M_IData, ModFP) < 1) ||
+                (fread_l(&M_IRefs, ModFP) < 1))
             {
                 filereadexit();
             }
-        }
 
-        if ((M_Type != MT_SYSTEM) && (M_Type != MT_FILEMAN)) {
-            modpt = mlist2;
-
-            while(*(modpt)++)
-            {
-                if (fread_l(*modpt, MFile) < 1)
-                {
-                    filereadexit();
-                }
-            }
+            HdrEnd = ftell(ModFP);  /* Update it again */
 
             if (M_Type == MT_TRAPLIB)
             {
-                modpt = mlist3;
 
-                while (*(modpt)++)
+                if ((fread_l(&M_Init, ModFP) < 1) ||
+                        (fread_l(&M_Term, ModFP) < 1))
                 {
-                    if (fread_l(*modpt, MFile) < 1)
-                    {
-                        filereadexit();
-                    }
+                    filereadexit();
                 }
+
+                HdrEnd = ftell(ModFP);  /* The final change.. */
             }
         }
-
     }
+
+    showresults();      /* Test results */ 
+}
+
+/* Test results */
+int showresults()
+{
+    char buf[200], *pt=buf;
+    char tmpch='a';
+
+    fseek(ModFP,M_Name,SEEK_SET);
+    while (tmpch) {
+        if (fread_b(&tmpch,ModFP) < 1)
+            filereadexit();
+        *(pt++) = tmpch;
+    }
+    *pt = '\0';
+    printf("Module name: %s\n", buf);
+    printf("Module Size: %X %d\n", M_Size, M_Size);
+    printf( "Stack Size: %X %d\n", M_Stack, M_Stack);
 }
 
 /* ******************************************************************* *
@@ -138,22 +146,27 @@ dopass(argc,argv,mypass)
     int sval = 0;
     int lval = 0;
     int wval = 0;
-    printf("Have entered dopass()\n");
 
-    if (!(MFile = fopen(ModFile, "r")))
+    if (!(ModFP = fopen(ModFile, "r")))
     {
         errexit("Cannot open Module file for read");
     }
 
-    get_modhead();
+    if (Pass == 1)
+    {
+        get_modhead();
+    }
+    else
+    {
+    }
 }
 
 int
 #ifdef __STDC__
-fread_b(int *dst, FILE *fp)
+fread_b(char *dst, FILE *fp)
 #else
 fread_b(dst, fp)
-    int *dst;
+    char *dst;
     FILE *fp;
 #endif
 {
