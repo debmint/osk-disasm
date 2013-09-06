@@ -26,6 +26,8 @@ main(argc,argv)
 #endif
 {
     int ret;
+    char buf[100];
+
     /* Process command-line options first */
 
     /*while ((ret = getopt(argc, argv, "abc:d")) != -1)
@@ -41,6 +43,8 @@ main(argc,argv)
     Pass = 1;
     dopass(argc,argv,1);
     Pass = 2;
+    dopass(argc,argv,1);
+
     return 0;
 }
 
@@ -96,7 +100,6 @@ void errexit
 #endif
 {
     fprintf (stderr, "%s\n",pmpt);
-
     exit(errno ? errno : 1);
 }
 
