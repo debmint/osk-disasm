@@ -6,20 +6,20 @@
 
 CFLAGS = -c -g
 LFLAGS = -g
-DISRELS = dis68.o dismain.o
+DISRELS = dis68.o dismain.o opcode00.o
 XTRAS = disglobs.h makefile.linux
 
 dis68: $(DISRELS)
 	cc $(LFLAGS) $(DISRELS) -o $@
 
-#$(DISRELS): $* makefile.linux
-#	cc $(CFLAGS) -o $@ $*.c
+$(DISRELS): makefile.linux
+	cc $(CFLAGS) $*.c
 
 # I broke down the dependencies for the object files
 # because I couldn't get the above to work...
 
-dis68.o: dis68.c $(XTRAS)
-	cc $(CFLAGS) -o $@ $*.c
-
-dismain.o: dismain.c $(XTRAS)
-	cc $(CFLAGS) -o $@ $*.c
+#dis68.o: dis68.c $(XTRAS)
+#	cc $(CFLAGS) -o $@ $*.c
+#
+#dismain.o: dismain.c $(XTRAS)
+#	cc $(CFLAGS) -o $@ $*.c

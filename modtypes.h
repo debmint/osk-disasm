@@ -6,7 +6,7 @@
  * ***************************************************** */
 
 struct modnam {
-    const char *name;
+    char *name;
     int val;
 };
 

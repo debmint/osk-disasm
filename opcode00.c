@@ -9,9 +9,9 @@ int
 #ifdef __STDC__
     opcode0000 (CMD_ITMS *cmditms)
 #else
-    opcode0000 (struct cmditems *cmdims)
+    opcode0000 (CMD_ITMS *cmdims)
 
-    struct cmditems *cmditms;
+    CMD_ITMS *cmditms;
 #endif
 {
     register int firstword = cmditms->code[0];    /* To save calculations */
