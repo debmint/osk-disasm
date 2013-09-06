@@ -7,16 +7,19 @@
  * $Id::                                                               $
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#ifndef HAVE_GLOBALS
+#define HAVE_GLOBALS
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 
-#include "proto.h"
-
-enum {
-    MID_PROG,
-    MID_ROF
-};
+typedef struct cmditems {
+    char mnem[50];
+    short code[10];
+    int wcount;
+    char opcode[200];              /* Possibly ovesized, but just to be safe */
+} CMD_ITMS;
 
 #ifdef _MAIN_
 #   define xt
@@ -24,9 +27,13 @@ enum {
 #   define xt extern
 #endif
 
+xt  CMD_ITMS Instruction;
 xt int Pass;    /* The disassembler is a two-pass assembler */
 xt char *ModFile;   /* The module file to read */
 xt FILE *ModFP;
+xt int PCPos;
+xt int CmdEnt;   /* The Entry Point for the Command */
+xt int ExtBegin; /* The position of the begin of the extended list (for PC-Relative addressing)
 
 /* Module header variables */
 xt int M_ID, M_SysRev, M_Size, M_Owner, M_Name, M_Accs;
@@ -43,3 +50,6 @@ xt int M_Edit, M_Usage, M_Symbol, M_Parity,
 
 xt int HdrEnd;   /* The first byte past end of header, usefule for begin of Pass 2 */
 xt int ModType;   /* The type of module */
+
+#include "proto.h"              /* Do this last so that structures, etc will be defined */
+#endif                     /* #ifdef HAVE_GLOBALS */

@@ -14,9 +14,9 @@ cat <<"EOP" > proto_h
 EOP
 
 cproto *.c >> proto_h
-echo "\n#else\n" >> proto_h
+echo -e "\n#else\n" >> proto_h
 cproto -f1 *.c >> proto_h
-echo "#endif\n" >> proto_h
+echo -e "#endif\n" >> proto_h
 
 rm proto.h
 mv proto_h proto.h

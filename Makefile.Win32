@@ -1,0 +1,31 @@
+# ************************************************************* *
+# Makefile for building dis68 for Windows                       $
+#                                                               $
+# $Id::                                                         $
+# ************************************************************* *
+
+
+LFLAGS = /ZI
+DISRELS = dis68.obj dismain.obj opcode00.obj
+XTRAS = disglobs.h Makefile.Win32
+CFLAGS = /ZI /D__STDC__
+
+dis68.exe: $(DISRELS)
+	$(CC) $(LFLAGS) $(DISRELS) /Fe $*
+
+$(DISRELS): $(XTRAS)
+	$(CC) /c $(CFLAGS) $*.c
+
+# I broke down the dependencies for the object files
+# because I couldn't get the above to work...
+
+#dis68.obj: dis68.c $(XTRAS)
+#	$(CC) /c $(CFLAGS) $*.c
+#
+
+#dismain.obj: dismain.c $(XTRAS)
+#	$(CC) /c $(CFLAGS) $*.c
+#
+
+#clean:
+#    del dis68.exe *.obj
