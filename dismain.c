@@ -25,7 +25,7 @@ char *
 );
 
 typedef struct modestrs {
-    const char *str;
+    char *str;
     int CPULvl;
 } MODE_STR;
 
@@ -186,8 +186,8 @@ dopass(argc,argv,mypass)
             if (Pass == 2)
             {
                 printf ("%08x %04.4x %s %08x\n", CmdEnt, (short)Instruction.code[0]&0xffff, "ds.w", Instruction.code[0]);
-                //PCPos += 2;
-                //CmdEnt = PCPos;
+                /*PCPos += 2;
+                //CmdEnt = PCPos;*/
             }
         }
     }
@@ -251,7 +251,7 @@ char
 #ifdef __STDC__
 fread_b(FILE *fp)
 #else
-fread_b(dst, fp)
+fread_b(fp)
     FILE *fp;
 #endif
 {
@@ -337,7 +337,7 @@ int fread_l(fp)
 {
     int l;
     
-    if (fread(dst, 4, 1, fp) < 1)
+    if (fread(&l, 4, 1, fp) < 1)
     {
         filereadexit();
     }
@@ -393,12 +393,15 @@ int fread_l(FILE *fp)
 
 /* NOTE: SHOULD THE VALID MODES BE CONSIDERED HERE? */
 
+char dispRegNam[2] = {'D','A'};
+
 int
 #ifdef __STDC__
 get_eff_addr(CMD_ITMS *ci, char *ea, int mode, int reg)
 #else
-get_eff_addr(ci, reversed)
-    CMD_ITMS ci;
+get_eff_addr(ci, ea, mode, reg)
+    CMD_ITMS *ci;
+    char * ea;
 int mode;
 int reg;
 #endif
@@ -409,7 +412,6 @@ int reg;
     int displac_l;
     char dispstr[50];
     char dispReg[4];
-    char dispRegNam[2] = {'D','A'};
 
     switch (mode)
     {
