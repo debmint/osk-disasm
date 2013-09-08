@@ -24,29 +24,6 @@ char *
 #endif
 );
 
-typedef struct modestrs {
-    char *str;
-    int CPULvl;
-} MODE_STR;
-
-MODE_STR ModeStrings[] = {
-    {"D%d", 0},
-    {"A%d", 0},
-    {"(A%d)", 0},
-    {"(A%d)+", 0},
-    {"-(A%d)", 0},
-    {"%s(A%d)", 0},
-    {"(%s,A%d,%s%d)", 0}
-};
-/* Need to add for 68020-up modes.  Don't know if they can be included in these two arrays or not..*/
-MODE_STR Mode07Strings[] = {
-    {"(%s).w", 0},
-    {"(%s).l", 0},
-    {"(%s},pc)",0},
-    {"(%s,pc},%s%d", 0},
-    {"#%s", 0}
-};
-
 /* ****************************************************** *
  * Get the module header.  We will do this only in Pass 1 *
  * ****************************************************** */
@@ -211,7 +188,7 @@ get_asmcmd()
     Instruction.mnem[0] = 0;
     Instruction.wcount = 0;
 
-    Instruction.code[0] = getnext_w(&Instruction);
+    Instruction.code[0] = get_extw(&Instruction);
     ExtBegin = CmdEnt+2;
 
     switch (Instruction.code[0] >> 12)
@@ -265,19 +242,20 @@ fread_b(fp)
     return b;
 }
 
-/* **********************************************************
- * getnext_w() - Fetches the next word from the module
- * Passed: The cmditems pointer
- * Returns: the word retrieved
- *
- * The PCPos is updated, and the count of words in the instruction is updated
- * ********************************************************** */
+/* **************************************************************************** *
+ * get_extw() - Fetches the next word (an Extended Word) from the module        *
+ * Passed: The cmditems pointer                                                 *
+ * Returns: the word retrieved                                                  *
+ *                                                                              *
+ * The PCPos is updated, the count of words in the instruction is updated and   *
+ *    the word is stored in the proper Info->code position                      *
+ * **************************************************************************** */
 
 short
 #ifdef __STDC__
-getnext_w(CMD_ITMS *ci)
+get_extw(CMD_ITMS *ci)
 #else
-getnext_w(ci)
+get_extw(ci)
     CMD_ITMS *ci;
 #endif
 {
@@ -286,19 +264,20 @@ getnext_w(ci)
     w = fread_w(ModFP);
     PCPos += 2;
     ci->wcount += 1;
+    ci->code[ci->wcount] = w;
     return w;
 }
 
 /* *************************************************************************** *
- * unget_w() - ungets (undoes) a previous word-get.
+ * unget_extw() - ungets (undoes) a previous word-get.
  * Passed: Pointer to the cmditems struct
  * *************************************************************************** */
 
 void
 #ifdef __STDC__
-    unget_w(CMD_ITMS *ci)
+    unget_extw(CMD_ITMS *ci)
 #else
-    unget_w(ci)
+    unget_extw(ci)
     CMD_ITMS *ci;
 #endif
 {
@@ -386,135 +365,3 @@ int fread_l(FILE *fp)
 }
 #endif
 
-/* ********************************************************************************** *
- * get_eff_addr() - Build the appropriate opcode string for the command and store it  *
- *     in the command structire opcode string                                         *
- * ********************************************************************************** */
-
-/* NOTE: SHOULD THE VALID MODES BE CONSIDERED HERE? */
-
-char dispRegNam[2] = {'D','A'};
-
-int
-#ifdef __STDC__
-get_eff_addr(CMD_ITMS *ci, char *ea, int mode, int reg)
-#else
-get_eff_addr(ci, ea, mode, reg)
-    CMD_ITMS *ci;
-    char * ea;
-int mode;
-int reg;
-#endif
-{
-    short ext1;
-    short ext2;
-    short displac_w;
-    int displac_l;
-    char dispstr[50];
-    char dispReg[4];
-
-    switch (mode)
-    {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-        sprintf(ea, ModeStrings[mode].str,reg);
-        return 1;
-        break;
-    case 5:
-        ext1 = getnext_w(ci);
-        ++(ci->wcount);
-        displac_w = (ext1 & 0xffff);
-
-        /* The system biases the data Pointer (a6) by 0x8000 bytes, so compensate */
-
-        if (reg == 6) {
-            displac_w += 0x8000;
-        }
-
-        /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
-        sprintf(dispstr, "%d", displac_w);
-        sprintf (ea, ModeStrings[mode].str,dispstr,reg);
-        return 1;
-        break;
-    case 6:
-        ext1 = getnext_w(ci);
-        ++(ci->wcount);
-        displac_w = (ext1 & 0xffff);
-
-        if (reg == 6) {     /* Compensate for Data Register bias */
-            displac_w += 0x8000;
-        }
-        sprintf (dispReg, "%c%d", dispRegNam[ext1 >> 15], (ext1 >> 12) & 7);
-        /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
-        sprintf (dispstr, "%d", displac_w);
-        sprintf (ea, ModeStrings[mode].str, dispReg, dispstr, reg);
-        return 1;
-        break;
-
-        /* We now go to mode %111, where the mode is determined by the register field */
-    case 7:
-        switch (reg) {
-        case 0: /* (xx).W */
-            ext1 = getnext_w(ci);
-            ++(ci->wcount);
-            displac_w = ext1 & 0xffff;
-            /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
-            sprintf (dispstr, "%d", displac_w);
-            sprintf (ea, ModeStrings[reg].str, dispstr);
-            return 1;
-        case 1:                               /* (xxx).L */
-            ext1 = getnext_w(ci);
-            ++(ci->wcount);
-            ext2 = getnext_w(ci);
-            ++(ci->wcount);
-            sprintf (dispstr, "%dL", (ext1 <<16) | ext2);
-            sprintf (ea, ModeStrings[reg].str, dispstr);
-            return 1;
-        case 4:
-            ext1 = getnext_w(ci);
-            ++(ci->wcount);
-
-            switch (ci->code[0] >> 12)
-            {
-                char b;
-            case 1:    /* byte */
-                b = ext1 & 0xff;
-                sprintf (dispstr, "%d", (int)b);
-                break;
-            case 3:    /* word */
-                displac_w = ext1 & 0xffff;
-                sprintf (dispstr, "%d", displac_w);
-                break;
-            case 2:    /* long */
-                ext2 = getnext_w(ci);
-                ++(ci->wcount);
-                displac_l = (ext1 << 8) | ext2;
-                sprintf (dispstr, "%dL", displac_l);
-                break;
-            }
-
-             sprintf (ea, Mode07Strings[reg].str, dispstr);
-            return 1;
-        case 2:              /* (d16,PC) */
-            ext1 = getnext_w(ci);
-            ++(ci->wcount);
-            sprintf (dispstr, "%d", ext1);
-            sprintf (ea, Mode07Strings[reg].str, dispstr);
-            return 1;
-        case 3:
-            ext1 = getnext_w(ci);
-            ++(ci->wcount);
-            displac_w = (ext1 & 0xffff);
-            sprintf (dispReg, "%c%d", dispRegNam[ext1 >> 15], (ext1 >> 12) & 7);
-            /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
-            sprintf (dispstr, "%d", displac_w);
-            sprintf (ea, Mode07Strings[mode].str, dispReg, dispstr, reg);
-            return 1;
-        }
-    }
-
-    return 0;    /* Return 0 means no effective address was found */
-}
