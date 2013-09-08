@@ -15,14 +15,14 @@ int
 #endif
 {
     register int firstword = cmditms->code[0];    /* To save calculations */
+    short ext1, ext2;
+    int mode,reg;
 
     switch ((firstword >> 8) & 0x0f)
     {
     case 0:
         if ((firstword & 0x1c) == 0x0c)    /* "cmp2" or "chk2"? */
         {
-            int mode,
-                reg;
             short w2;
 
             mode = (firstword >> 3) & 0x07;
@@ -39,7 +39,7 @@ int
                 break;
             }
 
-            w2 = getnext_w(cmditms);
+            w2 = get_extw(cmditms);
 
             if ((w2 & 0xfff) == 0)
             {
@@ -51,14 +51,13 @@ int
             }
             else
             {
-                unget_w(cmditms);
+                unget_extw(cmditms);
                 break;
             }
         }
 
-        strcpy(cmditms->mnem, "ori");
-        /* Eliminate ccr & SR */
         /* Go process extended command */
+        strcpy(cmditms->mnem, "ori");
         break;
     case 0x01:
         strcpy(cmditms->mnem, "andi");
@@ -66,6 +65,7 @@ int
         /* Go process extended command */
         break;
     case 0x02:
+        
         if (firstword & 0x80 == 0)
         {
             strcpy(cmditms->mnem, "subi");
@@ -169,12 +169,43 @@ int
     case 7:
         strcpy(cmditms->mnem, "bset");
         break;
+    case 10:
+        ext1 = get_extw(cmditms);
+        /* Eliminate ccr & SR */
+        switch (cmditms->code[0] & 0xff)
+        {
+            int regflag = cmditms->code[0] & 0x40; /* 0 if ccr, 1 if sr */
+
+        case 0x3c:
+        case 0x7c:
+            /* If it's ccr and it's negative, sign extend it */
+            if ((regflag == 0) && ( ext1 & 0x80))
+            {
+                ext1 |= 0xffff0000;
+            }
+
+            /* Verify if it's a label */
+            if (regflag == 0)
+            {
+                sprintf(cmditms->opcode, "#%s,ccr", ext1);
+            }
+            else
+            {
+                sprintf (cmditms->opcode, "#%s,sr", ext1);
+            }
+
+            strcpy(cmditms->mnem,"eori");
+            return 1;
+        default:
+            strcpy (cmditms->mnem, "eori");
+        }
     }
 
     if ((firstword & 0x38) == 0x08)
     {
         strcpy(cmditms->mnem, "movep");
     }
+
 
     return 0;
 }
