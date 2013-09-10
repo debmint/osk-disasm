@@ -1,58 +1,63 @@
-/* ********************************************************************************* *
- * opcode00.c - Resolves cases where the Opcode is 0000                              *
- * ********************************************************************************* */
+/* ************************************************************************ *
+ * opcode00.c - Resolves cases where the Opcode is 0000                     $
+ *                                                                          $
+ * $Id::                                                                    $
+ * ************************************************************************ */
 
 #include "disglobs.h"
 #include <string.h>
 
 int 
 #ifdef __STDC__
-    opcode0000 (CMD_ITMS *cmditms)
+    bit_movep_immediate (CMD_ITMS *cmditms)
 #else
-    opcode0000 (CMD_ITMS *cmdims)
+    bit_movep_immediate (CMD_ITMS *cmdims)
 
     CMD_ITMS *cmditms;
 #endif
 {
-    register int firstword = cmditms->code[0];    /* To save calculations */
+    register int firstword = cmditms->cmd_wrd;    /* To save calculations */
     short ext1, ext2;
     int mode,reg;
+
+    if ((firstword & 0xfff0) == 0x6c)  /* "rtm" */
+    {
+        //if (cpu >= 2)
+        {
+            return rtm_020(cmditms);
+        }
+       // else
+            //return 0;
+    }
+
+    switch (firstword)
+    {
+    case 0x3c:
+    case 0x7c:
+        return biti_reg(cmditms, "ori");
+    case 0x023c:
+    case 0x027c:
+        return biti_reg(cmditms, "andi");
+    case 0x0a3c:
+    case 0x0a7c:
+        return biti_reg(cmditms, "eori");
+    default:
+        break;
+    }
+    
 
     switch ((firstword >> 8) & 0x0f)
     {
     case 0:
-        if ((firstword & 0x1c) == 0x0c)    /* "cmp2" or "chk2"? */
+        if (cpu >= 2)
         {
-            short w2;
-
-            mode = (firstword >> 3) & 0x07;
-
-            if ((mode < 3) || (mode == 3) || (mode == 5))
+            if ((firstword & 0x1c) == 0x0c)    /* "cmp2" or "chk2"? */
             {
-                break;   /* Illegal, try something else */
-            }
+                /* For the time being, if this is not a match, simply
+                 * continue */
 
-            reg = firstword & 0x07;
-            
-            if ((mode == 3) && ((reg == 2) || (reg == 3)))
-            {
-                break;
-            }
-
-            w2 = get_extw(cmditms);
-
-            if ((w2 & 0xfff) == 0)
-            {
-                strcpy(cmditms->mnem, "cmp2");
-            }
-            else if ((w2 & 0xfff) == 0x800)
-            {
-                strcpy(cmditms->mnem, "chk2");
-            }
-            else
-            {
-                unget_extw(cmditms);
-                break;
+                if (cmp2_chk2(cmditms))
+                    return 1;
             }
         }
 
@@ -93,6 +98,8 @@ int
         }
 
         break;
+    case 4:
+        break;
     case 0x6:
 
         if ((firstword & 0xc0) == 0xc0)
@@ -102,8 +109,7 @@ int
         }
         else
         {
-            strcpy(cmditms->mnem, "addi");
-            /* Generic mode get */
+            return biti_size(cmditms, "addi");
         }
         break;
     case 0x0a:
@@ -112,7 +118,7 @@ int
         /* Go process extended command */
         break;
     case 0x0c:
-        /* Process standard extended mode */
+        return biti_size(cmditms, "cmpi");
         break;
     case 0x08:
         {
@@ -170,11 +176,11 @@ int
         strcpy(cmditms->mnem, "bset");
         break;
     case 10:
-        ext1 = get_extw(cmditms);
+        ext1 = getnext_w(cmditms);
         /* Eliminate ccr & SR */
-        switch (cmditms->code[0] & 0xff)
+        switch (cmditms->cmd_wrd & 0xff)
         {
-            int regflag = cmditms->code[0] & 0x40; /* 0 if ccr, 1 if sr */
+            int regflag = cmditms->cmd_wrd & 0x40; /* 0 if ccr, 1 if sr */
 
         case 0x3c:
         case 0x7c:
@@ -210,7 +216,109 @@ int
     return 0;
 }
 
-/* Build the "move"/"movea" commands */
+/*
+ * Immediate bit operations involving the status registers
+ * Returns 1 on success, 0 on failure
+ *
+ */
+
+int
+#ifdef __STDC__
+biti_reg(CMD_ITMS *ci, char *mnem)
+#else
+biti_reg(ci, mnem)
+    CMD_ITMS *ci;
+    char *mnem;
+#endif
+{
+    static char *sr[2] = {"ccr", "sr"};
+    register int size = (ci->code[1] >> 6) & 1;
+
+    ci->code[1] = getnext_w(ci);
+
+    if (ci->code[1] & 0xff00)
+    {
+        ungetnext_w(ci);
+        return 0;
+    }
+
+    /* Add functions to retrieve label */
+    if (Pass == 2) {
+        strcpy (ci->mnem, mnem);
+        sprintf (ci->opcode, "#%d,%s", ci->code[1], sr[size]);
+        return 1;
+    }
+}
+
+/*
+ * Immediate bit operations not involving status registers
+ *
+ */
+
+int
+#ifdef __STDC__
+biti_size(CMD_ITMS *ci, char *mnem)
+#else
+biti_size(ci, mnem)
+    CMD_ITMS *ci;
+    char *mnem;
+#endif
+{
+    register int size = (ci->cmd_wrd >> 6) & 3;
+    register int mode = (ci->cmd_wrd >> 3) & 7;
+    register int reg;
+    register int firstword = ci->wcount;
+    char ea[30];
+    long data;
+
+    if (size > SIZ_LONG)
+    {
+        return 0;
+    }
+
+    if (mode == 1)
+    {
+        return 0;
+    }
+   
+    reg = (ci->cmd_wrd) & 7;
+
+    if ((mode == 7) && (reg > 3))
+    {
+        return 0;
+    }
+
+    ci->code[firstword] = getnext_w(ci);
+
+    switch (size)
+    {
+    case SIZ_BYTE:
+    case SIZ_WORD:
+        data = ci->code[firstword];
+        break;
+    case SIZ_LONG:
+        ci->code[ci->wcount] = getnext_w(ci);
+        data = (ci->code[firstword] << 8) | ci->code[firstword + 1];
+        break;
+    }
+    if (get_eff_addr(ci, ea, mode, reg, SIZ_LONG))
+    {
+
+        /* We need to add feature to include Labels here... */
+        sprintf (ci->opcode, "#%ld,%s", data, ea);
+        strcpy (ci->mnem, mnem);
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+/*
+ *  Build the "move"/"movea" commands
+ *
+ */
 
 char *
 #ifdef __STDC__
@@ -223,41 +331,45 @@ move_instr(CMD_ITMS *ci)
     char *dst_opcode, *src_opcode;
     int d_mode, d_reg, src_mode, src_reg;
     char src_ea[20], dst_ea[20];
+    register int size;
+    
+    /* Move instructions have size biased by +1 */
+    size = ((ci->cmd_wrd >> 12) & 3) - 1;
 
     /* Get Destination EA */
-    d_mode = (ci->code[0] >> 6) & 7;
-    d_reg = (ci->code[0] >>9) & 7;
+    d_mode = (ci->cmd_wrd >> 6) & 7;
+    d_reg = (ci->cmd_wrd >>9) & 7;
 
     if ((d_mode == 7) && (d_mode > 1))
     {
         return 0;
     }
 
-    src_mode = (ci->code[0] >> 3) & 7;
-    src_reg = ci->code[0] & 7;
+    src_mode = (ci->cmd_wrd >> 3) & 7;
+    src_reg = ci->cmd_wrd & 7;
 
-    if (get_eff_addr (ci, dst_ea, d_mode, d_reg))
+    if (get_eff_addr (ci, src_ea, src_mode, src_reg, size))
     {
-        if (get_eff_addr (ci, src_ea, src_mode, src_reg))
+        if (get_eff_addr (ci, dst_ea, d_mode, d_reg, size))
         {
             sprintf(ci->opcode, "%s,%s", src_ea, dst_ea);
             strcpy (ci->mnem, "move");
 
-            if (((ci->code[0] >> 9) & 7) == 1)
+            if (((ci->cmd_wrd >> 9) & 7) == 1)
             {
                 strcat(ci->mnem, "a");
             }
             else
             {
-                switch ((ci->code[0] >>12) & 3)
+                switch (size)
                 {
-                case 1:
+                case SIZ_BYTE:
                     strcat(ci->mnem, ".b");
                     break;
-                case 3:
+                case SIZ_WORD:
                     strcat(ci->mnem, ".w");
                     break;
-                case 2:
+                case SIZ_LONG:
                     strcat(ci->mnem, ".l");
                 }
             }

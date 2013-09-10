@@ -14,23 +14,68 @@
 #include <stdio.h>
 #include <errno.h>
 
-typedef struct cmditems {
-    char mnem[50];
-    short code[10];
-    int wcount;
-    char opcode[200];              /* Possibly ovesized, but just to be safe */
-} CMD_ITMS;
-
 #ifdef _MAIN_
 #   define xt
 #else
 #   define xt extern
 #endif
 
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
+#ifndef SEEK_SET
+#   define SEEK_SET 0
+#   define SEEK_CUR 1
+#   define SEEK_END 2
+#endif
 
+enum {
+    SIZ_BYTE,
+    SIZ_WORD,
+    SIZ_LONG
+};
+
+typedef struct cmditems {
+    int cmd_wrd;        /* The single effective address word (the command) */
+    char mnem[50];
+    short code[10];
+    int wcount;         /* The count of words in the instrct/.(except sea) */
+    char opcode[200];   /* Possibly ovesized, but just to be safe */
+} CMD_ITMS;
+
+#define LBLLEN 40
+
+/* Defines a Label */
+
+struct symbldef {
+    char sname[LBLLEN+1];         /* Symbol name */
+    long myaddr;                  /* Address of symbol */
+    int stdname;                  /* Flag that it's a std named label */
+    int global;                   /* For ROF use... flags that it's global */
+    struct nlist *Next;           /* Next */
+    struct nlist *Prev;           /* Previous entry */
+};
+
+/* Offset 9 (-L00xx) - type stuff ] */
+
+struct ofsetree {
+    char oclas_maj;        /* Class to use in offset addressing          */
+    char of_maj;           /* The main offset value                      */
+    char incl_pc;          /* Flag to include PC offset mode             */
+    int add_to;            /* Flag: if set, add to offset, else subtract */
+    /*int of_sec;          Secondary offset (0 if none) */
+    /*char oclas_sec;      Class of secondary offset */
+};
+
+/* Data areas/Label Addressing Modes tree structure */
+
+struct databndaries {
+    long b_lo,         /* Lower (beginning) boundary address       */
+         b_hi;         /* Upper (ending) boundary address          */
+    char b_typ;        /* Boundary type for DA's and Lbl Class for AModes */
+    struct ofsetree *dofst;
+    struct databndaries *BNext,
+                        *BPrev;
+};
+
+xt int cpu;
 xt  CMD_ITMS Instruction;
 xt int Pass;    /* The disassembler is a two-pass assembler */
 xt char *ModFile;   /* The module file to read */
@@ -40,11 +85,15 @@ xt int CmdEnt;   /* The Entry Point for the Command */
 xt int ExtBegin; /* The position of the begin of the extended list (for PC-Relative addressing) */
 
 /* Module header variables */
-xt int M_ID, M_SysRev, M_Size, M_Owner, M_Name, M_Accs;
+xt int M_ID, M_SysRev;
+xt long M_Size, M_Owner, M_Name;
+xt int M_Accs;
 xt char M_Type, M_Lang, M_Attr, M_Revs;
 xt int M_Edit, M_Usage, M_Symbol, M_Parity,
     M_Exec, M_Except, M_Stack, M_IData,
-    M_IRefs, M_Init, M_Term, M_Port, M_Vector, M_IRQLvl,
+    M_IRefs, M_Init, M_Term;
+/* The following are for the Device Descriptor.. (Do we need these?) */
+xt int M_Port, M_Vector, M_IRQLvl,
     M_Prior, M_Mode, M_FMgr, M_PDev, M_DevCon, M_Opt,
     M_DType, M_PollSize, M_DevCnt, M_Procs, M_Paths, M_Params;
 xt int M_Sysgo, M_SysDev, M_Consol, M_Extens, M_Clock, M_Slice,
@@ -54,6 +103,12 @@ xt int M_Sysgo, M_SysDev, M_Consol, M_Extens, M_Clock, M_Slice,
 
 xt int HdrEnd;   /* The first byte past end of header, usefule for begin of Pass 2 */
 xt int ModType;   /* The type of module */
+
+xt char DorA[]
+#ifdef _MAIN_
+= {'d','a'}
+#endif
+;
 
 #include "proto.h"              /* Do this last so that structures, etc will be defined */
 #endif                     /* #ifdef HAVE_GLOBALS */
