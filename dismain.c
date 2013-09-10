@@ -155,14 +155,14 @@ dopass(argc,argv,mypass)
         {
             if (Pass == 2)
             {
-                printf("%08x %04.4x %s %s\n", CmdEnt, Instruction.code[0], Instruction.mnem, Instruction.opcode);
+                printf("%08x %04.4x %s %s\n", CmdEnt, Instruction.cmd_wrd, Instruction.mnem, Instruction.opcode);
             }
         }
         else
         {
             if (Pass == 2)
             {
-                printf ("%08x %04.4x %s %08x\n", CmdEnt, (short)Instruction.code[0]&0xffff, "ds.w", Instruction.code[0]);
+                printf ("%08x %04.4x %s %08x\n", CmdEnt, (short)Instruction.cmd_wrd&0xffff, "ds.w", Instruction.cmd_wrd);
                 /*PCPos += 2;
                 //CmdEnt = PCPos;*/
             }
@@ -188,30 +188,48 @@ get_asmcmd()
     Instruction.mnem[0] = 0;
     Instruction.wcount = 0;
 
-    Instruction.code[0] = get_extw(&Instruction);
-    ExtBegin = CmdEnt+2;
+    CmdEnt = PCPos;
+    /* We have to adjust things here... getnext_w() put the sea-word
+     * into the code array, but we want it in sea_word, and we want
+     * to reset wcount to 0
+     */
+    Instruction.cmd_wrd = getnext_w(&Instruction);
+    Instruction.wcount = 0;
+    ExtBegin = PCPos;
 
-    switch (Instruction.code[0] >> 12)
+    switch (Instruction.cmd_wrd >> 12)
     {
     case 0:
-        opcode0000(&Instruction);
+        return bit_movep_immediate(&Instruction);
         break;
     case 1:
     case 2:
     case 3:
         return move_instr(&Instruction) ? 1 : 0;
     case 4:
+        /*misc(&Instruction);*/
     case 5:
+        /*addq_subq_scc_dbcc_trapcc(&Instruction);*/
     case 6:
+        /*bcc_bsr(&Instruction);*/
     case 7:
+        /*moveq(&Instruction)*/
     case 8:
+        /*or_div_sbcd(&Instruction)*/
     case 9:
+        /*sub_subx(&Instruction);*/
     case 10:
+        /*aline(&Instruction);*/     /* Is this real? */
     case 11:
+        /*cmp_eor(&Instruction);*/
     case 12:
+        /*and_mul_abcd_exg(&Instruction);*/
     case 13:
+        /*add_addx(&Instruction)*/
     case 14:
+        /*shift_rotate_bitfield*/
     case 15:
+        /*coprocessor(&Instruction)*/
         break;
     }
 
@@ -243,7 +261,7 @@ fread_b(fp)
 }
 
 /* **************************************************************************** *
- * get_extw() - Fetches the next word (an Extended Word) from the module        *
+ * getnext_w() - Fetches the next word (an Extended Word) from the module        *
  * Passed: The cmditems pointer                                                 *
  * Returns: the word retrieved                                                  *
  *                                                                              *
@@ -253,9 +271,9 @@ fread_b(fp)
 
 short
 #ifdef __STDC__
-get_extw(CMD_ITMS *ci)
+getnext_w(CMD_ITMS *ci)
 #else
-get_extw(ci)
+getnext_w(ci)
     CMD_ITMS *ci;
 #endif
 {
@@ -269,15 +287,15 @@ get_extw(ci)
 }
 
 /* *************************************************************************** *
- * unget_extw() - ungets (undoes) a previous word-get.
+ * ungetnext_w() - ungets (undoes) a previous word-get.
  * Passed: Pointer to the cmditems struct
  * *************************************************************************** */
 
 void
 #ifdef __STDC__
-    unget_extw(CMD_ITMS *ci)
+    ungetnext_w(CMD_ITMS *ci)
 #else
-    unget_extw(ci)
+    ungetnext_w(ci)
     CMD_ITMS *ci;
 #endif
 {

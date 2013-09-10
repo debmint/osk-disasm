@@ -1,8 +1,9 @@
-/* ********************************************************************************** *
- * commonsubs.c - Common subroutines and functions that are used by several calls.    $
- *                                                                                    $
- * $Id::                                                                              $
- * ********************************************************************************** */
+/* ************************************************************************ *
+ * commonsubs.c - Common subroutines and functions that are used            $
+ *          by several calls.                                               $
+ *                                                                          $
+ * $Id::                                                                    $
+ * ************************************************************************ */
 
 #include "disglobs.h"
 
@@ -31,17 +32,15 @@ MODE_STR Mode07Strings[] = {
 
 char dispRegNam[2] = {'d','a'};
 
-/* ---------------------------------------------------------------------------------- *
- * get_eff_addr() - Build the appropriate opcode string for the command and store it  *
- *     in the command structire opcode string                                         *
- * ---------------------------------------------------------------------------------- */
-
-/* NOTE: SHOULD THE VALID MODES BE CONSIDERED HERE? */
-
+/*
+ * get_eff_addr() - Build the appropriate opcode string for the command
+ *     and store it in the command structure opcode string
+ *
+ */
 
 int
 #ifdef __STDC__
-get_eff_addr(CMD_ITMS *ci, char *ea, int mode, int reg)
+get_eff_addr(CMD_ITMS *ci, char *ea, int mode, int reg, int size)
 #else
 get_eff_addr(ci, ea, mode, reg)
     CMD_ITMS *ci;
@@ -59,20 +58,23 @@ int reg;
 
     switch (mode)
     {
+    default: return 0;
     case 0:   /* "Dn" */
-    case 1:
-    case 2:
-    case 3:
-    case 4:
+    case 1:   /* "An" */
+    case 2:   /* (An) */
+    case 3:   /* (An)+ */
+    case 4:   /* -(An) */
         sprintf(ea, ModeStrings[mode].str,reg);
         return 1;
         break;
-    case 5:
-        ext1 = get_extw(ci);
+    case 5:             /* d{16}An */
+        ext1 = getnext_w(ci);
         ++(ci->wcount);
         displac_w = (ext1 & 0xffff);
 
-        /* The system biases the data Pointer (a6) by 0x8000 bytes, so compensate */
+        /* The system biases the data Pointer (a6) by 0x8000 bytes,
+         * so compensate
+         */
 
         if (reg == 6) {
             displac_w += 0x8000;
@@ -83,8 +85,8 @@ int reg;
         sprintf (ea, ModeStrings[mode].str,dispstr,reg);
         return 1;
         break;
-    case 6:
-        ext1 = get_extw(ci);
+    case 6:             /* d{8}(An)Xn or 68020-up */
+        ext1 = getnext_w(ci);
         ++(ci->wcount);
         displac_w = (ext1 & 0xffff);
 
@@ -101,27 +103,27 @@ int reg;
         /* We now go to mode %111, where the mode is determined by the register field */
     case 7:
         switch (reg) {
-        case 0: /* (xx).W */
-            ext1 = get_extw(ci);
+        case 0:                 /* (xxx).W */
+            ext1 = getnext_w(ci);
             ++(ci->wcount);
             displac_w = ext1 & 0xffff;
             /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
             sprintf (dispstr, "%d", displac_w);
             sprintf (ea, ModeStrings[reg].str, dispstr);
             return 1;
-        case 1:                               /* (xxx).L */
-            ext1 = get_extw(ci);
+        case 1:                /* (xxx).L */
+            ext1 = getnext_w(ci);
             ++(ci->wcount);
-            ext2 = get_extw(ci);
+            ext2 = getnext_w(ci);
             ++(ci->wcount);
             sprintf (dispstr, "%dL", (ext1 <<16) | ext2);
             sprintf (ea, ModeStrings[reg].str, dispstr);
             return 1;
-        case 4:
-            ext1 = get_extw(ci);
+        case 4:                 /* #<data> */
+            ext1 = getnext_w(ci);
             ++(ci->wcount);
 
-            switch (ci->code[0] >> 12)
+            switch (size)
             {
                 char b;
             case 1:    /* byte */
@@ -133,7 +135,7 @@ int reg;
                 sprintf (dispstr, "%d", displac_w);
                 break;
             case 2:    /* long */
-                ext2 = get_extw(ci);
+                ext2 = getnext_w(ci);
                 ++(ci->wcount);
                 displac_l = (ext1 << 8) | ext2;
                 sprintf (dispstr, "%dL", displac_l);
@@ -143,13 +145,13 @@ int reg;
              sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 2:              /* (d16,PC) */
-            ext1 = get_extw(ci);
+            ext1 = getnext_w(ci);
             ++(ci->wcount);
             sprintf (dispstr, "%d", ext1);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
-        case 3:
-            ext1 = get_extw(ci);
+        case 3:              /* d8(PC)Xn */
+            ext1 = getnext_w(ci);
             ++(ci->wcount);
             displac_w = (ext1 & 0xffff);
             sprintf (dispReg, "%c%d", dispRegNam[ext1 >> 15], (ext1 >> 12) & 7);
@@ -171,7 +173,7 @@ int reg;
  *         (2) - the mnemonic for the call.  This routine adds the size descriptor    *
  * ---------------------------------------------------------------------------------- */
 
-int sizebits[] = {".b", ".w", ".l"};
+char *sizebits[] = {".b", ".w", ".l"};
 
 int
 #ifdef __STDC__
@@ -186,14 +188,14 @@ int
     char addr_mode[20];              /* Destination for the opcode */
     int data_word;
 
-    mode = (ci->code[0] >> 3) & 7;
-    reg = ci->code[0] & 7;
-    size = (ci->code[0] >> 6) & 3;
+    mode = (ci->cmd_wrd >> 3) & 7;
+    reg = ci->cmd_wrd & 7;
+    size = (ci->cmd_wrd >> 6) & 3;
 
-    get_eff_addr(ci, addr_mode, mode, reg);
-    get_extw(ci);
+    get_eff_addr(ci, addr_mode, mode, reg, size);
+    getnext_w(ci);
     
     if (size > 1) {
-        get_extw(ci);
+        getnext_w(ci);
     }
 }
