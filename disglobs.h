@@ -32,13 +32,48 @@ enum {
     SIZ_LONG
 };
 
+/* The following two structures define
+ * the extended word
+ */
+struct extWbrief {
+    int is020;      /* 1 = 68020-type */
+    char d_a;     /* Index Register ('D' or 'A' */
+    int regno;      /* Register # */
+    int isize;      /* Index size (W/L, 0 if sign-extended word */
+    int scale;      /* Scale  00 = 1, 01 = 2, 03 = 4, 11= 8 */
+    int displ;      /* Displacement (lower byte) */
+};
+
+/* The following is part of the description for the full extended word */
+
+/* I/IS combinations
+ * IS   I/IS    Operation
+         * 0    000 No memory indirection
+         * 0    001 Indirect preindexed with null outer displacement
+         * 0    010 Indirect preindexed with word od
+         * 0    011 Indirect preindexed with long od
+         * 0    101 Indirect postindexed with null od
+         * 0    110 Indirect postindexed with word od
+         * 0    111 Indirect postindexed with long od
+         * 1    000 No memory indirection
+         * 1    001 Memory indirect with null od
+         * 1    010 Memory indirect with word od
+         * 1    011 Memory indirect with long od
+         */ 
+
+
 typedef struct cmditems {
     int cmd_wrd;        /* The single effective address word (the command) */
     char mnem[50];
     short code[10];
     int wcount;         /* The count of words in the instrct/.(except sea) */
     char opcode[200];   /* Possibly ovesized, but just to be safe */
+    //struct extWbrief extend;   /* The extended command (if present) */
 } CMD_ITMS;
+
+
+struct extended020 {
+};
 
 #define LBLLEN 40
 
