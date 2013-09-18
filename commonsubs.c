@@ -5,7 +5,9 @@
  * $Id::                                                                    $
  * ************************************************************************ */
 
+#include "userdef.h"
 #include "disglobs.h"
+#include "proto.h"
 
 typedef struct modestrs {
     char *str;
@@ -124,7 +126,7 @@ int reg;
             ext2 = getnext_w(ci);
             //++(ci->wcount);
             sprintf (dispstr, "%dL", (ext1 <<16) | ext2);
-            sprintf (ea, ModeStrings[reg].str, dispstr);
+            sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 4:                 /* #<data> */
             ext1 = getnext_w(ci);

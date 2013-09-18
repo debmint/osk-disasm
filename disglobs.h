@@ -145,5 +145,4 @@ xt char DorA[]
 #endif
 ;
 
-#include "proto.h"              /* Do this last so that structures, etc will be defined */
 #endif                     /* #ifdef HAVE_GLOBALS */
