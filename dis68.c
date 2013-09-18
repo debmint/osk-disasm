@@ -8,6 +8,8 @@
                    define them extern from all other files */
 
 #include "disglobs.h"
+#include "userdef.h"
+#include "proto.h"
 
 static void
 #ifdef __STDC__

@@ -7,8 +7,10 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "disglobs.h"
+#include "textdef.h"
 #include "modtypes.h"
 #include <string.h>
+#include "proto.h"
 
 static int HdrLen;
 
@@ -156,6 +158,18 @@ dopass(argc,argv,mypass)
             if (Pass == 2)
             {
                 printf("%08x %04.4x %s %s\n", CmdEnt, Instruction.cmd_wrd, Instruction.mnem, Instruction.opcode);
+                if (Instruction.wcount)
+                {
+                    int count;
+                    printf("%9s", "");
+
+                    for (count = 0; count < Instruction.wcount; count++)
+                    {
+                       printf("%04x ", Instruction.code[count]);
+                    }
+
+                    printf("\n");
+                }
             }
         }
         else
@@ -180,62 +194,72 @@ initcmditems ()
     return &Instruction;
 }
 
+
+int notimplemented(CMD_ITMS *ci, int tblno)
+{
+    return 0;
+}
+
 static int
 get_asmcmd()
 {
-    struct cmditems *CodePtr;
+    extern OPSTRUCTURE syntax1[];
+    extern COPROCSTRUCTURE syntax2[];
+    extern error;
 
-    Instruction.mnem[0] = 0;
+    int opword;
+    int h,
+      j;
+    int size;
+
+
+    size = 0;
     Instruction.wcount = 0;
+    opword = getnext_w (&Instruction);
+    /* Make adjustments for this being the command word */
+    Instruction.cmd_wrd = Instruction.code[0];
+    Instruction.wcount = 0; /* Set it back again */
 
-    CmdEnt = PCPos;
-    /* We have to adjust things here... getnext_w() put the sea-word
-     * into the code array, but we want it in sea_word, and we want
-     * to reset wcount to 0
-     */
-    Instruction.cmd_wrd = getnext_w(&Instruction);
-    Instruction.wcount = 0;
-    ExtBegin = PCPos;
-
-    switch (Instruction.cmd_wrd >> 12)
+    for (j = 1; j <= MAXINST; j++)
     {
-    case 0:
-        return bit_movep_immediate(&Instruction);
-        break;
-    case 1:
-    case 2:
-    case 3:
-        return move_instr(&Instruction) ? 1 : 0;
-    case 4:
-        /*misc(&Instruction);*/
-    case 5:
-        /*addq_subq_scc_dbcc_trapcc(&Instruction);*/
-    case 6:
-        /*bcc_bsr(&Instruction);*/
-    case 7:
-        /*moveq(&Instruction)*/
-    case 8:
-        /*or_div_sbcd(&Instruction)*/
-    case 9:
-        /*sub_subx(&Instruction);*/
-    case 10:
-        /*aline(&Instruction);*/     /* Is this real? */
-    case 11:
-        /*cmp_eor(&Instruction);*/
-    case 12:
-        /*and_mul_abcd_exg(&Instruction);*/
-    case 13:
-        /*add_addx(&Instruction)*/
-    case 14:
-        /*shift_rotate_bitfield*/
-    case 15:
-        /*coprocessor(&Instruction)*/
-        break;
+        register OPSTRUCTURE *curop;
+        error = FALSE;
+        curop = tablematch (opword, j);
+
+        if (!error)
+        {
+            if (curop->opfunc(&Instruction, j, curop))
+            {
+                return 1;
+            }
+        }
     }
 
-    return 0;    /*  No cmd developed */
-}
+#if(DEVICE==68040 || COPROCESSOR==TRUE)
+    for (h = 3; h <= MAXCOPROCINST; h++)
+    {
+        error = FALSE;
+        j = fpmatch (start);
+        if (!error)
+        {
+            size = disassembleattempt (start, j);
+            if (size != 0)
+                break;
+        }
+    }
+#endif
+/*    if (size == 0)
+    {
+        printf ("\n%c%8x", HEXDEL, start);
+        printf (" %4X\t\t  DC.W", get16 (start));
+        printf (" \t\t?  ");
+        return (2);
+    }
+    else
+        return (size);*/
 
+    return 0;
+}
 /* *********************************************************************************** *
  * fread_* functions - These are partly convenience functions but mostly are used to   *
  *     enable retrieving multi-byte values regardless of the "ENDIAN"ness of the CPU   *
@@ -281,8 +305,8 @@ getnext_w(ci)
 
     w = fread_w(ModFP);
     PCPos += 2;
-    ci->wcount += 1;
     ci->code[ci->wcount] = w;
+    ci->wcount += 1;
     return w;
 }
 

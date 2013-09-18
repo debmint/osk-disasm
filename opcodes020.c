@@ -6,7 +6,9 @@
  * ****************************************************************** */
 
 #include "disglobs.h"
+#include "userdef.h"
 #include <string.h>
+#include "proto.h"
 
 int
 #ifdef __STDC__
