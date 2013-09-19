@@ -6,7 +6,7 @@
 
 
 LFLAGS = /ZI
-DISRELS = dis68.obj dismain.obj opcode00.obj commonsubs.obj
+DISRELS = dis68.obj dismain.obj opcode00.obj commonsubs.obj opcodes020.obj
 XTRAS = disglobs.h Makefile.Win32
 CFLAGS = /ZI /D__STDC__
 

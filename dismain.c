@@ -124,7 +124,7 @@ dopass(argc,argv,mypass)
     int lval = 0;
     int wval = 0;
 
-    if (!(ModFP = fopen(ModFile, "r")))
+    if (!(ModFP = fopen(ModFile, "rb")))
     {
         errexit("Cannot open Module file for read");
     }
@@ -146,23 +146,37 @@ dopass(argc,argv,mypass)
 
     PCPos = M_Exec;
 
-
     while (PCPos < M_Size)
     {
         CmdEnt = PCPos;
-        
+
         if (get_asmcmd())
         {
             if (Pass == 2)
             {
-                printf("%08x %04.4x %s %s\n", CmdEnt, Instruction.cmd_wrd, Instruction.mnem, Instruction.opcode);
+                printf("%05x %04.4x      %s %s\n", CmdEnt,
+                                Instruction.cmd_wrd, Instruction.mnem, Instruction.opcode);
+                if (Instruction.wcount)
+                {
+                    int c;
+
+                    printf("      ");
+
+                    for (c = 0; c < Instruction.wcount; c++)
+                    {
+                        printf ("%04x", Instruction.code[c]);
+                    }
+
+                    printf ("\n");
+                }
             }
         }
         else
         {
             if (Pass == 2)
             {
-                printf ("%08x %04.4x %s %08x\n", CmdEnt, (short)Instruction.cmd_wrd&0xffff, "ds.w", Instruction.cmd_wrd);
+                printf ("%05x %04.4x      %s %04x\n", CmdEnt, (short)Instruction.cmd_wrd&0xffff,
+                                "ds.w", Instruction.cmd_wrd);
                 /*PCPos += 2;
                 //CmdEnt = PCPos;*/
             }

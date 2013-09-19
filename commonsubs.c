@@ -164,7 +164,7 @@ int reg;
             {
                 char a_disp[50];
                 sprintf (a_disp, "%d", ew_b.displ);
-                sprintf (ea, Mode07Strings[mode].str, a_disp, reg,
+                sprintf (ea, Mode07Strings[reg].str, a_disp, reg,
                         ew_b.d_a, ew_b.regno);
                 return 1;
             }

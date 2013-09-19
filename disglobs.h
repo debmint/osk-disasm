@@ -72,8 +72,8 @@ typedef struct cmditems {
 } CMD_ITMS;
 
 
-struct extended020 {
-};
+//struct extended020 {
+//};
 
 #define LBLLEN 40
 
