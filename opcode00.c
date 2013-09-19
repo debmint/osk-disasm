@@ -9,6 +9,7 @@
 #include "userdef.h"
 #include "proto.h"
 
+char *SizSufx[] = {"b", "w", "l"};
 int
 #ifdef __STDC__
 bitModeRegLegal(int mode, int reg)
@@ -392,11 +393,8 @@ bit_static(ci, j, op)
     mode = (ci->cmd_wrd >> 3) & 7;
     reg = ci->cmd_wrd & 7;
 
-    if (bitModeRegLegal(mode, reg) == 0)
-    {
+    if (mode == 1)
         return 0;
-    }
-
 
     ext0 = getnext_w(ci);
 
@@ -442,10 +440,18 @@ bit_dynamic(ci, j, op)
     mode = (ci->cmd_wrd >> 3) & 7;
     reg = ci->cmd_wrd & 7;
 
-    if (bitModeRegLegal(mode, reg) == 0)
-    {
+    if (mode == 1)
         return 0;
-    }
+
+//    switch (j)
+//    {
+//        case 4:
+//            if (mode == 4)
+//                return 0;
+//        default:
+//            if (mode > 1)
+//                return 0;
+//    }
 
     strcpy(ci->mnem, op->name);
 
@@ -498,7 +504,7 @@ move_instr(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
     d_mode = (ci->cmd_wrd >> 6) & 7;
     d_reg = (ci->cmd_wrd >> 9) & 7;
 
-    if (((d_mode == 7) && (d_mode > 1)) || (d_mode == 1))
+    if ((d_mode == 7) && (d_mode > 1))
     {
         return 0;
     }
@@ -537,4 +543,261 @@ move_instr(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
     }
 
     return 0;
+}
+
+int
+#ifdef __STDC__
+movep(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+movep(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register int addr_reg = ci->cmd_wrd & 7;
+    register int opMode = (ci->cmd_wrd >> 6) & 7;
+    register int size = (opMode & 1) ? SIZ_LONG : SIZ_WORD;
+    char DReg[4];
+    char AReg[50];
+    int disp = getnext_w(ci);
+    static char opcodeFmt[8];
+
+    strcpy (opcodeFmt, "%s,%s");
+    sprintf (DReg, "D%d", (ci->cmd_wrd >> 9) & 7);
+    
+    sprintf (AReg, "%d(A%d)", disp, addr_reg);
+
+    if (opMode & 2)
+    {
+        sprintf (ci->opcode, opcodeFmt, DReg, AReg);
+    }
+    else
+    {
+        sprintf (ci->opcode, opcodeFmt, AReg, DReg);
+    }
+
+    strcpy (ci->mnem, op->name);
+    strcat( ci->mnem, (size == SIZ_LONG) ? "l" : "w");
+    return 1;
+}
+/*28	"move.",		2,18,0, "0100000011xxxxxx",8,8, one_ea},*/
+/*29	"negx.",		0,0,21, "01000000xxxxxxxx",7,6, one_ea},*/
+/*32	"clr.",		0,0,21, "01000010xxxxxxxx",7,6, one_ea},*/
+/*33	"move.",		2,2,17, "0100010011xxxxxx",8,8, one_ea},*/
+/*34	"neg.",		0,0,21, "01000100xxxxxxxx",7,6, one_ea},*/
+/*35	"move.",		2,2,18, "0100011011xxxxxx",8,8, one_ea},*/
+/*36	"not.",		0,0,21, "01000110xxxxxxxx",7,6, one_ea},*/
+/*37	"nbcd.",		1,0,21, "0100100000xxxxxx",6,6, one_ea},*/
+/*38	"swap.",		2,4,21, "0100100001000xxx",3,3, one_ea},*/
+/*39	"pea.",		5,5,21, "0100100001xxxxxx",7,7, one_ea},*/
+/*42	"tas.",		1,0,21, "0100101011xxxxxx",8,8, one_ea},*/
+/*43	"tst.",		0,1,21, "01001010xxxxxxxx",7,6, one_ea},*/
+/*57	"jsr",			6,5,21, "0100111010xxxxxx",0,0, one_ea},*/
+/*58	"jmp",			6,5,21, "0100111011xxxxxx",0,0, one_ea},*/
+
+/* --------------------------------------------------------------- *
+ * one_ea - A generic handler for when the basic command is a      *
+ *      single word and the EA is in the lower 6 bytes             *
+ * --------------------------------------------------------------- */
+
+int
+#ifdef __STDC__
+one_ea(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+one_ea(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int mode = (ci->cmd_wrd >> 3) & 7;
+    int reg = ci->cmd_wrd & 7;
+    int size = (ci->cmd_wrd >>6) & 3;
+    char ea[50];
+
+    if (j == 38)
+    {
+        sprintf(ci->opcode, "%d%d", ci->cmd_wrd & 7);
+    }
+    else
+    {
+        /* eliminate modes */
+        switch (j)
+        {
+            case 38:    /* swap */
+            case 43:    /* tst  */
+                break;      /* Allow all modes */
+            case 39:    /* pea  */
+            case 57:    /* jsr  */
+            case 58:    /* jmp  */
+                if ((2 ^ mode) & 0x0b)
+                    return 0;
+            default:
+                if (mode == 1)
+                    return 0;
+        }
+
+        /* Eliminate mode-7 regs */
+
+        if (mode == 7)
+        {
+            switch (j)
+            {
+                case 32:        /* Allow all modes */
+                case 38:
+                    break;
+                case 39:
+                case 57:    /* jsr  */
+                case 58:    /* jmp  */
+                    if (reg == 4)
+                        return 0;
+                default:
+                    if (reg > 1)
+                        return 0;
+            }
+        }
+
+        /* Handle opcode */
+
+        if (get_eff_addr(ci, ea, mode, reg, size))
+        {
+            switch (j)
+            {
+                const char *statreg = "ccr";
+
+                case 28:    /* Move from SR */
+                    statreg = "sr";
+                case 33:    /* Move to CCR  */
+                case 35:    /* Move from CCR */
+                    if (ci->cmd_wrd & 0x400)
+                        sprintf (ci->opcode, "%s,%s", ea, statreg);
+                    else
+                        sprintf (ci->opcode, "%s,%s", statreg, ea);
+                    break;
+                default:    /* A single ea */
+                    strcpy(ci->opcode, ea);
+                    break;
+            }
+        }
+    }
+
+    strcpy (ci->mnem, op->name);
+    return 1;
+}
+
+int
+#ifdef __STDC__
+bra_bsr(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+bra_bsr(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register char displ_8 = ci->cmd_wrd & 0xff;
+    int displ;
+    int jmp_base = PCPos;
+    int jmp_to;
+    char siz[4];
+
+    switch (displ_8)
+    {
+        case 0:
+            displ = getnext_w(ci);
+            strcpy (siz, "w");
+            break;
+        case 1:
+            displ = (getnext_w(ci) << 8) | (getnext_w(ci) & 0xff);
+            strcpy (siz, "l");
+            break;
+        default:
+            displ = displ_8;
+            strcpy (siz, "b");
+    }
+
+    /* We need to calculate the address here */
+    jmp_to = jmp_base + displ;
+    sprintf (ci->opcode, "L%05x", jmp_to);
+    strcpy (ci->mnem, op->name);
+    strcat (ci->mnem, siz);
+
+    return 1;
+}
+
+int
+#ifdef __STDC__
+cmd_no_opcode(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+cmd_no_opcode(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    ci->opcode[0] = '\0';
+    strcpy(ci->mnem, op->name);
+
+    return 1;
+}
+
+
+int
+#ifdef __STDC__
+bit_rotate_mem(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+bit_rotate_mem(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int mode = (ci->cmd_wrd >> 3) & 7;
+    int reg = ci->cmd_wrd & 7;
+    char ea[50];
+
+    if (mode < 2)
+    {
+        return 0;
+    }
+
+    if ((mode == 7) && (reg > 1))
+    {
+        return 0;
+    }
+
+    get_eff_addr(ci, ea, mode, reg, 8);
+    strcpy (ci->opcode, ea);
+    strcpy (ci->mnem, op->name);
+    return 1;
+}
+
+int
+#ifdef __STDC__
+bit_rotate_reg(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+bit_rotate_reg(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register int count_reg = (ci->cmd_wrd >> 9) & 7;
+    char dest_ea[5];
+
+    switch ((ci->cmd_wrd >> 5) & 1)
+    {
+        case 0:
+            sprintf (ci->opcode, "#%d,", count_reg);
+            break;
+        default:
+            sprintf (ci->opcode, "D%d,", count_reg);
+    }
+
+    sprintf(dest_ea, "D%d", ci->cmd_wrd & 7);
+    strcat (ci->opcode, dest_ea);
+    strcpy (ci->mnem, op->name);
+    strcat(ci->mnem, SizSufx[(ci->cmd_wrd >> 6) & 3]);
+    return 1;
 }
