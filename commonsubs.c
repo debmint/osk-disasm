@@ -5,6 +5,7 @@
  * $Id::                                                                    $
  * ************************************************************************ */
 
+#include <string.h>
 #include "userdef.h"
 #include "disglobs.h"
 #include "proto.h"
@@ -33,6 +34,8 @@ MODE_STR Mode07Strings[] = {
 };
 
 char dispRegNam[2] = {'d','a'};
+
+extern char *SizSufx[];
 
 /*
  * get_eff_addr() - Build the appropriate opcode string for the command
@@ -249,4 +252,312 @@ get_extends_common(ci, mnem)
     if (size > 1) {
         getnext_w(ci);
     }
+}
+
+/* ----------------------------------------------------------------- *
+ * ctl_addrmodesonly - Returns 0 if the addressing mode is anything  *
+ *    but a Control addressing mode                                  *
+ * ----------------------------------------------------------------- */
+
+#ifdef __STDC__
+ctl_addrmodesonly(int mode, int reg)
+#else
+ctl_addrmodesonly(mode, reg)
+#endif
+{
+    if ((mode < 2) || (mode == 4) || (mode == 8))
+        return 0;
+
+    if (mode == 7)
+    {
+        if (mode == 4)
+            return 0;
+    }
+}
+
+/* ----------------------------------------------------------------- *
+ * reg_ea - Functions that deal with a register and hold the reg #   *
+ *      in the command word, and also have an effective address      *
+ * ----------------------------------------------------------------- */
+
+int
+#ifdef __STDC__
+reg_ea(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+reg_ea(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int mode = (ci->cmd_wrd >> 3) & 7;
+    int reg = ci->cmd_wrd & 7;
+    int size = (ci->cmd_wrd >> 7) & 3;
+    char ea[50];
+    char *regname = "d";
+
+    /* Eliminate illegal Addressing modes */
+    switch (j)
+    {
+        case 30:        /* chk */
+        case 70:        /* divu */
+        case 71:        /* divs */
+        case 79:        /* mulu */
+        case 80:        /* muls */
+            if ((mode == 1))
+                return 0;
+
+            switch (size)
+            {
+                case 2:
+                    size = SIZ_LONG;
+                    break;
+                case 3:
+                    size = SIZ_WORD;
+                    break;
+                default:
+                    return 0;
+            }
+        case 31:       /* lea */
+            if (! ctl_addrmodesonly)
+                return 0;
+    }
+
+    switch (j)
+    {
+        default:
+            break;  /* Already checked above */
+    }
+
+    if (j == 31)
+    {
+        regname = "a";
+    }
+
+    if (get_eff_addr(ci, ea, mode, reg, size))
+    {
+        sprintf(ci->opcode, "%s,%c%d", ea, regname[0], (ci->cmd_wrd >> 9) & 7);
+        strcpy (ci->mnem, op->name);
+
+        switch (size)
+        {
+            case SIZ_BYTE:
+                strcat(ci->mnem, "b");
+                break;
+            case SIZ_WORD:
+                strcat(ci->mnem, "w");
+                break;
+            case SIZ_LONG:
+                strcat(ci->mnem, "l");
+            default:
+                ci->mnem[strlen(ci->mnem) - 1] = '\0';
+        }
+
+        return 1;
+    }
+
+    return 0;
+
+}
+
+/*
+ * Format a range of registers (``low'' to ``high'')
+ * into ``s'', beginning with a ``slash'' if necessary.
+ * ``ad'' specifies either address (A) or data (D) registers.
+ */
+static char *
+regwrite(char *s, char *ad, int low, int high, int slash)
+{
+	if (slash)
+		*s++ = '/';
+	if (high - low >= 1) {
+		s += sprintf(s, "%s", ad);
+		*s++ = low + '0';
+		*s++ = '-';
+		s += sprintf(s, "%s", ad);
+		*s++ = high + '0';
+	} else if (high - low == 1) {
+		s += sprintf(s, "%s", ad);
+		*s++ = low + '0';
+		*s++ = '/';
+		s += sprintf(s, "%s", ad);
+		*s++ = high + '0';
+	} else {
+		s += sprintf(s, "%s", ad);
+		*s++ = high + '0';
+	}
+	*s = '\0';
+
+	return s;
+}
+
+/*
+ * Format ``regmask'' into ``s''.  ``ad'' is a prefix used to indicate
+ * whether the mask is for address, data, or floating-point registers.
+ */
+char *
+regbyte(char *s, unsigned char regmask, char *ad, int doslash)
+{
+	int	i;
+	int	last;
+
+	for (last = -1, i = 0; regmask; i++, regmask >>= 1)
+    {
+		if (regmask & 1) {
+			if (last != -1)
+				continue;
+			else
+				last = i;
+		} else if (last != -1) {
+			s = regwrite(s, ad, last, i - 1, doslash);
+			doslash = 1;
+			last = -1;
+		}
+    }
+
+	if (last != -1)
+		s = regwrite(s, ad, last, i - 1, doslash);
+
+	return s;
+}
+
+
+/* ------------------------------------------------------------------ *
+ * revbits() - Reverses the bit order for a value.                    *
+ * ------------------------------------------------------------------ */
+
+
+int
+#ifdef __STDC__
+revbits(int num, int lgth)
+#else
+revbits(num, lgth)
+    int num, lgth;
+#endif
+{
+    int n2 = 0;
+    int c, i, b;
+
+    for (c = (lgth - 1), i = 0; c >= 0; c--,i++)
+    {
+        n2 <<= 1;
+
+        if (num & (1 << i))
+            n2 |= 1;
+    }
+
+    return n2;
+}
+
+static void
+#ifdef _STDC__
+reglist(char *s, unsigned long regmask, int mode)
+#else
+reglist (s, regmask, mode)
+    char *s;
+    unsigned long regmask;
+    int mode;
+#endif
+{
+    char *t = s;
+
+    if (mode == 4)
+    {
+        regmask = revbits(regmask, 16);
+    }
+
+    s = regbyte (s, regmask >> 8, "A", 0);
+    s = regbyte (s, regmask & 0xff, "D", s != t);
+
+    if (s == t)
+    {
+        strcpy (s, "0");
+    }
+}
+
+int
+#ifdef __STDC__
+movem_cmd(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+movem_cmd(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int mode = (ci->cmd_wrd >> 3) & 7;
+    int reg = ci->cmd_wrd & 7;
+    int size = (ci->cmd_wrd & 0x40) ? SIZ_LONG : SIZ_WORD;
+    char ea[50];
+    int dir = (ci->cmd_wrd >> 10) & 1;
+    int regmask;
+
+    if (mode < 2)       /* Common to both modes */
+    {
+        return 0;
+    }
+
+    if (dir)
+    {
+        if (mode == 4)
+            return 0;
+        if ((mode == 7) && (reg == 4))
+            return 0;
+    }
+    else
+    {
+        if (mode == 3)
+            return 0;
+        if ((mode == 7) && (reg > 1))
+            return 0;
+    }
+
+    get_eff_addr(ci, ea, mode, reg, size);
+    regmask = getnext_w(ci);
+    reglist (ea, regmask, mode);
+    strcpy (ci->mnem, op->name);
+    strcat (ci->mnem, SizSufx[size]);
+
+    return 1;
+}
+
+int
+#ifdef __STDC__
+link_unlk(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+link_unlk(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int regno = ci->cmd_wrd & 7;
+    int ext_w;
+
+    strcpy (ci->mnem, op->name);
+
+    switch (j)
+    {
+        case 47:        /* "unlink: only needs regno for the opcode */
+            sprintf (ci->opcode, "A%d", regno);
+
+            if ((ci->mnem[strlen(ci->mnem) - 1]) == '.')
+            {
+               ci->mnem[strlen(ci->mnem) - 1] = '\0';
+            }
+
+            break;
+        default:
+            ext_w = getnext_w(ci);
+
+            if (j == 138)
+            {
+                ext_w = (ext_w << 8) | (getnext_w(ci) & 0xff);
+            }
+
+            sprintf (ci->opcode, "A%d,#%d", regno, ext_w);
+            strcat(ci->mnem, (j == 46) ? "w" : "l");
+    }
+
+    return 1;
 }

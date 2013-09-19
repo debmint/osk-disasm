@@ -157,11 +157,11 @@ dopass(argc,argv,mypass)
         {
             if (Pass == 2)
             {
-                printf("%08x %04.4x %s %s\n", CmdEnt, Instruction.cmd_wrd, Instruction.mnem, Instruction.opcode);
+                printf("%05x %04.4x      %s %s\n", CmdEnt, Instruction.cmd_wrd, Instruction.mnem, Instruction.opcode);
                 if (Instruction.wcount)
                 {
                     int count;
-                    printf("%9s", "");
+                    printf("%6s", "");
 
                     for (count = 0; count < Instruction.wcount; count++)
                     {
@@ -176,7 +176,7 @@ dopass(argc,argv,mypass)
         {
             if (Pass == 2)
             {
-                printf ("%08x %04.4x %s %08x\n", CmdEnt, (short)Instruction.cmd_wrd&0xffff, "ds.w", Instruction.cmd_wrd);
+                printf ("%05x %04.4x      %s %08x\n", CmdEnt, (short)Instruction.cmd_wrd&0xffff, "ds.w", Instruction.cmd_wrd);
                 /*PCPos += 2;
                 //CmdEnt = PCPos;*/
             }

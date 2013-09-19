@@ -111,6 +111,13 @@ void errexit
 
 void filereadexit()
 {
-    errexit ("Error reading file... Aborting");
+    if (feof(ModFP))
+    {
+        errexit ("End of file reached prematurely\n");
+    }
+    else
+    {
+        errexit ("Error reading file...\nAborting");
+    }
 }
 
