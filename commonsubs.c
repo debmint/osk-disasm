@@ -22,14 +22,14 @@ MODE_STR ModeStrings[] = {
     {"(A%d)+", 0},
     {"-(A%d)", 0},
     {"%s(A%d)", 0},
-    {"(%s,A%d,%c%d)", 0}
+    {"%s(A%d,%c%d)", 0}
 };
 /* Need to add for 68020-up modes.  Don't know if they can be included in these two arrays or not..*/
 MODE_STR Mode07Strings[] = {
     {"(%s).w", 0},
     {"(%s).l", 0},
-    {"(%s},pc)",0},
-    {"(%s,pc},%c%d", 0},
+    {"%s(pc)",0},
+    {"%s(pc,%c%d)", 0},
     {"#%s", 0}
 };
 
@@ -169,7 +169,7 @@ int reg;
             {
                 char a_disp[50];
                 sprintf (a_disp, "%d", ew_b.displ);
-                sprintf (ea, Mode07Strings[mode].str, a_disp, reg,
+                sprintf (ea, Mode07Strings[reg].str, a_disp,
                         ew_b.d_a, ew_b.regno);
                 return 1;
             }
@@ -189,6 +189,7 @@ int reg;
  * Returns 1 if valid, 0 if not                                             *
  * ------------------------------------------------------------------------ */
 
+int
 #ifdef __STDC__
 get_ext_wrd_brief (CMD_ITMS *ci, struct extWbrief *extW, int mode, int reg)
 #else
@@ -214,7 +215,7 @@ get_ext_wrd_brief (ci)
     extW->isize = (ew >> 11) & 1;
     extW->scale = (ew >>10) * 3;
     extW->displ = ew & 0xff;
-
+    return 1;
 }
 
 /* ------------------------------------------------------------------------ *
@@ -226,7 +227,7 @@ get_ext_wrd_brief (ci)
  *               descriptor                                                 *
  * ------------------------------------------------------------------------ */
 
-char *sizebits[] = {".b", ".w", ".l"};
+char *sizebits[] = {".s", ".w", ".l"};
 
 int
 #ifdef __STDC__
@@ -259,6 +260,7 @@ get_extends_common(ci, mnem)
  *    but a Control addressing mode                                  *
  * ----------------------------------------------------------------- */
 
+int
 #ifdef __STDC__
 ctl_addrmodesonly(int mode, int reg)
 #else
@@ -273,6 +275,8 @@ ctl_addrmodesonly(mode, reg)
         if (mode == 4)
             return 0;
     }
+
+    return 1;
 }
 
 /* ----------------------------------------------------------------- *
@@ -450,7 +454,7 @@ revbits(num, lgth)
 }
 
 static void
-#ifdef _STDC__
+#ifdef __STDC__
 reglist(char *s, unsigned long regmask, int mode)
 #else
 reglist (s, regmask, mode)

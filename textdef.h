@@ -423,7 +423,7 @@ OPSTRUCTURE syntax1[]=
 /* BSR */ 
 /*65*/	{"bsr.",		0,23,21, "01100001xxxxxxxx",10,10, bra_bsr},
 /* Bcc */ 
-/*66*/	{"b~~.",		0,23,21, "0110xxxxxxxxxxxx",10,10, notimplemented},
+/*66*/	{"b~~.",		0,23,21, "0110xxxxxxxxxxxx",10,10, br_cond},
 /* MOVEQ */ 
 /*67*/	{"moveq.",		5,8,4, "0111xxx0xxxxxxxx",8,8, notimplemented},
 /* SBCD */ 

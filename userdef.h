@@ -64,7 +64,7 @@ typedef struct
 }EA_TABLE;
 
 
-typedef struct
+typedef struct opst
 {
 	char *name;
 	short sizestr;	/* sizefield[size]   */
