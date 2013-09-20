@@ -10,6 +10,8 @@
 #include "proto.h"
 
 char *SizSufx[] = {"b", "w", "l"};
+
+extern CONDITIONALS typecondition[];
 int
 #ifdef __STDC__
 bitModeRegLegal(int mode, int reg)
@@ -377,6 +379,7 @@ biti_size(ci, j, op)
     }
 }
 
+int
 #ifdef __STDC__
 bit_static(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
@@ -423,7 +426,7 @@ bit_static(ci, j, op)
     return 0;
 }
 
-
+int
 #ifdef __STDC__
 bit_dynamic(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
@@ -613,7 +616,7 @@ one_ea(ci, j, op)
 {
     int mode = (ci->cmd_wrd >> 3) & 7;
     int reg = ci->cmd_wrd & 7;
-    int size = (ci->cmd_wrd >>6) & 3;
+    int size = (ci->cmd_wrd >> 6) & 3;
     char ea[50];
 
     if (j == 38)
@@ -631,7 +634,7 @@ one_ea(ci, j, op)
             case 39:    /* pea  */
             case 57:    /* jsr  */
             case 58:    /* jmp  */
-                if ((2 ^ mode) & 0x0b)
+                if ((mode < 2) || (mode == 3) || (mode == 4))
                     return 0;
             default:
                 if (mode == 1)
@@ -652,6 +655,7 @@ one_ea(ci, j, op)
                 case 58:    /* jmp  */
                     if (reg == 4)
                         return 0;
+                    break;
                 default:
                     if (reg > 1)
                         return 0;
@@ -680,10 +684,47 @@ one_ea(ci, j, op)
                     break;
             }
         }
+        else
+        {
+            return 0;
+        }
     }
 
     strcpy (ci->mnem, op->name);
     return 1;
+}
+
+/* ------------------------------------------------------------------- *
+ * branch_displ - Calculates the size of a branch and places the size  *
+ *          suffix in the string provided in the parameters.           *
+ * ------------------------------------------------------------------- */
+
+static int
+#ifdef __STDC__
+branch_displ (CMD_ITMS *ci, int cmd_word, char *siz_suffix)
+#else
+branch_displ (siz_suffix)
+    int cmd_word;
+    char *siz_suffix;
+#endif
+{
+    register int displ = cmd_word & 0xff;
+
+    switch (displ)
+    {
+        case 0:
+            displ = getnext_w(ci);
+            strcpy (siz_suffix, "w");
+            break;
+        case 1:
+            displ = (getnext_w(ci) << 8) | (getnext_w(ci) & 0xff);
+            strcpy (siz_suffix, "l");
+            break;
+        default:
+            strcpy (siz_suffix, "b");
+    }
+
+    return displ;
 }
 
 int
@@ -696,30 +737,14 @@ bra_bsr(ci, j, op)
     OPSTRUCTURE *op;
 #endif
 {
-    register char displ_8 = ci->cmd_wrd & 0xff;
-    int displ;
-    int jmp_base = PCPos;
-    int jmp_to;
+    register int displ;
+    register int jmp_base = PCPos;
     char siz[4];
 
-    switch (displ_8)
-    {
-        case 0:
-            displ = getnext_w(ci);
-            strcpy (siz, "w");
-            break;
-        case 1:
-            displ = (getnext_w(ci) << 8) | (getnext_w(ci) & 0xff);
-            strcpy (siz, "l");
-            break;
-        default:
-            displ = displ_8;
-            strcpy (siz, "b");
-    }
+    displ = branch_displ(ci, ci->cmd_wrd, siz);
 
     /* We need to calculate the address here */
-    jmp_to = jmp_base + displ;
-    sprintf (ci->opcode, "L%05x", jmp_to);
+    sprintf (ci->opcode, "L%05x", jmp_base + displ);
     strcpy (ci->mnem, op->name);
     strcat (ci->mnem, siz);
 
@@ -799,5 +824,44 @@ bit_rotate_reg(ci, j, op)
     strcat (ci->opcode, dest_ea);
     strcpy (ci->mnem, op->name);
     strcat(ci->mnem, SizSufx[(ci->cmd_wrd >> 6) & 3]);
+    return 1;
+}
+
+int
+#ifdef __STDC__
+br_cond(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+br_cond(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register int jmp_base = PCPos;
+    register char *condit = typecondition[(ci->cmd_wrd >> 8) & 0x0f].condition;
+    char siz[5];
+    register int displ = branch_displ(ci, ci->cmd_wrd, siz);
+    char *subst;
+
+    strcpy(ci->mnem, op->name);
+
+    if ((subst = strchr(ci->mnem, '~')))
+    {
+        while (*condit)
+        {
+            *(subst++) = *(condit++);
+        }
+
+        *(subst++) = '.';
+        strcpy (subst, siz);
+    }
+    else
+    {
+        return 0;
+    }
+
+        /* We need to calculate the address here */
+    sprintf (ci->opcode, "L%05x", jmp_base + displ);
+
     return 1;
 }

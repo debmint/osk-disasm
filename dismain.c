@@ -126,7 +126,7 @@ dopass(argc,argv,mypass)
     int lval = 0;
     int wval = 0;
 
-    if (!(ModFP = fopen(ModFile, "r")))
+    if (!(ModFP = fopen(ModFile, "rb")))
     {
         errexit("Cannot open Module file for read");
     }
@@ -205,7 +205,7 @@ get_asmcmd()
 {
     extern OPSTRUCTURE syntax1[];
     extern COPROCSTRUCTURE syntax2[];
-    extern error;
+    extern int error;
 
     int opword;
     int h,
