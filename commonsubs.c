@@ -211,9 +211,9 @@ get_ext_wrd_brief (ci)
 
     /* get the values common to all */
     extW->d_a = (ew & 0x8000) ? 'a' : 'd';
-    extW->regno = (ew >> 14) & 7;
+    extW->regno = (ew >> 12) & 7;
     extW->isize = (ew >> 11) & 1;
-    extW->scale = (ew >>10) * 3;
+    extW->scale = (ew >> 9) * 3;
     extW->displ = ew & 0xff;
     return 1;
 }
@@ -493,6 +493,7 @@ movem_cmd(ci, j, op)
     int reg = ci->cmd_wrd & 7;
     int size = (ci->cmd_wrd & 0x40) ? SIZ_LONG : SIZ_WORD;
     char ea[50];
+    char regnames[50];
     int dir = (ci->cmd_wrd >> 10) & 1;
     int regmask;
 
@@ -518,9 +519,18 @@ movem_cmd(ci, j, op)
 
     get_eff_addr(ci, ea, mode, reg, size);
     regmask = getnext_w(ci);
-    reglist (ea, regmask, mode);
+    reglist (regnames, regmask, mode);
     strcpy (ci->mnem, op->name);
     strcat (ci->mnem, SizSufx[size]);
+
+    if (dir)
+    {
+        sprintf(ci->opcode, "%s,%s", ea, regnames);
+    }
+    else
+    {
+        sprintf(ci->opcode, "%s,%s", regnames, ea);
+    }
 
     return 1;
 }

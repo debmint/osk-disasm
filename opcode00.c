@@ -7,9 +7,10 @@
 #include <string.h>
 #include "disglobs.h"
 #include "userdef.h"
+#include "sysnames.h"
 #include "proto.h"
 
-char *SizSufx[] = {"b", "w", "l"};
+char *SizSufx[] = {"s", "w", "l"};
 
 extern CONDITIONALS typecondition[];
 int
@@ -864,4 +865,123 @@ br_cond(ci, j, op)
     sprintf (ci->opcode, "L%05x", jmp_base + displ);
 
     return 1;
+}
+
+enum {
+    EA2REG,
+    REG2EA
+};
+
+typedef struct add_sub_def {
+    int size;
+    int direction;
+    char regname;
+} ADDSUBDEF;
+
+int
+#ifdef __STDC__
+add_sub(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+add_sub(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int size;
+    int datareg = (ci->cmd_wrd >> 9) & 7;
+    int ea_mode = (ci->cmd_wrd >> 3) & 7;
+    int ea_reg = ci->cmd_wrd & 7;
+    static ADDSUBDEF AddSubDefs[] = {
+        {SIZ_BYTE, EA2REG, 'd'},
+        {SIZ_WORD, EA2REG, 'd'},
+        {SIZ_LONG, EA2REG, 'd'},
+        {SIZ_WORD, EA2REG, 'a'},
+        {SIZ_BYTE, REG2EA, 'd'},
+        {SIZ_WORD, REG2EA, 'd'},
+        {SIZ_LONG, REG2EA, 'd'},
+        {SIZ_LONG, EA2REG, 'a'}
+    };
+    register ADDSUBDEF *asDef = &AddSubDefs[(ci->cmd_wrd >> 6) & 7];
+    char ea[50];
+
+    if (asDef->direction == REG2EA)
+    {
+        if (ea_mode < 2)
+            return 0;
+
+        if ((ea_mode == 7) && (ea_reg < 2))
+        {
+            return 0;
+        }
+    }
+
+    if (get_eff_addr(ci, ea, ea_mode, ea_reg, asDef->size))
+    {
+        if (asDef->direction == REG2EA)
+        {
+            sprintf (ci->opcode, "%c%d,%s", asDef->regname, (ci->cmd_wrd >> 9) & 7, ea);
+        }
+        else
+        {
+            sprintf (ci->opcode, "%s,%c%d", ea, asDef->regname, (ci->cmd_wrd >> 9) & 7);
+        }
+
+        strcpy (ci->mnem, op->name);
+        strcat (ci->mnem, SizSufx[asDef->size]);
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+int
+#ifdef __STDC__
+trap(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+trap(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register int vector = ci->cmd_wrd & 0x0f;
+    register int syscall;
+
+    switch (vector)
+    {
+    case 0:             /* System Call */
+    case 0x0f:          /* Math trap   */
+        if (syscall = getnext_w (ci))
+        {
+            switch (vector)
+            {
+            case 0:
+                if (strlen (SysNames[vector]))
+                {
+                    strcpy (ci->opcode, SysNames[syscall]);
+                    strcpy (ci->mnem, "os9");
+                    return 1;
+                }
+            case 0x0f:
+                if (syscall < sizeof(MathCalls)/sizeof(MathCalls[0]))
+                {
+                    sprintf (ci->opcode, "T$Math,%s", MathCalls[syscall]);
+                    strcpy(ci->mnem, "tcall");
+                    return 1;
+                }
+            }
+        }
+
+        ungetnext_w(ci);
+        break;
+    default:
+        sprintf (ci->opcode, "#%d", syscall);
+        strcpy (ci->mnem, op->name);
+        return 1;
+    }
+
+    return 0;
 }
