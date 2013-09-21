@@ -374,7 +374,7 @@ OPSTRUCTURE syntax1[]=
 /* MOVEM Registers to EA */ 
 /*40*/	{"movem.",		4,20,6, "010010001xxxxxxx",6,6, movem_cmd},
 /*ILLEGAL  */ 
-/*41*/	{"illegal",		6,21,21, "0100101011111100",0,0, notimplemented},
+/*41*/	{"illegal",		6,21,21, "0100101011111100",0,0, cmd_no_opcode},
 /* TAS */ 
 /*42*/	{"tas.",		1,0,21, "0100101011xxxxxx",8,8, one_ea},
 /* TST */ 
@@ -382,7 +382,7 @@ OPSTRUCTURE syntax1[]=
 /* MOVEM EA to Registers */ 
 /*44*/	{"movem.",		4,7,20, "010011001xxxxxxx",6,6, movem_cmd},
 /* TRAP */ 
-/*45*/	{"trap",		6,8,21, "010011100100xxxx",0,0, notimplemented},
+/*45*/	{"trap",		6,8,21, "010011100100xxxx",0,0, trap},
 /* LINK WORD */ 
 /*46*/	{"link.",		2,3,8, "0100111001010xxx",3,3, link_unlk},
 /* UNLK */ 
@@ -434,7 +434,7 @@ OPSTRUCTURE syntax1[]=
 /* DIVS */ 
 /*71*/	{"divs.",		2,2,4, "1000xxx111xxxxxx",12,12, reg_ea},
 /* SUBA */ 
-/*72*/	{"suba.",		9,10,3, "1001xxxx11xxxxxx",8,7, notimplemented},
+/*72*/	{"suba.",		9,10,3, "1001xxxx11xxxxxx",8,7, add_sub},
 /* SUBX */ 
 /*73*/	{"subx.",		0,4,4, "1001xxx1xx000xxx",7,6, notimplemented},
 /*74*/	{"subx.",		0,13,13, "1001xxx1xx001xxx",7,6, notimplemented},
@@ -463,14 +463,14 @@ OPSTRUCTURE syntax1[]=
 /*86*/	{"and.",		0,2,4, "1100xxx0xxxxxxxx",7,6, notimplemented},
 /*87*/	{"and.",		0,4,12, "1100xxx1xxxxxxxx",7,6, notimplemented},
 /* ADDA */ 
-/*88*/	{"adda.",		9,10,3, "1101xxxx11xxxxxx",8,7, notimplemented},
+/*88*/	{"adda.",		9,10,3, "1101xxxx11xxxxxx",8,7, add_sub},
 /* ADDX */ 
 /*89*/	{"addx.",		0,4,4, "1101xxx1xx000xxx",7,6, notimplemented},
 /*90*/	{"addx.",		0,13,13, "1101xxx1xx001xxx",7,6, notimplemented},
 /* ADD */ 
-/*91*/	{"add.",		0,2,4, "1101xxx0xxxxxxxx",7,6, notimplemented},
-/*92*/	{"add.",		7,3,4, "1101xxx0xxxxxxxx",7,6, notimplemented},
-/*93*/	{"add.",		0,4,12, "1101xxx1xxxxxxxx",7,6, notimplemented},
+/*91*/	{"add.",		0,2,4, "1101xxx0xxxxxxxx",7,6, add_sub},
+/*92*/	{"add.",		7,3,4, "1101xxx0xxxxxxxx",7,6, add_sub},
+/*93*/	{"add.",		0,4,12, "1101xxx1xxxxxxxx",7,6, add_sub},
 /* SHIFT ROTATE memory */ 
 /*94*/	{"rol.",		11,12,21, "1110011111xxxxxx",7,6, bit_rotate_mem},
 /*95*/	{"ror.",		11,12,21, "1110011011xxxxxx",7,6, bit_rotate_mem},
@@ -511,17 +511,17 @@ OPSTRUCTURE syntax1[]=
 /*120*/	{"or.",			0,4,12, "1000xxx1xxxxxxxx",7,6, notimplemented},
 /*121*/	{"or.",			0,2,4, "1000xxx0xxxxxxxx",7,6, notimplemented},
 /* SUB */ 
-/*122*/	{"sub.",		0,2,4, "1001xxx0xxxxxxxx",7,6, notimplemented},
-/*123*/	{"sub.",		7,3,4, "1001xxx0xxxxxxxx",7,6, notimplemented},
+/*122*/	{"sub.",		0,2,4, "1001xxx0xxxxxxxx",7,6, add_sub},
+/*123*/	{"sub.",		7,3,4, "1001xxx0xxxxxxxx",7,6, add_sub},
 #if ((DEVICE==68000) || (DEVICE==68008))
-/*124*/	{"sub.",		0,4,12, "1001xxx1xxxxxxxx",7,6, notimplemented}
+/*124*/	{"sub.",		0,4,12, "1001xxx1xxxxxxxx",7,6, add_sub}
 
 };
 #endif /* end for OPSTRUCTURE */
 
 #if DEVICE>=68010
 /* SUB */ 
-/*124*/	{"sub.",		0,4,12, "1001xxx1xxxxxxxx",7,6, notimplemented},
+/*124*/	{"sub.",		0,4,12, "1001xxx1xxxxxxxx",7,6, add_sub},
 /* ******************************************************************** */
 /* **************************68010 INSTRUCTIONS************************ */
 /* ******************************************************************** */
