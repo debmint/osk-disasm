@@ -118,6 +118,9 @@ xt FILE *ModFP;
 xt int PCPos;
 xt int CmdEnt;   /* The Entry Point for the Command */
 xt int ExtBegin; /* The position of the begin of the extended list (for PC-Relative addressing) */
+/* EaString is storage for the primary Effective Address of a command.  Storage for any further
+ * strings need to be provided by the function */
+xt char EaString[100];
 
 /* Module header variables */
 xt int M_ID, M_SysRev;

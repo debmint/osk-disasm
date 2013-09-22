@@ -49,6 +49,7 @@ cmp2_chk2(ci)
         return 0;
     }
     /* Function unfinished */
+    return 0;      /* Until we finish the function */
 }
 
 int

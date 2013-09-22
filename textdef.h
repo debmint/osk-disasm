@@ -348,7 +348,7 @@ OPSTRUCTURE syntax1[]=
 /* MOVE WORD */ 
 /*27*/	{"move.",		2,10,0, "0011xxxxxxxxxxxx",15,15, move_instr},
 /* MOVE from SR */ 
-/*28*/	{"move.",		2,18,0, "0100000011xxxxxx",8,8, one_ea},
+/*28*/	{"move.",		2,18,0, "0100000011xxxxxx",8,8, move_ccr_sr},
 /* NEGX */ 
 /*29*/	{"negx.",		0,0,21, "01000000xxxxxxxx",7,6, one_ea},
 /* CHK 68000 */ 
@@ -358,11 +358,11 @@ OPSTRUCTURE syntax1[]=
 /* CLR */ 
 /*32*/	{"clr.",		0,0,21, "01000010xxxxxxxx",7,6, one_ea},
 /* MOVE to CCR */ 
-/*33*/	{"move.",		2,2,17, "0100010011xxxxxx",8,8, one_ea},
+/*33*/	{"move.",		2,2,17, "0100010011xxxxxx",8,8, move_ccr_sr},
 /* NEG */ 
 /*34*/	{"neg.",		0,0,21, "01000100xxxxxxxx",7,6, one_ea},
 /* MOVE to SR */ 
-/*35*/	{"move.",		2,2,18, "0100011011xxxxxx",8,8, one_ea},
+/*35*/	{"move.",		2,2,18, "0100011011xxxxxx",8,8, move_ccr_sr},
 /* NOT */ 
 /*36*/	{"not.",		0,0,21, "01000110xxxxxxxx",7,6, one_ea},
 /* NBCD */ 
@@ -388,21 +388,21 @@ OPSTRUCTURE syntax1[]=
 /* UNLK */ 
 /*47*/	{"unlk",		6,3,21, "0100111001011xxx",0,0, link_unlk},
 /* MOVE to USP */ 
-/*48*/	{"move.",		5,3,26, "0100111001100xxx",4,4, notimplemented},
+/*48*/	{"move.",		5,3,26, "0100111001100xxx",4,4, move_usp},
 /* MOVE from USP */ 
-/*49*/	{"move.",		5,26,3, "0100111001101xxx",4,4, notimplemented},
+/*49*/	{"move.",		5,26,3, "0100111001101xxx",4,4, move_usp},
 /* RESET */ 
-/*50*/	{"reset",		6,21,21, "0100111001110000",0,0, notimplemented},
+/*50*/	{"reset",		6,21,21, "0100111001110000",0,0, cmd_no_opcode},
 /* NOP */ 
-/*51*/	{"nop",			6,21,21, "0100111001110001",0,0, notimplemented},
+/*51*/	{"nop",			6,21,21, "0100111001110001",0,0, cmd_no_opcode},
 /* STOP */ 
-/*52*/	{"stop",		6,8,21, "0100111001110010",0,0, notimplemented},
+/*52*/	{"stop",		6,8,21, "0100111001110010",0,0, cmd_stop},
 /* RTE */ 
-/*53*/	{"rte",			6,21,21, "0100111001110011",0,0, notimplemented},
+/*53*/	{"rte",			6,21,21, "0100111001110011",0,0, cmd_no_opcode},
 /* RTS */ 
 /*54*/	{"rts",			6,21,21, "0100111001110101",0,0, cmd_no_opcode},
 /* TRAPV */ 
-/*55*/	{"trapv",		6,21,21, "0100111001110110",0,0, notimplemented},
+/*55*/	{"trapv",		6,21,21, "0100111001110110",0,0, cmd_no_opcode},
 /* RTR */ 
 /*56*/	{"rtr",			6,21,21, "0100111001110111",0,0, cmd_no_opcode},
 /* JSR */ 
@@ -410,14 +410,14 @@ OPSTRUCTURE syntax1[]=
 /* JMP */ 
 /*58*/	{"jmp",			6,5,21, "0100111011xxxxxx",0,0, one_ea},
 /* DBcc */ 
-/*59*/	{"db~~.",		2,4,23, "0101xxxx11001xxx",4,4, notimplemented},
+/*59*/	{"db~~.",		2,4,23, "0101xxxx11001xxx",4,4, cmd_dbcc},
 /* Scc */ 
-/*60*/	{"s~~.",		8,0,21, "0101xxxx11xxxxxx",6,6, notimplemented},
+/*60*/	{"s~~.",		8,0,21, "0101xxxx11xxxxxx",6,6, cmd_scc},
 /* ADDQ */ 
-/*61*/	{"addq.",		0,8,0, "0101xxx0xxxxxxxx",7,6, notimplemented},
+/*61*/	{"addq.",		0,8,0, "0101xxx0xxxxxxxx",7,6, addq_subq},
 /* SUBQ */ 
-/*62*/	{"subq.",		0,8,0, "0101xxx1xxxxxxxx",7,6, notimplemented},
-/*63*/	{"subq.",		7,8,3, "0101xxx1xxxxxxxx",7,6, notimplemented},
+/*62*/	{"subq.",		0,8,0, "0101xxx1xxxxxxxx",7,6, addq_subq},
+/*63*/	{"subq.",		7,8,3, "0101xxx1xxxxxxxx",7,6, addq_subq},
 /* BRA */ 
 /*64*/	{"bra.",		0,23,21, "01100000xxxxxxxx",10,10, bra_bsr},
 /* BSR */ 
@@ -425,10 +425,10 @@ OPSTRUCTURE syntax1[]=
 /* Bcc */ 
 /*66*/	{"b~~.",		0,23,21, "0110xxxxxxxxxxxx",10,10, br_cond},
 /* MOVEQ */ 
-/*67*/	{"moveq.",		5,8,4, "0111xxx0xxxxxxxx",8,8, notimplemented},
+/*67*/	{"moveq.",		5,8,4, "0111xxx0xxxxxxxx",8,8, moveq},
 /* SBCD */ 
-/*68*/	{"sbcd.",		1,4,4, "1000xxx100000xxx",4,4, notimplemented},
-/*69*/	{"sbcd.",		1,13,13, "1000xxx100001xxx",4,4, notimplemented},
+/*68*/	{"sbcd.",		1,4,4, "1000xxx100000xxx",4,4, abcd_sbcd},
+/*69*/	{"sbcd.",		1,13,13, "1000xxx100001xxx",4,4, abcd_sbcd},
 /* DIVU */ 
 /*70*/	{"divu.",		2,2,4, "1000xxx011xxxxxx",8,8, reg_ea},
 /* DIVS */ 
@@ -436,37 +436,37 @@ OPSTRUCTURE syntax1[]=
 /* SUBA */ 
 /*72*/	{"suba.",		9,10,3, "1001xxxx11xxxxxx",8,7, add_sub},
 /* SUBX */ 
-/*73*/	{"subx.",		0,4,4, "1001xxx1xx000xxx",7,6, notimplemented},
-/*74*/	{"subx.",		0,13,13, "1001xxx1xx001xxx",7,6, notimplemented},
+/*73*/	{"subx.",		0,4,4, "1001xxx1xx000xxx",7,6, cmpm_addx_subx},
+/*74*/	{"subx.",		0,13,13, "1001xxx1xx001xxx",7,6, cmpm_addx_subx},
 /* CMPA */ 
-/*75*/	{"cmpa.",		9,10,3, "1011xxxx11xxxxxx",8,7, notimplemented},
+/*75*/	{"cmpa.",		9,10,3, "1011xxxx11xxxxxx",8,7, cmp_cmpa},
 /* CMP */ 
-/*76*/	{"cmp.",		0,10,4, "1011xxx0xxxxxxxx",7,6, notimplemented},
+/*76*/	{"cmp.",		0,10,4, "1011xxx0xxxxxxxx",7,6, cmp_cmpa},
 /* EOR */ 
-/*77*/	{"eor.",		0,4,0, "1011xxx1xxxxxxxx",7,6, notimplemented},
+/*77*/	{"eor.",		0,4,0, "1011xxx1xxxxxxxx",7,6, add_sub},
 /* CMPM */ 
-/*78*/	{"cmpm.",		0,24,24, "1011xxx1xx001xxx",7,6, notimplemented},
+/*78*/	{"cmpm.",		0,24,24, "1011xxx1xx001xxx",7,6, cmpm_addx_subx},
 /* MULU WORD */ 
 /*79*/	{"mulu.",		2,2,4, "1100xxx011xxxxxx",8,8, reg_ea},
 /* MULS WORD */ 
 /*80*/	{"muls.",		2,2,4, "1100xxx111xxxxxx",12,12, reg_ea},
 /* ABCD */ 
-/*81*/	{"abcd.",		1,4,4, "1100xxx100000xxx",7,6, notimplemented},
-/*82*/	{"abcd.",		1,13,13, "1100xxx100001xxx",7,6, notimplemented},
+/*81*/	{"abcd.",		1,4,4, "1100xxx100000xxx",7,6, abcd_sbcd},
+/*82*/	{"abcd.",		1,13,13, "1100xxx100001xxx",7,6, abcd_sbcd},
 /* EXG data registers  */ 
-/*83*/	{"exg.",		5,4,4, "1100xxx101000xxx",3,3, notimplemented},
+/*83*/	{"exg.",		5,4,4, "1100xxx101000xxx",3,3, cmd_exg},
 /* EXG address registers  */ 
-/*84*/	{"exg.",		5,3,3, "1100xxx101001xxx",4,4, notimplemented},
+/*84*/	{"exg.",		5,3,3, "1100xxx101001xxx",4,4, cmd_exg},
 /* EXG data register and address  */ 
-/*85*/	{"exg.",		5,4,3, "1100xxx110001xxx",4,4, notimplemented},
+/*85*/	{"exg.",		5,4,3, "1100xxx110001xxx",4,4, cmd_exg},
 /* AND  */ 
-/*86*/	{"and.",		0,2,4, "1100xxx0xxxxxxxx",7,6, notimplemented},
-/*87*/	{"and.",		0,4,12, "1100xxx1xxxxxxxx",7,6, notimplemented},
+/*86*/	{"and.",		0,2,4, "1100xxx0xxxxxxxx",7,6, add_sub},
+/*87*/	{"and.",		0,4,12, "1100xxx1xxxxxxxx",7,6, add_sub},
 /* ADDA */ 
 /*88*/	{"adda.",		9,10,3, "1101xxxx11xxxxxx",8,7, add_sub},
 /* ADDX */ 
-/*89*/	{"addx.",		0,4,4, "1101xxx1xx000xxx",7,6, notimplemented},
-/*90*/	{"addx.",		0,13,13, "1101xxx1xx001xxx",7,6, notimplemented},
+/*89*/	{"addx.",		0,4,4, "1101xxx1xx000xxx",7,6, cmpm_addx_subx},
+/*90*/	{"addx.",		0,13,13, "1101xxx1xx001xxx",7,6, cmpm_addx_subx},
 /* ADD */ 
 /*91*/	{"add.",		0,2,4, "1101xxx0xxxxxxxx",7,6, add_sub},
 /*92*/	{"add.",		7,3,4, "1101xxx0xxxxxxxx",7,6, add_sub},
@@ -475,8 +475,8 @@ OPSTRUCTURE syntax1[]=
 /*94*/	{"rol.",		11,12,21, "1110011111xxxxxx",7,6, bit_rotate_mem},
 /*95*/	{"ror.",		11,12,21, "1110011011xxxxxx",7,6, bit_rotate_mem},
 /* SHIFT ROTATE logical memory */ 
-/*96*/	{"roxl.",		11,12,21, "1110010111xxxxxx",7,6, notimplemented},
-/*97*/	{"roxr.",		11,12,21, "1110010011xxxxxx",7,6, notimplemented},
+/*96*/	{"roxl.",		11,12,21, "1110010111xxxxxx",7,6, bit_rotate_mem},
+/*97*/	{"roxr.",		11,12,21, "1110010011xxxxxx",7,6, bit_rotate_mem},
 /* SHIFT ROTATE */ 
 /*98*/	{"rol.",		0,8,4, "1110xxx1xx011xxx",7,6, bit_rotate_reg},
 /*99*/	{"rol.",		0,4,4, "1110xxx1xx111xxx",7,6, bit_rotate_reg},
@@ -484,15 +484,15 @@ OPSTRUCTURE syntax1[]=
 /*100*/	{"ror.",		0,8,4, "1110xxx0xx011xxx",7,6, bit_rotate_reg},
 /*101*/	{"ror.",		0,4,4, "1110xxx0xx111xxx",7,6, bit_rotate_reg},
 /* SHIFT ROTATE */ 
-/*102*/	{"roxl.",		0,8,4, "1110xxx1xx010xxx",7,6, notimplemented},
-/*103*/	{"roxl.",		0,4,4, "1110xxx1xx110xxx",7,6, notimplemented},
+/*102*/	{"roxl.",		0,8,4, "1110xxx1xx010xxx",7,6, bit_rotate_reg},
+/*103*/	{"roxl.",		0,4,4, "1110xxx1xx110xxx",7,6, bit_rotate_mem},
 /* SHIFT ROTATE */ 
-/*104*/	{"roxr.",		0,8,4, "1110xxx0xx010xxx",7,6, notimplemented},
-/*105*/	{"roxr.",		0,4,4, "1110xxx0xx110xxx",7,6, notimplemented},
+/*104*/	{"roxr.",		0,8,4, "1110xxx0xx010xxx",7,6, bit_rotate_reg},
+/*105*/	{"roxr.",		0,4,4, "1110xxx0xx110xxx",7,6, bit_rotate_reg},
 /* EXT */ 
-/*106*/	{"ext.",		10,4,21, "01001000xx000xxx",7,6, notimplemented},
+/*106*/	{"ext.",		10,4,21, "01001000xx000xxx",7,6, ext_extb},
 /* ADDQ */ 
-/*107*/	{"addq.",		7,8,3, "0101xxx0xxxxxxxx",7,6, notimplemented},
+/*107*/	{"addq.",		7,8,3, "0101xxx0xxxxxxxx",7,6, addq_subq},
 /* SHIFT ROTATE */ 
 /*108*/	{"asl.",		11,12,21, "1110000111xxxxxx",7,6, bit_rotate_mem},
 /*109*/	{"asl.",		0,8,4, "1110xxx1xx000xxx",7,6, bit_rotate_reg},
@@ -508,8 +508,8 @@ OPSTRUCTURE syntax1[]=
 /*118*/	{"lsr.",		0,8,4, "1110xxx0xx001xxx",7,6, bit_rotate_reg},
 /*119*/	{"lsr.",		0,4,4, "1110xxx0xx101xxx",7,6, bit_rotate_reg},
 /* OR  */
-/*120*/	{"or.",			0,4,12, "1000xxx1xxxxxxxx",7,6, notimplemented},
-/*121*/	{"or.",			0,2,4, "1000xxx0xxxxxxxx",7,6, notimplemented},
+/*120*/	{"or.",			0,4,12, "1000xxx1xxxxxxxx",7,6, add_sub},
+/*121*/	{"or.",			0,2,4, "1000xxx0xxxxxxxx",7,6, add_sub},
 /* SUB */ 
 /*122*/	{"sub.",		0,2,4, "1001xxx0xxxxxxxx",7,6, add_sub},
 /*123*/	{"sub.",		7,3,4, "1001xxx0xxxxxxxx",7,6, add_sub},
@@ -531,7 +531,7 @@ OPSTRUCTURE syntax1[]=
 /* MOVES 68010 */ 
 /*126*/	{"moves.",		0,12,25, "00001110xxxxxxxx",7,6, notimplemented},
 /* MOVE from CCR */ 
-/*127*/	{"move.",		2,17,0, "0100001011xxxxxx",8,8, notimplemented},
+/*127*/	{"move.",		2,17,0, "0100001011xxxxxx",8,8, move_ccr_sr},
 /* RTD */ 
 /*128*/	{"rtd",			6,8,21,	"0100111001110100",7,6, notimplemented},
 /* MOVEC */ 
@@ -569,7 +569,7 @@ OPSTRUCTURE syntax1[]=
 /* LINK LONG */ 
 /*138*/	{"link.",		5,3,8, "0100100000001xxx",4,4, link_unlk},
 /* EXTB */ 
-/*139*/	{"extb.",		5,4,21, "0100100111000xxx",9,9, notimplemented},
+/*139*/	{"extb.",		5,4,21, "0100100111000xxx",9,9, ext_extb},
 /* MULS LONG */ 
 /*140*/	{"muls.",		5,2,4, "0100110000xxxxxx",6,6, notimplemented},
 /*141*/	{"muls.",		5,2,28, "0100110000xxxxxx",6,6, notimplemented},

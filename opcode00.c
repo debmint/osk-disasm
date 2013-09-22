@@ -10,6 +10,11 @@
 #include "sysnames.h"
 #include "proto.h"
 
+enum {
+    EA2REG,
+    REG2EA
+};
+
 char *SizSufx[] = {"s", "w", "l"};
 
 extern CONDITIONALS typecondition[];
@@ -310,8 +315,9 @@ biti_reg(ci, j, op)
     if (Pass == 2) {
         strcpy (ci->mnem, op->name);
         sprintf (ci->opcode, "#%d,%s", ci->code[1], sr[size]);
-        return 1;
     }
+
+    return 1;
 }
 
 /*
@@ -372,6 +378,7 @@ biti_size(ci, j, op)
         /* We need to add feature to include Labels here... */
         sprintf (ci->opcode, "#%ld,%s", data, ea);
         strcpy (ci->mnem, op->name);
+        strcat (ci->mnem, SizSufx[size]);
         return 1;
     }
     else
@@ -409,20 +416,21 @@ bit_static(ci, j, op)
         return 0;
     }
 
-    /* Also the but number has limits */
+    /* Also the bt number has limits */
     if (((mode > 1) && (ext0 > 7)) || ext0 > 0x1f)
     {
         ungetnext_w(ci);
         return 0;
     }
 
-    strcpy(ci->mnem, op->name);
-
     if (get_eff_addr (ci, ea, mode, reg, (ext0 >7) ? SIZ_LONG : SIZ_BYTE))
     {
         sprintf(ci->opcode, "#%d,%s", ext0, ea);
+        strcpy(ci->mnem, op->name);
+        strcat (ci->mnem, (mode == 0) ? "l" : "b");
         return 1;
     }
+
 
     return 0;
 }
@@ -438,8 +446,6 @@ bit_dynamic(ci, j, op)
 #endif
 {
     register int mode, reg;
-    register int ext0;
-    char ea[30];
 
     mode = (ci->cmd_wrd >> 3) & 7;
     reg = ci->cmd_wrd & 7;
@@ -457,11 +463,11 @@ bit_dynamic(ci, j, op)
 //                return 0;
 //    }
 
-    strcpy(ci->mnem, op->name);
-
-    if (get_eff_addr (ci, ea, mode, reg, (ext0 >7) ? SIZ_LONG : SIZ_BYTE))
+    if (get_eff_addr (ci, EaString, mode, reg, SIZ_LONG))
     {
-        sprintf(ci->opcode,"d%d,%s", (ci->cmd_wrd >>9) & 7, ea);
+        sprintf(ci->opcode,"d%d,%s", (ci->cmd_wrd >>9) & 7, EaString);
+        strcpy(ci->mnem, op->name);
+        strcat (ci->mnem, (mode == 0) ? "l" : "b");
         return 1;
     }
 
@@ -477,7 +483,7 @@ int
 #ifdef __STDC__
 move_instr(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
-    move_instr(ci, j, op)
+move_instr(ci, j, op)
     CMD_ITMS *ci;
     int j;
     OPSTRUCTURE *op;
@@ -551,6 +557,90 @@ move_instr(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 
 int
 #ifdef __STDC__
+move_ccr_sr(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+move_ccr_sr(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    /* direction is actually 2 bytes, but this lets REG2EA/EA2REG to work */
+    int dir = REG2EA;
+    char *statReg;
+    int mode = (ci->cmd_wrd >> 3) & 7;
+    int reg = ci->cmd_wrd & 7;
+
+    switch (ci->cmd_wrd & 0x0300)
+    {
+    case 0:
+        statReg = "sr";
+        break;
+    case 2:
+        dir = EA2REG;
+    case 1:
+        statReg = "ccr";
+    }
+
+    if (get_eff_addr (ci, EaString, mode, reg, SIZ_WORD))
+    {
+        register char *dot;
+
+        switch (dir)
+        {
+        case EA2REG:
+            sprintf (ci->opcode, "%s,%s", statReg, EaString);
+        default:
+            sprintf (ci->opcode, "%s,%s", EaString, statReg);
+        }
+
+        strcpy (ci->mnem, op->name);
+        if ((dot = strchr(ci->mnem, '.')))
+        {
+            *dot = '\0';
+        }
+
+        return 1;
+    }
+
+    return 0;
+}
+
+int
+#ifdef __STDC__
+move_usp(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+move_usp(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register char *dot;
+
+    sprintf(EaString, "A%d", ci->cmd_wrd & 7);
+
+    if ((ci->cmd_wrd >> 3) & 1)
+    {
+        sprintf(ci->opcode, "%s,%s", "usp", EaString);
+    }
+    else
+    {
+        sprintf (ci->opcode, "%s,%s", EaString, "usp");
+    }
+
+    strcpy (ci->mnem, op->name);
+
+    if ((dot = strchr(ci->mnem, '.')))
+    {
+        *dot = '\0';
+    }
+
+    return 1;
+}
+
+int
+#ifdef __STDC__
 movep(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
 movep(ci, j, op)
@@ -585,20 +675,29 @@ movep(ci, j, op)
     strcat( ci->mnem, (size == SIZ_LONG) ? "l" : "w");
     return 1;
 }
-/*28	"move.",		2,18,0, "0100000011xxxxxx",8,8, one_ea},*/
-/*29	"negx.",		0,0,21, "01000000xxxxxxxx",7,6, one_ea},*/
-/*32	"clr.",		0,0,21, "01000010xxxxxxxx",7,6, one_ea},*/
-/*33	"move.",		2,2,17, "0100010011xxxxxx",8,8, one_ea},*/
-/*34	"neg.",		0,0,21, "01000100xxxxxxxx",7,6, one_ea},*/
-/*35	"move.",		2,2,18, "0100011011xxxxxx",8,8, one_ea},*/
-/*36	"not.",		0,0,21, "01000110xxxxxxxx",7,6, one_ea},*/
-/*37	"nbcd.",		1,0,21, "0100100000xxxxxx",6,6, one_ea},*/
-/*38	"swap.",		2,4,21, "0100100001000xxx",3,3, one_ea},*/
-/*39	"pea.",		5,5,21, "0100100001xxxxxx",7,7, one_ea},*/
-/*42	"tas.",		1,0,21, "0100101011xxxxxx",8,8, one_ea},*/
-/*43	"tst.",		0,1,21, "01001010xxxxxxxx",7,6, one_ea},*/
-/*57	"jsr",			6,5,21, "0100111010xxxxxx",0,0, one_ea},*/
-/*58	"jmp",			6,5,21, "0100111011xxxxxx",0,0, one_ea},*/
+
+int
+#ifdef __STDC__
+moveq(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+moveq(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register char *dot;
+
+    sprintf(ci->opcode, "#%d,D%d", ci->cmd_wrd & 0xff, (ci->cmd_wrd >> 9) & 7);
+    strcpy (ci->mnem, op->name);
+
+    if (dot = strchr(ci->mnem, '.'))
+    {
+        *dot = '\0';
+    }
+
+    return 1;
+}
 
 /* --------------------------------------------------------------- *
  * one_ea - A generic handler for when the basic command is a      *
@@ -692,6 +791,12 @@ one_ea(ci, j, op)
     }
 
     strcpy (ci->mnem, op->name);
+
+    if (strchr (ci->mnem, '.'))
+    {
+        strcat (ci->mnem, SizSufx[size]);
+    }
+
     return 1;
 }
 
@@ -867,15 +972,11 @@ br_cond(ci, j, op)
     return 1;
 }
 
-enum {
-    EA2REG,
-    REG2EA
-};
-
 typedef struct add_sub_def {
     int size;
     int direction;
     char regname;
+    int allmodes;
 } ADDSUBDEF;
 
 int
@@ -893,19 +994,19 @@ add_sub(ci, j, op)
     int ea_mode = (ci->cmd_wrd >> 3) & 7;
     int ea_reg = ci->cmd_wrd & 7;
     static ADDSUBDEF AddSubDefs[] = {
-        {SIZ_BYTE, EA2REG, 'd'},
-        {SIZ_WORD, EA2REG, 'd'},
-        {SIZ_LONG, EA2REG, 'd'},
-        {SIZ_WORD, EA2REG, 'a'},
-        {SIZ_BYTE, REG2EA, 'd'},
-        {SIZ_WORD, REG2EA, 'd'},
-        {SIZ_LONG, REG2EA, 'd'},
-        {SIZ_LONG, EA2REG, 'a'}
+        {SIZ_BYTE, EA2REG, 'd', 0},
+        {SIZ_WORD, EA2REG, 'd', 0},
+        {SIZ_LONG, EA2REG, 'd', 0},
+        {SIZ_WORD, EA2REG, 'a', 1},
+        {SIZ_BYTE, REG2EA, 'd', 0},
+        {SIZ_WORD, REG2EA, 'd', 0},
+        {SIZ_LONG, REG2EA, 'd', 0},
+        {SIZ_LONG, EA2REG, 'a', 1}
     };
     register ADDSUBDEF *asDef = &AddSubDefs[(ci->cmd_wrd >> 6) & 7];
     char ea[50];
 
-    if (asDef->direction == REG2EA)
+    if ((asDef->direction == REG2EA) && !(asDef->allmodes))
     {
         if (ea_mode < 2)
             return 0;
@@ -935,6 +1036,117 @@ add_sub(ci, j, op)
     {
         return 0;
     }
+}
+
+int
+#ifdef __STDC__
+cmp_cmpa(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+cmp_cmpa(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register int mode = (ci->cmd_wrd >> 3) & 7;
+    register int reg = ci->cmd_wrd & 7;
+    register int size = (ci->cmd_wrd >> 6) & 7;
+    char regName = 'd';
+
+    if (size > 2)
+    {
+        switch (size)
+        {
+        case 3:
+            size = SIZ_WORD;
+            regName = 'a';
+            break;
+        case 7:
+            size = SIZ_LONG;
+            regName = 'a';
+            break;
+        default:
+            return 0;
+        }
+    }
+
+    if (get_eff_addr(ci, EaString, mode, reg, size))
+    {
+        sprintf (ci->opcode, "%s,%c%d", EaString, regName, (ci->cmd_wrd >>6) & 7);
+        strcpy (ci->mnem, op->name);
+        strcat (ci->mnem, SizSufx[size]);
+        return 1;
+    }
+
+    return 0;
+}
+int
+#ifdef __STDC__
+addq_subq(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+addq_subq(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int mode = (ci->cmd_wrd >> 3) & 7;
+    int reg = ci->cmd_wrd & 7;
+    int size = (ci->cmd_wrd >> 6) & 3;
+    int data = (ci->cmd_wrd >> 9) & 7;
+
+    if ((mode == 7) && (reg > 1))
+    {
+        return 0;
+    }
+
+    if (data == 0)
+    {
+        data = 8;
+    }
+
+    if (get_eff_addr(ci, EaString, mode, reg, size))
+    {
+        sprintf (ci->opcode, "#%d,%s", data, EaString);
+        strcpy (ci->mnem, op->name);
+        strcat(ci->mnem, SizSufx[size]);
+        return 1;
+    }
+
+    return 0;
+}
+
+int
+#ifdef __STDC__
+abcd_sbcd(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+abcd_sbcd(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register int srcReg = ci->cmd_wrd & 7;
+    register int dstReg = (ci->cmd_wrd >> 9) & 7;
+    register char *dot;
+
+    if (ci->cmd_wrd & 0x08)
+    {
+        sprintf (ci->opcode, "-(a%d),-(a%d)", srcReg, dstReg);
+    }
+    else
+    {
+        sprintf (ci->opcode, "d%d,d%d", srcReg, dstReg);
+    }
+
+    strcpy(ci->mnem, op->name);
+
+    if (dot = strchr(ci->mnem, '.'))
+    {
+        *dot = '\0';
+    }
+
+    return 1;
 }
 
 int
@@ -978,10 +1190,219 @@ trap(ci, j, op)
         ungetnext_w(ci);
         break;
     default:
-        sprintf (ci->opcode, "#%d", syscall);
+        sprintf (ci->opcode, "#%d", vector);
         strcpy (ci->mnem, op->name);
         return 1;
     }
 
     return 0;
+}
+
+int
+#ifdef __STDC__
+cmd_stop(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+cmd_stop(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    sprintf(ci->opcode, "#%d", getnext_w(ci));
+    strcpy (ci->mnem, op->name);
+    return 1;
+}
+
+int
+#ifdef __STDC__
+cmd_dbcc(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+cmd_dbcc(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int br_from = PCPos;
+    register int dest;
+    char *condpos;
+
+    strcpy (ci->mnem, op->name);
+
+    if (condpos = strchr(ci->mnem, '~'))
+    {
+        register int offset;
+
+        strcpy(condpos, typecondition[(ci->cmd_wrd >> 8) & 7].condition);
+        offset = getnext_w(ci);
+        dest  = br_from + offset;
+
+        /* We need to handle label name calculations here*/
+        sprintf(EaString, "#L%d", dest);
+        sprintf (ci->opcode, "d%d,#%s", EaString);
+
+        return 1;
+    }
+
+    return 0;
+}
+
+int
+#ifdef __STDC__
+cmd_scc(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+cmd_scc(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    int mode = (ci->cmd_wrd >> 8) & 7;
+    int reg = ci->cmd_wrd & 8;
+    char *condpos;
+
+    if (mode == 1)
+    {
+        return 0;
+    }
+
+    if ((mode == 7) && (reg > 1))
+    {
+        return 0;
+    }
+
+    strcpy (ci->mnem, op->name);
+
+    if (condpos = strchr(ci->mnem, '~'))
+    {
+        strcpy(condpos, typecondition[(ci->cmd_wrd >> 8) & 7].condition);
+
+        if ( get_eff_addr(ci, EaString, mode, reg, SIZ_BYTE))
+        {
+            strcpy(ci->mnem, EaString);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int
+#ifdef __STDC__
+cmd_exg(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+cmd_exg(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register int regnumSrc = ci->cmd_wrd & 7;
+    register int regnumDst = (ci->cmd_wrd >> 9) & 7;
+    char regnameSrc = 'd';
+    char regnameDst = 'd';
+    char *dot;
+
+    switch ((ci->cmd_wrd >> 3) & 0x1f)
+    {
+    case 0x80:
+        break;
+    case 0x81:
+        regnameSrc = 'a';
+    case 0x101:
+        regnameDst = 'a';
+    default:
+        return 0;
+    }
+
+    sprintf (ci->opcode, "%c%d,%c%d", regnameSrc,regnumSrc,regnameDst, regnumDst);
+    strcpy (ci->mnem, op->name);
+
+    if (dot = strchr(ci->mnem, '.'))
+    {
+        *dot = '\0';
+    }
+
+    return 1;
+}
+
+int
+#ifdef __STDC__
+ext_extb(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+ext_extb(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register char *sufx;
+
+    sprintf (ci->opcode, "d%d", ci->cmd_wrd & 7);
+    strcpy (ci->mnem, op->name);
+    
+    switch (ci->cmd_wrd & 0x01c0)
+    {
+    case 0x80:
+        sufx = "w";
+        break;
+    case 0xc0:
+        sufx = "l";
+        break;
+    case 0x1c0:
+        if (cpu < 2)
+        {
+            return 0;
+        }
+
+        sufx = "l";
+    default:
+        return 0;
+    }
+
+    strcat (ci->mnem, sufx);
+    return 1;
+}
+
+int
+#ifdef __STDC__
+cmpm_addx_subx(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
+#else
+cmpm_addx_subx(ci, j, op)
+    CMD_ITMS *ci;
+    int j;
+    OPSTRUCTURE *op;
+#endif
+{
+    register int srcRegno = ci->cmd_wrd & 7;
+    register int dstRegno = (ci->cmd_wrd >> 9) & 7;
+    register int size = (ci->cmd_wrd >> 6) & 3;
+    char *opcodeFmt;
+
+    if (size == 3)
+    {
+        return 0;
+    }
+    
+    switch (ci->cmd_wrd & 0xf000)
+    {
+    case 0xb000:            /* cmpm */
+        opcodeFmt = "(a%d)+,(a%d)+";
+        break;
+    default:                /* addx/subx */
+        if (ci->cmd_wrd & 8)
+        {
+            opcodeFmt = "-(a%d),-(a%d)";
+        }
+        else
+        {
+            opcodeFmt = "D%d,D%d";
+        }
+    }
+
+    sprintf (ci->opcode, opcodeFmt, srcRegno, dstRegno);
+    strcpy (ci->mnem, op->name);
+    strcat (ci->mnem, SizSufx[size]);
+
+    return 1;
 }
