@@ -14,8 +14,12 @@
 /* ************************************************************************* */
 
 int
+#ifdef __STDC__
+fpmatch (int start)
+#else
 fpmatch (start)
      int start;
+#endif
 {
     extern error;
     extern char sizechar[];
@@ -103,9 +107,13 @@ fpmatch (start)
 /* ************************************************************************* */
 
 OPSTRUCTURE *
+#ifdef __STDC__
+tablematch (int opword, int entry)
+#else
 tablematch (opword, entry)
      int opword;
      int entry;
+#endif
 {
     extern OPSTRUCTURE syntax1[];
     extern int error;
@@ -146,10 +154,14 @@ tablematch (opword, entry)
 /* ************************************************************************* */
 
 int
+#ifdef __STDC__
+bitnum (int startbit, int endbit, int opword)
+#else
 bitnum (startbit, endbit, opword)
      int startbit,
        endbit,
        opword;
+#endif
 {
     int shifted_word,
       i,
@@ -199,10 +211,14 @@ EA_TABLE EffectiveAddrTable[] = {
 /* ************************************************************************* */
 
 int
+#ifdef __STDC__
+illegalEA (int EAentry, int opword, int extensionword)
+#else
 illegalEA (EAentry, opword, extensionword)
      int EAentry;               /* FROM TABLE CONSISTING OF MASKS */
      int opword;
      int extensionword;
+#endif
 {
     extern EAALLOWED_TYPE EAtype[];
     int i,
@@ -271,11 +287,16 @@ illegalEA (EAentry, opword, extensionword)
 /* ROUTINE: printEA							     */
 /* ************************************************************************* */
 
+int
+#ifdef __STDC__
+printEA (int EAentry, int EAstartpoint, char sizechar, int opword)
+#else
 printEA (EAentry, EAstartpoint, sizechar, opword)
      int EAentry,
        EAstartpoint;
      char sizechar;
      int opword;
+#endif
 {
     int d16,
       d8,
@@ -506,10 +527,14 @@ printEA (EAentry, EAstartpoint, sizechar, opword)
 
 
 int
+#ifdef __STDC__
+sizeEA (int EAentry, int EAstartpoint, char sizechar)
+#else
 sizeEA (EAentry, EAstartpoint, sizechar)
      int EAentry,
        EAstartpoint;
      char sizechar;
+#endif
 {
     int bdsize,
       odsize,

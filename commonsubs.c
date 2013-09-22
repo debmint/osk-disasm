@@ -253,6 +253,8 @@ get_extends_common(ci, mnem)
     if (size > 1) {
         getnext_w(ci);
     }
+
+    return 1;
 }
 
 /* ----------------------------------------------------------------- *
@@ -323,7 +325,7 @@ reg_ea(ci, j, op)
                     return 0;
             }
         case 31:       /* lea */
-            if (! ctl_addrmodesonly)
+            if (! ctl_addrmodesonly(mode,reg))
                 return 0;
     }
 
