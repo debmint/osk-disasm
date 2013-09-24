@@ -45,7 +45,7 @@ main(argc,argv)
     Pass = 1;
     dopass(argc,argv,1);
     Pass = 2;
-    dopass(argc,argv,1);
+    dopass(argc, argv, Pass);
 
     return 0;
 }

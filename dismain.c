@@ -148,7 +148,6 @@ dopass(argc,argv,mypass)
 
     PCPos = M_Exec;
 
-
     while (PCPos < M_Size)
     {
         CmdEnt = PCPos;
@@ -157,7 +156,9 @@ dopass(argc,argv,mypass)
         {
             if (Pass == 2)
             {
-                printf("%05x %04.4x      %s %s\n", CmdEnt, Instruction.cmd_wrd, Instruction.mnem, Instruction.opcode);
+                printf("%05x %04.4x %10.10s %s %s\n",
+                        CmdEnt, Instruction.cmd_wrd, lblstr('L', CmdEnt),
+                        Instruction.mnem, Instruction.opcode);
                 if (Instruction.wcount)
                 {
                     int count;
@@ -165,7 +166,7 @@ dopass(argc,argv,mypass)
 
                     for (count = 0; count < Instruction.wcount; count++)
                     {
-                       printf("%04x ", Instruction.code[count]);
+                       printf("%04x ", Instruction.code[count] & 0xffff);
                     }
 
                     printf("\n");
