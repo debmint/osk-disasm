@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include "structs.h"
 
 #ifdef _MAIN_
 #   define xt
@@ -60,55 +61,6 @@ struct extWbrief {
          * 1    010 Memory indirect with word od
          * 1    011 Memory indirect with long od
          */ 
-
-
-typedef struct cmditems {
-    int cmd_wrd;        /* The single effective address word (the command) */
-    char mnem[50];
-    short code[10];
-    int wcount;         /* The count of words in the instrct/.(except sea) */
-    char opcode[200];   /* Possibly ovesized, but just to be safe */
-    //struct extWbrief extend;   /* The extended command (if present) */
-} CMD_ITMS;
-
-
-//struct extended020 {
-//};
-
-#define LBLLEN 40
-
-/* Defines a Label */
-
-struct symbldef {
-    char sname[LBLLEN+1];         /* Symbol name */
-    long myaddr;                  /* Address of symbol */
-    int stdname;                  /* Flag that it's a std named label */
-    int global;                   /* For ROF use... flags that it's global */
-    struct nlist *Next;           /* Next */
-    struct nlist *Prev;           /* Previous entry */
-};
-
-/* Offset 9 (-L00xx) - type stuff ] */
-
-struct ofsetree {
-    char oclas_maj;        /* Class to use in offset addressing          */
-    char of_maj;           /* The main offset value                      */
-    char incl_pc;          /* Flag to include PC offset mode             */
-    int add_to;            /* Flag: if set, add to offset, else subtract */
-    /*int of_sec;          Secondary offset (0 if none) */
-    /*char oclas_sec;      Class of secondary offset */
-};
-
-/* Data areas/Label Addressing Modes tree structure */
-
-struct databndaries {
-    long b_lo,         /* Lower (beginning) boundary address       */
-         b_hi;         /* Upper (ending) boundary address          */
-    char b_typ;        /* Boundary type for DA's and Lbl Class for AModes */
-    struct ofsetree *dofst;
-    struct databndaries *BNext,
-                        *BPrev;
-};
 
 xt int cpu;
 xt  CMD_ITMS Instruction;

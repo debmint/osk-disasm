@@ -822,12 +822,18 @@ branch_displ (siz_suffix)
             displ = getnext_w(ci);
             strcpy (siz_suffix, "w");
             break;
-        case 1:
+        case 0xff:
             displ = (getnext_w(ci) << 8) | (getnext_w(ci) & 0xff);
             strcpy (siz_suffix, "l");
             break;
         default:
-            strcpy (siz_suffix, "b");
+            /* Sign extend the 8-bit displacement */
+            if (displ & 0x80)
+            {
+                displ |= 0xff00;
+            }
+
+            strcpy (siz_suffix, "s");
     }
 
     return displ;
@@ -843,14 +849,15 @@ bra_bsr(ci, j, op)
     OPSTRUCTURE *op;
 #endif
 {
-    register int displ;
+    register int displ, dstAddr;
     register int jmp_base = PCPos;
     char siz[4];
 
     displ = branch_displ(ci, ci->cmd_wrd, siz);
+    dstAddr = jmp_base + displ;
 
-    /* We need to calculate the address here */
-    sprintf (ci->opcode, "L%05x", jmp_base + displ);
+    process_label (ci, 'L', dstAddr);
+
     strcpy (ci->mnem, op->name);
     strcat (ci->mnem, siz);
 
@@ -967,7 +974,8 @@ br_cond(ci, j, op)
     }
 
         /* We need to calculate the address here */
-    sprintf (ci->opcode, "L%05x", jmp_base + displ);
+    process_label (ci, 'L', jmp_base + displ);
+    //sprintf (ci->opcode, "L%05x", jmp_base + displ);
 
     return 1;
 }
@@ -1237,9 +1245,8 @@ cmd_dbcc(ci, j, op)
         offset = getnext_w(ci);
         dest  = br_from + offset;
 
-        /* We need to handle label name calculations here*/
-        sprintf(EaString, "#L%d", dest);
-        sprintf (ci->opcode, "d%d,#%s", EaString);
+        process_label (ci, 'L', dest);
+        sprintf (ci->opcode, "d%d,#%s", ci->cmd_wrd & 7, EaString);
 
         return 1;
     }

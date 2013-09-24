@@ -6,7 +6,8 @@
 
 CFLAGS = -c -g
 LFLAGS = -g
-DISRELS = dis68.o dismain.o 68def.o opcode00.o commonsubs.o opcodes020.o
+DISRELS = dis68.o dismain.o 68def.o opcode00.o commonsubs.o lblfuncs.o\
+		  opcodes020.o
 XTRAS = disglobs.h
 PROG  = dis68
 
