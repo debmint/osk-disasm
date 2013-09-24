@@ -47,9 +47,10 @@ int
 #ifdef __STDC__
 get_eff_addr(CMD_ITMS *ci, char *ea, int mode, int reg, int size)
 #else
-get_eff_addr(ci, ea, mode, reg)
+get_eff_addr(ci, ea, mode, reg, size)
     CMD_ITMS *ci;
     char * ea;
+    int size;
 int mode;
 int reg;
 #endif
@@ -75,7 +76,7 @@ int reg;
         break;
     case 5:             /* d{16}An */
         ext1 = getnext_w(ci);
-        //++(ci->wcount);
+       /*++(ci->wcount);*/
         displac_w = (ext1 & 0xffff);
 
         /* The system biases the data Pointer (a6) by 0x8000 bytes,
@@ -92,8 +93,7 @@ int reg;
         return 1;
         break;
     case 6:             /* d{8}(An)Xn or 68020-up */
-        //ext1 = getnext_w(ci);
-
+        /*ext1 = getnext_w(ci);*/
         if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
         {
             /* the displacement should be a string for it may sometimes
@@ -117,7 +117,7 @@ int reg;
         switch (reg) {
         case 0:                 /* (xxx).W */
             ext1 = getnext_w(ci);
-            //++(ci->wcount);
+            /*++(ci->wcount);*/
             displac_w = ext1 & 0xffff;
             /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
             sprintf (dispstr, "%d", displac_w);
@@ -125,15 +125,15 @@ int reg;
             return 1;
         case 1:                /* (xxx).L */
             ext1 = getnext_w(ci);
-            //++(ci->wcount);
+            /*++(ci->wcount);*/
             ext2 = getnext_w(ci);
-            //++(ci->wcount);
+            /*++(ci->wcount);*/
             sprintf (dispstr, "%dL", (ext1 <<16) | ext2);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 4:                 /* #<data> */
             ext1 = getnext_w(ci);
-            //++(ci->wcount);
+            /*++(ci->wcount);*/
 
             switch (size)
             {
@@ -148,7 +148,7 @@ int reg;
                 break;
             case 2:    /* long */
                 ext2 = getnext_w(ci);
-                //++(ci->wcount);
+                /*++(ci->wcount);*/
                 displac_l = (ext1 << 16) | ext2;
                 sprintf (dispstr, "%dL", displac_l);
                 break;
@@ -158,12 +158,12 @@ int reg;
             return 1;
         case 2:              /* (d16,PC) */
             ext1 = getnext_w(ci);
-            //++(ci->wcount);
+            /*++(ci->wcount);*/
             sprintf (dispstr, "%d", ext1);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 3:              /* d8(PC)Xn */
-            //ext1 = getnext_w(ci);
+            /*ext1 = getnext_w(ci);*/
 
             if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
             {
@@ -193,7 +193,7 @@ int
 #ifdef __STDC__
 get_ext_wrd_brief (CMD_ITMS *ci, struct extWbrief *extW, int mode, int reg)
 #else
-get_ext_wrd_brief (ci)
+get_ext_wrd_brief (ci, extW, mode, reg)
     CMD_ITMS *ci;
     struct extWbrief *extW;
     int mode, reg;
@@ -371,11 +371,19 @@ reg_ea(ci, j, op)
  * into ``s'', beginning with a ``slash'' if necessary.
  * ``ad'' specifies either address (A) or data (D) registers.
  */
+
 static char *
+#ifdef __STDIO__
 regwrite(char *s, char *ad, int low, int high, int slash)
+#else
+regwrite(s, ad, low, high, slash)
+    char *s; char *ad; int low; int high; int slash;
+#endif
 {
+
 	if (slash)
 		*s++ = '/';
+
 	if (high - low >= 1) {
 		s += sprintf(s, "%s", ad);
 		*s++ = low + '0';
@@ -392,8 +400,8 @@ regwrite(char *s, char *ad, int low, int high, int slash)
 		s += sprintf(s, "%s", ad);
 		*s++ = high + '0';
 	}
-	*s = '\0';
 
+	*s = '\0';
 	return s;
 }
 
@@ -401,8 +409,14 @@ regwrite(char *s, char *ad, int low, int high, int slash)
  * Format ``regmask'' into ``s''.  ``ad'' is a prefix used to indicate
  * whether the mask is for address, data, or floating-point registers.
  */
+
 char *
+#ifdef __STDIO__
 regbyte(char *s, unsigned char regmask, char *ad, int doslash)
+#else
+regbyte (s, regmask, ad, doslash)
+    char *s; unsigned char regmask; char *ad; int doslash;
+#endif
 {
 	int	i;
 	int	last;

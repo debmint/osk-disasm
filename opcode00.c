@@ -8,6 +8,10 @@
 #include "disglobs.h"
 #include "userdef.h"
 #include "sysnames.h"
+
+#ifdef _OSK
+#include <osk.h>
+#endif
 #include "proto.h"
 
 enum {
@@ -41,7 +45,7 @@ bitModeRegLegal(mode, reg)
     }
 }
 
-//int 
+/*int 
 //#ifdef __STDC__
 //    bit_movep_immediate (CMD_ITMS *cmditms)
 //#else
@@ -51,11 +55,11 @@ bitModeRegLegal(mode, reg)
 //#endif
 //{
 //    register int firstword = cmditms->cmd_wrd;    /* To save calculations */
-//    short ext1, ext2;
+/*    short ext1, ext2;
 //    int mode,reg;
 //
 //    /* 68020+ code
-//    if ((firstword & 0xfff0) == 0x6c)  // "rtm"
+/*    if ((firstword & 0xfff0) == 0x6c)  // "rtm"
 //    {
 //        //if (cpu >= 2)
 //        {
@@ -64,7 +68,7 @@ bitModeRegLegal(mode, reg)
 //       // else
 //            //return 0;
 //    }*/
-//
+/*
 //    switch (firstword)
 //    {
 //    case 0x3c:
@@ -81,7 +85,7 @@ bitModeRegLegal(mode, reg)
 //    }
 //
 //    /* Handle static bit cmds */
-//
+/*
 //    switch (firstword & 0xffd0)
 //    {
 //    case 0x0800:
@@ -95,7 +99,7 @@ bitModeRegLegal(mode, reg)
 //    }
 //
 //    /* Dynamic bit commands */
-//
+/*
 //    switch ((firstword >> 6) & 7)
 //    {
 //        case 4:
@@ -131,10 +135,10 @@ bitModeRegLegal(mode, reg)
 //        if (cpu >= 2)
 //        {
 //            if ((firstword & 0x1c) == 0x0c)    /* "cmp2" or "chk2"? */
-//            {
-//                /* For the time being, if this is not a match, simply
-//                 * continue */
-//
+/*            {
+                /* For the time being, if this is not a match, simply
+                                 * continue */
+/*
 //                if (cmp2_chk2(cmditms))
 //                    return 1;
 //            }
@@ -145,7 +149,7 @@ bitModeRegLegal(mode, reg)
 //    case 0x01:
 //        return (biti_size(cmditms, "andi"));
 //        /* Eliminate ccr & SR */
-//        break;
+/*        break;
 //    case 0x02:
 //        return (biti_size(cmditms, "ori"));
 //    case 0x03:
@@ -154,7 +158,7 @@ bitModeRegLegal(mode, reg)
 //            if (cpu > 2)
 //            {
 //                /* Process rtm, callm, cmp2, chk2 */
-//            }
+/*            }
 //            else
 //            {
 //                return 0;
@@ -174,7 +178,7 @@ bitModeRegLegal(mode, reg)
 //        {
 //            strcpy(cmditms->mnem, "callm");
 //            /* special case */
-//        }
+/*        }
 //        else
 //        {
 //            return biti_size(cmditms, "addi");
@@ -183,8 +187,8 @@ bitModeRegLegal(mode, reg)
 //    case 0x0a:
 //        strcpy(cmditms->mnem, "eori");
 //        /* Eliminate ccr & SR */
-//        /* Go process extended command */
-//        break;
+        /* Go process extended command */
+/*        break;
 //    case 0x0c:
 //        return biti_size(cmditms, "cmpi");
 //        break;
@@ -212,7 +216,7 @@ bitModeRegLegal(mode, reg)
 //    }
 //
 //    /* We need to now check a different set of bits */
-//    switch ((firstword >>6) & 0x07)
+/*    switch ((firstword >>6) & 0x07)
 //    {
 //    case 3:
 //        if (firstword & 0x800)
@@ -225,7 +229,7 @@ bitModeRegLegal(mode, reg)
 //            else
 //            {
 //                /* Possible tests needed */
-//                strcpy(cmditms->mnem, "cas");
+/*                strcpy(cmditms->mnem, "cas");
 //                break;
 //            }
 //        }
@@ -246,20 +250,20 @@ bitModeRegLegal(mode, reg)
 //    case 10:
 //        ext1 = getnext_w(cmditms);
 //        /* Eliminate ccr & SR */
-//        switch (cmditms->cmd_wrd & 0xff)
+/*        switch (cmditms->cmd_wrd & 0xff)
 //        {
 //            int regflag = cmditms->cmd_wrd & 0x40; /* 0 if ccr, 1 if sr */
-//
+/*
 //        case 0x3c:
 //        case 0x7c:
 //            /* If it's ccr and it's negative, sign extend it */
-//            if ((regflag == 0) && ( ext1 & 0x80))
+/*            if ((regflag == 0) && ( ext1 & 0x80))
 //            {
 //                ext1 |= 0xffff0000;
 //            }
 //
 //            /* Verify if it's a label */
-//            if (regflag == 0)
+/*            if (regflag == 0)
 //            {
 //                sprintf(cmditms->opcode, "#%s,ccr", ext1);
 //            }
@@ -453,7 +457,7 @@ bit_dynamic(ci, j, op)
     if (mode == 1)
         return 0;
 
-//    switch (j)
+/*    switch (j)
 //    {
 //        case 4:
 //            if (mode == 4)
@@ -461,7 +465,7 @@ bit_dynamic(ci, j, op)
 //        default:
 //            if (mode > 1)
 //                return 0;
-//    }
+//    }*/
 
     if (get_eff_addr (ci, EaString, mode, reg, SIZ_LONG))
     {
@@ -768,7 +772,7 @@ one_ea(ci, j, op)
         {
             switch (j)
             {
-                const char *statreg = "ccr";
+                 char *statreg = "ccr";
 
                 case 28:    /* Move from SR */
                     statreg = "sr";
@@ -809,7 +813,8 @@ static int
 #ifdef __STDC__
 branch_displ (CMD_ITMS *ci, int cmd_word, char *siz_suffix)
 #else
-branch_displ (siz_suffix)
+branch_displ (ci, cmd_word, siz_suffix)
+    CMD_ITMS *ci;
     int cmd_word;
     char *siz_suffix;
 #endif
@@ -975,7 +980,7 @@ br_cond(ci, j, op)
 
         /* We need to calculate the address here */
     process_label (ci, 'L', jmp_base + displ);
-    //sprintf (ci->opcode, "L%05x", jmp_base + displ);
+    /*sprintf (ci->opcode, "L%05x", jmp_base + displ);*/
 
     return 1;
 }

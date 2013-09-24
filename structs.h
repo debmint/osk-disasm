@@ -13,12 +13,12 @@ typedef struct cmditems {
     short code[10];
     int wcount;         /* The count of words in the instrct/.(except sea) */
     char opcode[200];   /* Possibly ovesized, but just to be safe */
-    //struct extWbrief extend;   /* The extended command (if present) */
+    /*struct extWbrief extend;*.   /* The extended command (if present) */
 } CMD_ITMS;
 
 
-//struct extended020 {
-//};
+/*struct extended020 {
+};*/
 
 #define LBLLEN 40
 
@@ -30,7 +30,7 @@ typedef struct symbldef {
     int stdname;                  /* Flag that it's a std named label */
     int global;                   /* For ROF use... flags that it's global */
     struct symbldef *Next;           /* Next */
-//    struct symbldef *More;
+/*    struct symbldef *More;*/
     struct symbldef *Prev;           /* Previous entry */
 } LBLDEF;
 

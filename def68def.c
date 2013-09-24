@@ -8,7 +8,7 @@
 /* 				 68def 					     */
 /* ************************************************************************* */
 
-#if(DEVICE==68040 || COPROCESSOR==TRUE)
+#if (DEVICE==68040 || COPROCESSOR==TRUE)
 /* ************************************************************************* */
 /* ROUTINE: FPMATCH							     */
 /* ************************************************************************* */
@@ -312,14 +312,14 @@ printEA (EAentry, EAstartpoint, sizechar, opword)
     static char RegType[2] = { 'D', 'A' };
     static char WLsize[2] = { 'W', 'L' };
 
-#if(DEVICE==68040 || COPROCESSOR==TRUE)
+#if (DEVICE==68040 || COPROCESSOR==TRUE)
     int f0_fp,
       f1_fp,
       f2_fp;
 
 #endif
 
-//    extensionword = get16 (EAstartpoint);
+/*    extensionword = get16 (EAstartpoint);
 //    bdsize = 0;
 //    odsize = 0;
 //    switch (EAentry)
@@ -348,7 +348,7 @@ printEA (EAentry, EAstartpoint, sizechar, opword)
 //            switch (bitnum (8, 8, extensionword))
 //            {
 //                case 0:        /*BIT 8=0       */
-//                    if (EAentry == 6)
+/*                    if (EAentry == 6)
 //                        printf ("(%c%x,A%d,", HEXDEL,
 //                                bitnum (7, 0, extensionword),
 //                                bitnum (2, 0, opword));
@@ -362,7 +362,7 @@ printEA (EAentry, EAstartpoint, sizechar, opword)
 //                            scale[bitnum (10, 9, extensionword)]);
 //                    return;
 //                case 1:        /*BIT 8=1       */
-//                    switch (bitnum (5, 4, extensionword))
+/*                    switch (bitnum (5, 4, extensionword))
 //                    {
 //                        case 1:
 //                            bdsize = 0;
@@ -467,7 +467,7 @@ printEA (EAentry, EAstartpoint, sizechar, opword)
 //                case 'L':
 //                    immediatedata = get32 (EAstartpoint);
 //                    break;
-//#if(DEVICE==68040 || COPROCESSOR==TRUE)
+//#if (DEVICE==68040 || COPROCESSOR==TRUE)
 //                default:
 //                    f0_fp = get32 (EAstartpoint);
 //                    f1_fp = get32 (EAstartpoint + 4);
@@ -517,7 +517,7 @@ printEA (EAentry, EAstartpoint, sizechar, opword)
 //            }
 //            printf ("#%c%x", HEXDEL, immediatedata);
 //            return;
-//    }
+//    }*/
 }
 
 /* ************************************************************************* */
@@ -540,7 +540,7 @@ sizeEA (EAentry, EAstartpoint, sizechar)
       odsize,
       extensionword;
 
-//    extensionword = get16 (EAstartpoint);
+/*    extensionword = get16 (EAstartpoint);
 //    switch (EAentry)
 //    {
 //        case 0:
@@ -610,7 +610,7 @@ sizeEA (EAentry, EAstartpoint, sizechar)
 //                case 's':
 //                case 'S':
 //                    return (4);
-//#if(DEVICE==68040 || COPROCESSOR==TRUE)
+//#if (DEVICE==68040 || COPROCESSOR==TRUE)
 //                case 'd':
 //                case 'D':
 //                    return (8);
@@ -621,5 +621,5 @@ sizeEA (EAentry, EAstartpoint, sizechar)
 //                    return (12);
 //#endif
 //            }
-//    }
+//    }*/
 }

@@ -12,6 +12,12 @@
 #include <string.h>
 #include "proto.h"
 
+#ifdef _OSK
+#   define BINREAD "r"
+#else
+#   define BINREAD "rb"
+#endif
+
 static int HdrLen;
 
 static int get_asmcmd(
@@ -126,7 +132,7 @@ dopass(argc,argv,mypass)
     int lval = 0;
     int wval = 0;
 
-    if (!(ModFP = fopen(ModFile, "rb")))
+    if (!(ModFP = fopen(ModFile, BINREAD)))
     {
         errexit("Cannot open Module file for read");
     }
@@ -195,8 +201,14 @@ initcmditems ()
     return &Instruction;
 }
 
-
-int notimplemented(CMD_ITMS *ci, int tblno)
+int
+#ifdef __STDC__
+notimplemented(CMD_ITMS *ci, int tblno)
+#else
+notimplemented (ci, tblno)
+    CMD_ITMS *ci;
+    int tblno;
+#endif
 {
     return 0;
 }
@@ -236,7 +248,7 @@ get_asmcmd()
         }
     }
 
-#if(DEVICE==68040 || COPROCESSOR==TRUE)
+#if (DEVICE==68040 || COPROCESSOR==TRUE)
     for (h = 3; h <= MAXCOPROCINST; h++)
     {
         error = FALSE;
