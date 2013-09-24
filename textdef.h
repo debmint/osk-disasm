@@ -37,8 +37,8 @@ extern tmcmd(),rdcmd(),rmcmd(),mmcmd(),mdcmd(),gocmd();
 extern trcmd(),ascmd(),sdcmd();
 */
 
-//extern notimplemented(),bit_movep_immediate(),move_instr();
-//extern biti_reg(), bit_static(), bit_dynamic(), biti_size();
+/*extern notimplemented(),bit_movep_immediate(),move_instr();
+extern biti_reg(), bit_static(), bit_dynamic(), biti_size();*/
 
 /* ****************ADDITIONS*********************** */
 
@@ -46,7 +46,7 @@ EAFIELD seperatorfield[5];
 EAFIELD actualfield[5];
 
 
-#if(COPROCESSOR==TRUE || DEVICE==68040)
+#if (COPROCESSOR==TRUE || DEVICE==68040)
 
 COPROCCONTROLREG COPROCCRreg[]=
 {
@@ -756,7 +756,7 @@ COPROCSTRUCTURE syntax2[]=
 };
 #endif /* end for COPROCSTRUCTURE */
 
-#if((COPROCESSOR==TRUE) || (EMULATOR==TRUE))
+#if ((COPROCESSOR==TRUE) || (EMULATOR==TRUE))
 /* FTST */ 
 /*36*/	{"ftst.",		16,46,21},
 /* FMOVE.P FPm,<ea>{Dn} or FPm,<ea>{#k} */ 
@@ -809,7 +809,7 @@ char p_c[] = "PC   ";
 char s_r[] = "SR   ";
 char usp[] = "USP  ";
 char msp[] = "MSP  ";
-#if(DEVICE<68020)
+#if (DEVICE<68020)
 char ssp[] = "SSP  ";
 #else
 char isp[] = "ISP  ";
@@ -819,7 +819,7 @@ char dfc[] = "DFC  ";
 char vbr[] = "VBR  ";
 char cac[] = "CACR ";
 char caa[] = "CAAR ";
-#if(DEVICE==68030)
+#if (DEVICE==68030)
 char crp[] = "CRP  ";
 char srp[] = "SRP  ";
 char tc[]  = "TC   ";
@@ -827,7 +827,7 @@ char tt_0[] = "TT0  ";
 char tt_1[] = "TT1  ";
 char mmusr[] = "PSR  ";
 #endif
-#if(DEVICE==68040)
+#if (DEVICE==68040)
 char urp[] = "URP  ";
 char srp[] = "SRP  ";
 char tc[]  = "TC   ";

@@ -1,6 +1,6 @@
 #include "targetsys.h"
 
-#if(COPROCESSOR==TRUE || DEVICE==68040)
+#if (COPROCESSOR==TRUE || DEVICE==68040)
 
 typedef struct
 {
@@ -115,7 +115,7 @@ typedef struct
 	int index_indirect_selection;
 	int BDdisplacement;	
 	int ODdisplacement;	/* MC68020 full format extension word(s)*/
-#if(DEVICE==68040 || COPROCESSOR==TRUE)
+#if (DEVICE==68040 || COPROCESSOR==TRUE)
 	short  	s_fp;
 	short  s1_fp;/*  8 bits */
 	int  	e_fp;/* 32 bits */

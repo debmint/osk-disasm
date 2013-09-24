@@ -167,7 +167,7 @@ memory locations, used for memory map purposes.
 
 #if (DEVICE>=68020)
 
-#if(DEVICE==68040)
+#if (DEVICE==68040)
 #define COPROCESSOR TRUE      
 #else
 /* ********************** */
@@ -222,7 +222,7 @@ memory locations, used for memory map purposes.
 #define USERVBRLOC 0x0
 
 /* *********************************************************************** */
-#if(DEVICE<68020)
+#if (DEVICE<68020)
 #define USERSSPLOC USERVBRLOC+0x2000	/* Note: Only one of these is
 						 used based on the device
 						 being implemented */
@@ -247,11 +247,12 @@ memory locations, used for memory map purposes.
 number of bytes word different sizes.
 */
 
-#define WORD 2		/* word 2 for 68k, 4 for 88k */
-#define BYTE 1		/* byte, always 1 */
-#define LONG 4		/* long, 4 for 68k, not used for 88k */
-#define HALF 2		/* half, 2 for 88k, not used for 68k */
-#define DFSIZE 2	/* default size to use if none specified */
+/* We don't use these, and 'WORD' conflicts with WORD in OSK stdio.h */
+/*#define WORD 2*/		/* word 2 for 68k, 4 for 88k */
+/*#define BYTE 1*/		/* byte, always 1 */
+/*#define LONG 4*/		/* long, 4 for 68k, not used for 88k */
+/*#define HALF 2*/		/* half, 2 for 88k, not used for 68k */
+/*#define DFSIZE 2*/	/* default size to use if none specified */
 
 
 #ifndef COPROCESSOR
@@ -260,7 +261,9 @@ number of bytes word different sizes.
 
 
 #if (DEVICE==68000)
+#ifndef COPROCESSOR
 #define COPROCESSOR FALSE
+#endif
 #endif
 #if (DEVICE==68008)
 #define MAXINST 124
@@ -282,12 +285,13 @@ number of bytes word different sizes.
 #endif
 
 #ifndef MAXINST
-#define DEVICE  68000
+/*#define DEVICE  68000*/
 #define MAXINST 124
 #endif
 
-#ifndef CRENTRIES	/* variable used to determine the extent of the
+	/* variable used to determine the extent of the
 			   CONTROLREG table for movec instruction  */
+#ifndef CRENTRIES
 #define CRENTRIES 7
 #endif
 
@@ -314,11 +318,11 @@ number of bytes word different sizes.
 
 #define MAXMONADIC 34
 
-#if(DEVICE==68040 || COPROCESSOR==TRUE)
+#if (DEVICE==68040 || COPROCESSOR==TRUE)
 #define MAXREGS 75 	/* most registers used by any one device */
 #endif
 
-#if(DEVICE==68030)
+#if (DEVICE==68030)
 #ifndef MAXREGS
 #define MAXREGS 41 	/* most registers used by any one device */
 #endif

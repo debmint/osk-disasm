@@ -130,7 +130,7 @@ static LBLDEF *
 #ifdef __STDC__
 create_lbldef (char lblclass, int val, char *name)
 #else
-create_lbldef (val, name)
+create_lbldef (lblclass, val, name)
     char lblclass;
     int val;
     char *name;
@@ -165,9 +165,10 @@ LBLDEF *
 #ifdef __STDC__
 addlbl (char lblclass, int val, char *newname)
 #else
-addlbl (lblclass, val)
+addlbl (lblclass, val, newname)
     char lblclass;
     int val;
+    char *newname;
 #endif
 {
     LBLDEF *oldlbl = lblpos (lblclass, val);
@@ -292,7 +293,12 @@ process_label (ci, lblclass, addr)
 }
 
 void
+#ifdef __STDC__
 parsetree(char c)
+#else
+parsetree(c)
+    char c;
+#endif
 {
     LBLDEF *l;
     int x;
