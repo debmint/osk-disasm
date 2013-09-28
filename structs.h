@@ -43,7 +43,7 @@ typedef struct {
 
 struct ofsetree {
     char oclas_maj;        /* Class to use in offset addressing          */
-    char of_maj;           /* The main offset value                      */
+    int  of_maj;           /* The main offset value                      */
     char incl_pc;          /* Flag to include PC offset mode             */
     int add_to;            /* Flag: if set, add to offset, else subtract */
     /*int of_sec;          Secondary offset (0 if none) */
@@ -54,11 +54,14 @@ struct ofsetree {
 
 struct databndaries {
     int  b_lo,         /* Lower (beginning) boundary address       */
-         b_hi;         /* Upper (ending) boundary address          */
+         b_hi,         /* Upper (ending) boundary address          */
+         b_siz;        /* Size of one unit in the set              */
     char b_typ;        /* Boundary type for DA's and Lbl Class for AModes */
+    char b_class;      /* Class for class 'L' and 'S' boundaries          */
     struct ofsetree *dofst;
-    struct databndaries *BNext,
-                        *BPrev;
+    struct databndaries *DLess,
+                        *DMore,
+                        *DPrev;
 };
 
 

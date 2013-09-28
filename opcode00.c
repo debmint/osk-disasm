@@ -580,9 +580,9 @@ move_ccr_sr(ci, j, op)
     case 0:
         statReg = "sr";
         break;
-    case 2:
+    case 0x200:
         dir = EA2REG;
-    case 1:
+    case 0x100:
         statReg = "ccr";
     }
 
@@ -723,9 +723,9 @@ one_ea(ci, j, op)
     int size = (ci->cmd_wrd >> 6) & 3;
     char ea[50];
 
-    if (j == 38)
+    if (j == 38)       /* swap */
     {
-        sprintf(ci->opcode, "%d%d", ci->cmd_wrd & 7);
+        sprintf(ci->opcode, "d%d", ci->cmd_wrd & 7);
     }
     else
     {

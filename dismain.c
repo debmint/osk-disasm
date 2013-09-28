@@ -6,19 +6,19 @@
  * $Id::                                                               $
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#define _MAIN_  /* We will define all variables in one header file, then
+                   define them extern from all other files */
+
+#include <ctype.h>
 #include "disglobs.h"
 #include "textdef.h"
 #include "modtypes.h"
 #include <string.h>
 #include "proto.h"
 
-#ifdef _OSK
-#   define BINREAD "r"
-#else
-#   define BINREAD "rb"
-#endif
-
 static int HdrLen;
+
+extern struct databndaries *dbounds;
 
 static int get_asmcmd(
 #ifdef __STDC__
@@ -26,11 +26,33 @@ static int get_asmcmd(
 #endif
 );
 
-extern void errexit(
+/*
+ * list_print() - Handle printouts of lines of code.  Prints to the listing
+ *        and prints to asm code file if specified
+ */
+
+static void
 #ifdef __STDC__
-char *
+list_print (CMD_ITMS *ci, short ent, char *lblnam)
+#else
+list_print (ci)
+    CMD_ITMS *ci;
+    short ent;
+    char *lblnam;
 #endif
-);
+{
+    register char *ListFmt = "%05x %04x %10.10s %s %s\n";
+    char *lb;
+
+    lb = (lblnam ? lblnam : lblstr('L', CmdEnt));
+
+    /* When ready, need to provide for option whether to print or not */
+    printf(ListFmt, ent & 0xffff, ci->cmd_wrd, lb,
+                    ci->mnem, ci->opcode);
+    /* Provide for printing to asm src listing */
+
+}
+
 
 /* ****************************************************** *
  * Get the module header.  We will do this only in Pass 1 *
@@ -67,6 +89,44 @@ get_modhead()
     {
     case 0x4afc:
         ModType = MT_PROGRAM;
+        /* Now get any further Mod-type specific headers */
+
+        switch (M_Type)
+        {
+        case MT_PROGRAM:
+        case MT_SYSTEM:
+        case MT_TRAPLIB:
+        case MT_FILEMAN:
+        case MT_DEVDRVR:
+            M_Exec = fread_l(ModFP);
+            M_Except = fread_l(ModFP);
+
+            HdrEnd = ftell(ModFP); /* We'll keep changing it if necessary */
+
+            if ((M_Type != MT_SYSTEM) && (M_Type != MT_FILEMAN))
+            {
+
+                M_Stack = fread_l(ModFP);
+                M_IData = fread_l(ModFP);
+                M_IRefs = fread_l( ModFP);
+
+                HdrEnd = ftell(ModFP);  /* Update it again */
+
+                if (M_Type == MT_TRAPLIB)
+                {
+                    M_Init = fread_l(ModFP);
+                    M_Term = fread_l(ModFP);
+                    HdrEnd = ftell(ModFP);  /* The final change.. */
+                }
+            }
+        }
+
+        fseek (ModFP, 0, SEEK_END);
+        if (ftell(ModFP) < M_Size)
+        {
+            errexit ("\n*** ERROR!  File size < Module Size... Aborting...! ***\n");
+        }
+
         break;
     case 0xdead:
         errexit("Disassembly of ROF files is not yet implemented.");
@@ -75,39 +135,83 @@ get_modhead()
         errexit("Unknown module type");
     }
 
-    /* Now get any further Mod-type specific headers */
+    return 0;
+}
 
-    switch (M_Type)
+/*
+ * modnam_find() - search a modna struct for the desired value
+ * Returns: On Success: Pointer to the desired value
+ *          On Failure: NULL
+ */
+
+struct modnam *
+#ifdef __STDC__
+modnam_find (struct modnam *pt, int desired)
+#else
+modnam_find (pt, desired)
+    struct modname *pt;
+    int desired;
+#endif
+{
+    while ((pt->val) && (pt->val != desired))
     {
-    case MT_PROGRAM:
-    case MT_SYSTEM:
-    case MT_TRAPLIB:
-    case MT_FILEMAN:
-    case MT_DEVDRVR:
-        M_Exec = fread_l(ModFP);
-        M_Except = fread_l(ModFP);
-
-        HdrEnd = ftell(ModFP); /* We'll keep changing it if necessary */
-
-        if ((M_Type != MT_SYSTEM) && (M_Type != MT_FILEMAN))
-        {
-
-            M_Stack = fread_l(ModFP);
-            M_IData = fread_l(ModFP);
-            M_IRefs = fread_l( ModFP);
-
-            HdrEnd = ftell(ModFP);  /* Update it again */
-
-            if (M_Type == MT_TRAPLIB)
-            {
-                M_Init = fread_l(ModFP);
-                M_Term = fread_l(ModFP);
-                HdrEnd = ftell(ModFP);  /* The final change.. */
-            }
-        }
+        ++pt;
     }
 
-    return 0;
+    return (pt->val ? pt : NULL);
+}
+
+static void
+psect_setup()
+{
+    register struct modnam *pt;
+    char *ProgType = NULL;
+    char *ProgLang = NULL;
+    char *ProgAtts = NULL;
+    /*char *StackAddL;*/
+    char **prgsets[4] = {&ProgType, &ProgLang, &ProgAtts, NULL};
+    unsigned char hdrvals[3];
+    int c;
+    CMD_ITMS CmdIt;
+    char *psecfld[2] = {",((%s << 8)", " | %s)"};
+
+    ProgType = modnam_find (ModTyps, (unsigned char)M_Type)->name;
+    hdrvals[0] = M_Type;
+    ProgLang = modnam_find (ModLangs, (unsigned char)M_Lang)->name;
+    hdrvals[1] = M_Lang;
+    ProgAtts = modnam_find (ModAtts, (unsigned char)M_Attr)->name;
+    hdrvals[2] = M_Attr;
+    strcpy (CmdIt.mnem, "set");
+#ifdef _WIN32
+    strcpy (EaString, strrchr(ModFile, '\\') + 1);
+#else
+    strcpy (EaString, strrchr(ModFile, '/') + 1);
+#endif
+    strcat (EaString, "_a");
+
+    for (c = 0; prgsets[c]; c++)
+    {
+        if (*prgsets[c])
+        {
+            CmdIt.cmd_wrd = hdrvals[c];
+            sprintf (CmdIt.opcode, "%d", hdrvals[c]);
+            //strcpy(CmdIt.mnem, *prgsets[c]);
+            list_print (&CmdIt, hdrvals[c], *prgsets[c]);
+        }
+        else {
+            sprintf (CmdIt.mnem, "%d", hdrvals[c]);
+        }
+
+        sprintf (CmdIt.opcode, psecfld[c % 2], *prgsets[c]);
+        strcat (EaString, CmdIt.opcode);
+    }
+
+    sprintf (&EaString[strlen(EaString)], "|%d)", M_Edit);
+    strcat (EaString, ",0");    /* For the time being, don't add any stack */
+    sprintf (&EaString[strlen(EaString)], ",%s", findlbl ('L', M_Exec)->sname);
+    strcpy (CmdIt.opcode, EaString);
+    strcpy (CmdIt.mnem, "psect");
+    list_print (&CmdIt, M_Exec, NULL);
 }
 
 /* ******************************************************************* *
@@ -132,39 +236,65 @@ dopass(argc,argv,mypass)
     int lval = 0;
     int wval = 0;
 
-    if (!(ModFP = fopen(ModFile, BINREAD)))
-    {
-        errexit("Cannot open Module file for read");
-    }
-
     if (Pass == 1)
     {
+        /* Set Default Addressing Modes according to Module Type */
+        switch (ModType)
+        {
+        case MT_PROGRAM:
+            strcpy(DfltLbls, "LLLLLLDL&LL");
+            break;
+        case MT_DEVDRVR:
+            break;
+        }
+
+        if (!(ModFP = fopen(ModFile, BINREAD)))
+        {
+            errexit("Cannot open Module file for read");
+        }
+
+        do_cmd_file();
         PCPos = 0;
         get_modhead();
         PCPos = ftell(ModFP);
+        process_label(&Instruction, 'L', M_Exec);
+    }
+    else   /* Do Pass 2 Setup */
+    {
+        psect_setup();
     }
 
     /* NOTE: This is just a temporary kludge The begin _SHOULD_ be
              the first byte past the end of the header, but until
              we get bounds working, we'll do  this. */
-    if (fseek(ModFP, M_Exec, SEEK_SET) != 0)
+    if (fseek(ModFP, HdrEnd, SEEK_SET) != 0)
     {
         errexit("FIle Seek Error");
     }
 
-    PCPos = M_Exec;
+    PCPos = HdrEnd;
 
-    while (PCPos < M_Size)
+    while (PCPos < M_Size - 3)   /* Temporarily ignore the CRC */
     {
+        struct databndaries *bp;
+
         CmdEnt = PCPos;
-        
+
+        /* NOTE: The 6809 version did an "if" and it apparently worked,
+         *     but we had to do this to get it to work with consecutive bounds.
+         */
+        while (bp = ClasHere (dbounds, PCPos))
+        {
+            NsrtBnds (bp);
+            CmdEnt = PCPos;
+        }
+       
         if (get_asmcmd())
         {
             if (Pass == 2)
             {
-                printf("%05x %04.4x %10.10s %s %s\n",
-                        CmdEnt, Instruction.cmd_wrd, lblstr('L', CmdEnt),
-                        Instruction.mnem, Instruction.opcode);
+                list_print (&Instruction, CmdEnt, NULL);
+
                 if (Instruction.wcount)
                 {
                     int count;
@@ -183,9 +313,11 @@ dopass(argc,argv,mypass)
         {
             if (Pass == 2)
             {
-                printf ("%05x %04.4x      %s %08x\n", CmdEnt, (short)Instruction.cmd_wrd&0xffff, "ds.w", Instruction.cmd_wrd);
-                /*PCPos += 2;
-                //CmdEnt = PCPos;*/
+                strcpy (Instruction.mnem, "ds.w");
+                sprintf (Instruction.opcode, "$%x", Instruction.cmd_wrd & 0xffff);
+                /* To do the following, we need to set it up in Pass 1 */
+                /*process_label (&Instruction, 'L', CmdEnt);*/
+                list_print (&Instruction, CmdEnt, NULL);
             }
         }
     }
@@ -201,13 +333,19 @@ initcmditems ()
     return &Instruction;
 }
 
+/*
+ * noimplemented() - A dummy function which simply returns NULL for instructions
+ *       that do not yet have handler functions
+ */
+
 int
 #ifdef __STDC__
-notimplemented(CMD_ITMS *ci, int tblno)
+notimplemented(CMD_ITMS *ci, int tblno, OPSTRUCTURE *op)
 #else
-notimplemented (ci, tblno)
+notimplemented (ci, tblno, op)
     CMD_ITMS *ci;
     int tblno;
+    OPSTRUCTURE *op;
 #endif
 {
     return 0;
@@ -294,6 +432,27 @@ fread_b(fp)
         filereadexit();
     }
 
+    return b;
+}
+
+char
+#ifdef __STDC__
+getnext_b(CMD_ITMS *ci)
+#else
+getnext_b(ci)
+    CMD_ITMS *ci;
+#endif
+{
+    char b;
+
+    if (fread(&b, 1, 1, ModFP) < 1)
+    {
+        filereadexit();
+    }
+
+    ++PCPos;
+    /* We won't store this into the buffers
+     * as it is not a command */
     return b;
 }
 
@@ -420,3 +579,395 @@ int fread_l(FILE *fp)
 }
 #endif
 
+
+/* ******************************************************************** *
+ * MovBytes() - Reads data for Data Boundary range from input file and  *
+ *          places it onto the print buffer (and does any applicable    *
+ *          printing if in pass 2).                                     *
+ * ******************************************************************** */
+
+static void
+MovBytes (struct databndaries *db)
+{
+    CMD_ITMS Ci;
+    char tmps[20];
+    int valu;
+    char *xFmt[3] = {"$%02x", "$%04x", "$ %08x"};
+    int cCount = 0,
+        maxLst;
+
+    CmdEnt = PCPos;
+
+    /* This may be temporary, and we may set PBytSiz
+     * to the appropriate value */
+    strcpy (Ci.mnem, "dc");
+    Ci.opcode[0] = '\0';
+    Ci.cmd_wrd = 0;
+    PBytSiz = db->b_siz;
+
+    switch (PBytSiz)
+    {
+    case 1:
+        strcat (Ci.mnem, ".b");
+        maxLst = 8;
+        break;
+    case 2:
+        strcat (Ci.mnem, ".w");
+        maxLst = 4;
+        break;
+    case 4:
+        strcat (Ci.mnem, ".l");
+        maxLst = 2;
+        break;
+    }
+
+    while (PCPos <= db->b_hi)
+    {
+        /* Init dest buffer to null string for LblCalc concatenation */
+
+        tmps[0] = '\0';
+
+        switch (PBytSiz)
+        {
+        case 1:
+            valu = fread_b(ModFP);
+            break;
+        case 2:
+            valu = fread_w (ModFP);
+            break;
+        case 4:
+            valu = fread_l (ModFP);
+            break;
+        }
+
+        PCPos += db->b_siz;
+        ++cCount;
+
+        //process_label (&Ci, AMode, valu);
+
+
+        LblCalc (tmps, valu, AMode);
+
+        if (Pass == 2)
+        {
+            //char tmp[20];
+
+            //sprintf (tmp, xFmt[PBytSiz >> 1], valu);
+
+            if (cCount < maxLst)
+            {
+                Ci.cmd_wrd =  ((Ci.cmd_wrd << (PBytSiz * 8)) | valu);
+            }
+
+            if (strlen(Ci.opcode))
+            {
+                strcat (Ci.opcode, ",");
+            }
+
+            strcat (Ci.opcode, tmps);
+
+            /* If length of operand string is max, print a line */
+
+            if ( (strlen (Ci.opcode) > 22) || findlbl ('L', PCPos))
+            {
+                list_print(&Ci, CmdEnt, NULL);
+                Ci.opcode[0] = '\0';
+                Ci.cmd_wrd = 0;
+                CmdEnt = PCPos/* _ PBytSiz*/;
+                cCount = 0;
+            }
+        }
+
+        /*PCPos += PBytSiz;*/
+    }
+
+    /* Loop finished.. print any unprinted data */
+
+    if ((Pass==2) && strlen (Ci.opcode))
+    {
+        list_print (&Ci, (short)CmdEnt, NULL);
+        /*PrintLine (pseudcmd, pbuf, 'L', CmdEnt, PCPos);*/
+    }
+}
+
+/* ********************************************************* *
+ * AddDelims() - Add delimiters for fcc/fcs operand -        *
+ *              checks string for nonexistand delimiter      *
+ *              and copies string with delims to destination *
+ * ********************************************************* */
+
+static void
+AddDelims (char *dest, char *src)
+{
+    char delim = '"';
+    char bestdelims[] = "\"'/#\\|$!";
+    char *dref = bestdelims;
+
+    /* First, try to use some "preferred" delimiters */
+
+    while (strchr (src, *dref))
+    {
+        ++dref;
+
+        if (*dref == '\0')
+        {
+            break;
+        }
+    }
+
+    delim = *dref;
+
+    if (delim == '\0')
+    {
+        /* OK.. we didn't find a delim in the above..  Now let's
+         * start off basically where we left off and parse through
+         * the whole ASCII set to find one
+         */
+
+        delim = '\x25';
+
+        while ( ! strchr(src, delim))
+        {
+            ++delim;
+
+            /* This should never happen, but just in case */
+
+            if (delim == '\x7f')
+            {
+                fprintf (stderr,
+                         "Error, string contains ALL ASCII Characters???\n");
+                exit(1);
+            }
+        }
+    }
+
+    sprintf (dest, "%c%s%c", delim, src, delim);
+}
+
+/* ************************************************** *
+ * MovAsc() - Move nb byes int fcc (or fcs) statement *
+ * ************************************************** */
+
+void
+MovASC (int nb, char aclass)
+{
+    char oper_tmp[30];
+    CMD_ITMS Ci;
+    int cCount = 0;
+
+    //memset (pbuf, 0, sizeof (pbuf));
+    strcpy (Ci.mnem, "dc.b");         /* Default mnemonic to "fcc" */
+    CmdEnt = PCPos;
+
+    *oper_tmp = '\0';
+    Ci.cmd_wrd = 0;
+    //Ci.opcode[0] = '\0';
+
+    while (nb--)
+    {
+        register int x;
+        char c[6];
+
+        x = fgetc (ModFP);
+        ++cCount;
+
+        if (isprint (x))
+        {
+            if (Pass == 2)
+            {
+                //if (strlen (pbuf->instr) < 12)
+                //{
+                //    sprintf (c, "%02x ", x);
+                //    strcat (pbuf->instr, c);
+                //}
+
+                sprintf (c, "%c", x & 0x7f);
+                strcat (oper_tmp, c);
+
+                if (cCount < 16)
+                {
+                    Ci.cmd_wrd = (Ci.cmd_wrd << 8) | (x & 0xff);
+                }
+
+                //if ((x & 0x80))
+                //{
+                //    strcpy (pbuf->mnem, "fcs");
+                //    AddDelims (pbuf->operand, oper_tmp);
+                //    PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
+                //    *oper_tmp = '\0';
+                //    CmdEnt = PCPos + 1;
+                //    strcpy (pbuf->mnem, "fcc");
+                //}
+
+                if ((strlen (oper_tmp) > 24) ||
+                    (strlen (oper_tmp) && findlbl (aclass, x)))
+                    //(strlen (oper_tmp) && findlbl (ListRoot (aclass), PCPos + 1)))
+                {
+                    AddDelims (Ci.opcode, oper_tmp);
+                    list_print (&Ci, CmdEnt, NULL);
+                    //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
+                    oper_tmp[0] = '\0';
+                    CmdEnt = PCPos + 1;
+                    Ci.cmd_wrd = 0;
+                    //strcpy (pbuf->mnem, "fcc");
+                }
+            }   /* end if (Pass2) */
+        }
+        else            /* then it's a control character */
+        {
+            if ((Pass == 2) && (strlen (oper_tmp)))
+            {
+                AddDelims (Ci.opcode, oper_tmp);
+                list_print (&Ci, CmdEnt, NULL);
+                Ci.opcode[0] = '\0';
+                //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
+                oper_tmp[0] = '\0';
+                CmdEnt = PCPos;
+            }
+
+            if (Pass == 1)
+            {
+                if ((x & 0x7f) < 33)
+                {
+                    addlbl (aclass, x & 0xff, "");
+                }
+            }
+            else
+            {
+                /* a dummy ptr to pass to Printlbl() to satify prototypes */
+                struct nlist *nlp;
+
+                /* do the following to keep gcc quiet about uninitialized
+                 * variable.. If we're wrong, we'll get a segfault letting
+                 * us know of our mistake.. */
+
+                nlp = NULL;
+
+                //strcpy (pbuf->mnem, "fcb");
+                sprintf (Ci.opcode, "%d", x);
+                list_print (&Ci, CmdEnt, NULL);
+                Ci.opcode[0] = '\0';
+                //PrintLbl (Ci.opcode, '^', x, nlp);
+                //sprintf (pbuf->instr, "%02x", x & 0xff);
+                //list_print (&Ci, CmdEnt, NULL);
+                //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
+                //strcpy (pbuf->mnem, "fcc");
+            }
+
+            //CmdEnt = PCPos + 2;
+        }
+
+        ++PCPos;
+    }       /* end while (nb--) - all chars moved */
+
+    /* Finally clean up any remaining data. */
+    if ((Pass == 2) && (strlen (Ci.opcode)) )       /* Clear out any pending string */
+    {
+        AddDelims (Ci.opcode, oper_tmp);
+        list_print (&Ci, CmdEnt, NULL);
+        //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
+        *oper_tmp = '\0';
+    }
+
+    CmdEnt = PCPos;
+}
+
+/* ********************************* *
+ * NsertBnds():	Insert boundary area *
+ * ********************************* */
+
+void
+#ifdef __STDC__
+NsrtBnds (struct databndaries *bp)
+#else
+NsrtBnds (bp)
+    struct databndaries *bp;
+#endif
+{
+    //memset (pbuf, 0, sizeof (struct printbuf));
+    AMode = 0;                  /* To prevent LblCalc from defining class */
+    NowClass = bp->b_class;
+    PBytSiz = 1;                /* Default to one byte length */
+
+    switch (bp->b_typ)
+    {
+        case 1:                    /* Ascii */
+            /* Bugfix?  Pc was bp->b_lo...  that setup allowed going past
+             * the end if the lower bound was not right. */
+
+            MovASC ((bp->b_hi) - PCPos + 1, 'L');
+            break;                  /* bump PC  */
+        case 6:                     /* Word */
+            PBytSiz = 2;            /* Takes care of both Word & Long */
+            MovBytes(bp);
+            break;
+        case 4:                     /* Long */
+            PBytSiz = 4;            /* Takes care of both Word & Long */
+            MovBytes(bp);
+            break;
+        case 2:                     /* Byte */
+        case 5:                     /* Short */
+            MovBytes (bp);
+            break;
+        case 3:                    /* "C"ode .. not implememted yet */
+            break;
+        default:
+            break;
+    }
+
+    NowClass = 0;
+}
+
+#ifdef DoIsCmd
+/* ******************************************************************** *
+ * IsCmd() - Checks to see if code pointed to by p is valid code.       *
+ *      On entry, we are poised at the first byte of prospective code.  *
+ * Returns: pointer to valid lkuptable entry or 0 on fail               *
+ * ******************************************************************** */
+
+static struct lkuptbl *
+IsCmd (int *fbyte, int *csiz)
+{
+    struct lkuptbl *T;          /* pointer to appropriate tbl   */
+    register int sz;            /* # entries in this table      */
+    int c = fgetc (progpath);
+
+    *csiz = 2;
+
+    switch (*fbyte = c)
+    {
+        case '\x10':
+            T = Pre10;
+            c = fgetc (progpath);
+            *fbyte =(*fbyte <<8) + c;
+            sz = sizeof (Pre10) / sizeof (Pre10[0]);
+            break;
+        case '\x11':
+            T = Pre11;
+            c = fgetc (progpath);
+            *fbyte =(*fbyte <<8) + c;
+            sz = sizeof (Pre11) / sizeof (Pre11[0]);
+            break;
+        default:
+            *csiz = 1;
+            T = Byte1;
+            sz = sizeof (Byte1) / sizeof (struct lkuptbl);
+            break;
+    }
+
+    while ((T->cod != c))
+    {
+        if (--sz == 0)
+        {
+            return 0;
+        }
+
+        ++T;
+    }
+
+    AMode = T->amode;
+
+    return ((T->cod == c) && (T->t_cpu <= CpuTyp)) ? T : 0;
+}
+
+#endif           /* ifdef IsCmd */
