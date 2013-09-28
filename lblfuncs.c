@@ -105,7 +105,7 @@ movchr (char *dst, unsigned char ch)
     else
     {
         if (pp = findlbl ('^', ch))
-        //if ((pp = FindLbl (ListRoot ('^'), ch & 0x7f)))
+        /*if ((pp = FindLbl (ListRoot ('^'), ch & 0x7f)))*/
         {
             strcat (dst, pp->sname);
         }
@@ -621,7 +621,7 @@ LblCalc (char *dst, int adr, int amod)
         char tmpname[20];
 
         if ((mylabel = findlbl (mainclass, raw)))
-        //if ((mylabel = FindLbl (LblList[strpos (lblorder, mainclass)], raw)))
+        /*if ((mylabel = FindLbl (LblList[strpos (lblorder, mainclass)], raw)))*/
         {
             PrintLbl (tmpname, mainclass, raw, mylabel);
             strcat (dst, tmpname);
@@ -674,8 +674,8 @@ LblCalc (char *dst, int adr, int amod)
                 }
             }
             if (mylabel = findlbl (c,  kls->dofst->of_maj))
-            //if ((mylabel = FindLbl (LblList[strpos (lblorder, c)],
-            //                        kls->dofst->of_maj)))
+            /*if ((mylabel = FindLbl (LblList[strpos (lblorder, c)],
+                                    kls->dofst->of_maj)))*/
             {
                 PrintLbl (tmpname, c, kls->dofst->of_maj, mylabel);
                 strcat (dst, tmpname);
@@ -695,7 +695,7 @@ LblCalc (char *dst, int adr, int amod)
                     fprintf (stderr, "Lookup error on Pass 2 (offset)\n");
                     fprintf (stderr, "Cannot find %c%x\n", t,
                              kls->dofst->of_maj);
-                    //fprintf (stderr, "Cmd line thus far: %s\n", tmpname);
+                    /*fprintf (stderr, "Cmd line thus far: %s\n", tmpname);*/
                     exit (1);
                 }
             }

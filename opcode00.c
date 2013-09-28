@@ -286,7 +286,7 @@ bitModeRegLegal(mode, reg)
 //
 //
 //    return 0;
-//}
+//}*/
 
 /*
  * Immediate bit operations involving the status registers
@@ -458,14 +458,14 @@ bit_dynamic(ci, j, op)
         return 0;
 
 /*    switch (j)
-//    {
-//        case 4:
-//            if (mode == 4)
-//                return 0;
-//        default:
-//            if (mode > 1)
-//                return 0;
-//    }*/
+    {
+        case 4:
+            if (mode == 4)
+                return 0;
+        default:
+            if (mode > 1)
+                return 0;
+    }*/
 
     if (get_eff_addr (ci, EaString, mode, reg, SIZ_LONG))
     {
