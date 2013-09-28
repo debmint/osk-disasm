@@ -46,11 +46,11 @@ struct modnam ModTyps[] = {
 #define ML_ICODE	2
 
 struct modnam ModLangs[] = {
-   {"Objct", 1},
-    {"ICode", 2},
-    {"PCode", 3},
-    {"CCode", 4},
-    {"CblCode", 5},
+    {"Objct",    1},
+    {"ICode",    2},
+    {"PCode",    3},
+    {"CCode",    4},
+    {"CblCode",  5},
     {"FrtnCode", 6},
     {"", 0}
 };

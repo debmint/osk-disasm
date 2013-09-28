@@ -24,10 +24,22 @@ MODE_STR ModeStrings[] = {
     {"%s(A%d)", 0},
     {"%s(A%d,%c%d)", 0}
 };
+
+/* The above strings for when the register is A6 (sp) */
+MODE_STR SPStrings[] = {
+    {"", 99999},    /* Should never be used */
+    {"sp",   0},
+    {"(sp)", 0},
+    {"(sp)+", 0},
+    {"-(sp)", 0},
+    {"%s{sp}", 0},
+    {"%s{sp,%c%d", 0}
+};
+
 /* Need to add for 68020-up modes.  Don't know if they can be included in these two arrays or not..*/
 MODE_STR Mode07Strings[] = {
-    {"(%s).w", 0},
-    {"(%s).l", 0},
+    {"%s.w", 0},
+    {"%s.l", 0},
     {"%s(pc)",0},
     {"%s(pc,%c%d)", 0},
     {"#%s", 0}
@@ -65,13 +77,25 @@ int reg;
 
     switch (mode)
     {
+        MODE_STR *a_pt;
     default: return 0;
     case 0:   /* "Dn" */
+        sprintf(ea, ModeStrings[mode].str, reg);
+        return 1;
     case 1:   /* "An" */
     case 2:   /* (An) */
     case 3:   /* (An)+ */
     case 4:   /* -(An) */
-        sprintf(ea, ModeStrings[mode].str,reg);
+        if (reg == 6)
+        {
+            a_pt = &SPStrings[mode];
+        }
+        else
+        {
+            a_pt = &ModeStrings[mode];
+        }
+
+        sprintf(ea, a_pt->str);
         return 1;
         break;
     case 5:             /* d{16}An */
@@ -89,19 +113,43 @@ int reg;
 
         /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
         sprintf(dispstr, "%d", displac_w);
-        sprintf (ea, ModeStrings[mode].str,dispstr,reg);
+
+        if (reg == 6)
+        {
+            sprintf(ea, SPStrings[mode].str, dispstr);
+        }
+        else
+        {
+            sprintf (ea, ModeStrings[mode].str,dispstr,reg);
+        }
         return 1;
         break;
     case 6:             /* d{8}(An)Xn or 68020-up */
-        /*ext1 = getnext_w(ci);*/
         if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
         {
             /* the displacement should be a string for it may sometimes
              * be a label */
             char a_disp[50];
-            sprintf (a_disp, "%d", ew_b.displ);
-            sprintf (ea, ModeStrings[mode].str, a_disp, reg,
-                    ew_b.d_a, ew_b.regno);
+
+            if (ew_b.displ)
+            {
+                sprintf (a_disp, "%d", ew_b.displ);
+            }
+            else
+            {
+                a_disp[0] = '\0';
+            }
+
+            if (reg == 6)
+            {
+                sprintf (ea, SPStrings[mode].str, a_disp,
+                        ew_b.d_a, ew_b.regno);
+            }
+            else
+            {
+                sprintf (ea, ModeStrings[mode].str, a_disp, reg,
+                        ew_b.d_a, ew_b.regno);
+            }
             return 1;
         }
         else
@@ -117,18 +165,17 @@ int reg;
         switch (reg) {
         case 0:                 /* (xxx).W */
             ext1 = getnext_w(ci);
-            /*++(ci->wcount);*/
             displac_w = ext1 & 0xffff;
             /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
             sprintf (dispstr, "%d", displac_w);
-            sprintf (ea, ModeStrings[reg].str, dispstr);
+            sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 1:                /* (xxx).L */
             ext1 = getnext_w(ci);
             /*++(ci->wcount);*/
             ext2 = getnext_w(ci);
             /*++(ci->wcount);*/
-            sprintf (dispstr, "%dL", (ext1 <<16) | ext2);
+            sprintf (dispstr, "%d", (ext1 <<16) | ext2);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 4:                 /* #<data> */
@@ -138,19 +185,19 @@ int reg;
             switch (size)
             {
                 char b;
-            case 0:    /* byte */
+            case SIZ_BYTE:
                 b = ext1 & 0xff;
                 sprintf (dispstr, "%d", (int)b);
                 break;
-            case 1:    /* word */
+            case SIZ_WORD:
                 displac_w = ext1 & 0xffff;
                 sprintf (dispstr, "%d", displac_w);
                 break;
-            case 2:    /* long */
+            case SIZ_LONG:
                 ext2 = getnext_w(ci);
                 /*++(ci->wcount);*/
                 displac_l = (ext1 << 16) | ext2;
-                sprintf (dispstr, "%dL", displac_l);
+                sprintf (dispstr, "%d", displac_l);
                 break;
             }
 
@@ -168,7 +215,15 @@ int reg;
             if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
             {
                 char a_disp[50];
-                sprintf (a_disp, "%d", ew_b.displ);
+
+                if (ew_b.displ)
+                {
+                    sprintf (a_disp, "%d", ew_b.displ);
+                }
+                else
+                {
+                    a_disp[0] = '\0';
+                }
                 sprintf (ea, Mode07Strings[reg].str, a_disp,
                         ew_b.d_a, ew_b.regno);
                 return 1;
@@ -216,6 +271,86 @@ get_ext_wrd_brief (ci, extW, mode, reg)
     extW->scale = (ew >> 9) * 3;
     extW->displ = ew & 0xff;
     return 1;
+}
+
+/*
+ * pass_eq() - Skip past the '=' of an assignment, and also skip
+ *      blanks so that on return, the pointer will be positioned
+ *      at the begin of the next string.
+ */
+
+char *
+#ifdef __STDC__
+pass_eq (char *p)
+#else
+pass_eq (p)
+char *p;
+#endif
+{
+    while ((*p) && (strchr ("= \t\r\f\n", *p)))
+    {
+        ++p;
+    }
+
+    if (*p == '\n')
+    {
+        *p = 0;
+    }
+
+    return p;
+}
+
+/*
+ * strpos() - Similar to strchr except that it returns the
+ *        base-1 offset from the begin of the string.
+ */
+
+int
+#ifdef __STDC__
+strpos (char *s, char c)
+#else
+strpos (s, c)
+char *s;
+char c;
+#endif
+{
+    register int p;
+
+    return ((p = (int)strchr(s, c)) ? (p - (int)s + 1) : 0);
+}
+
+/* **************************************************************** *
+ * skipblank() passes over any space, tab, or any newline character *
+ *             in the string                                        *
+ * Passed: p pointer to begin of string to parse                    *
+ * Returns: pointer to first character of "valid" data,             *
+ *          or null if end of data                                  *
+ * **************************************************************** */
+
+char *
+#ifdef __STDC__
+skipblank (char *p)
+#else
+skipblank (p)
+char *p;
+#endif
+{
+    /* We did just pass over spaces or tabs, but we need to
+     * also be sure we are past all return characters
+     * ( especially the extra character MS-Dos uses
+     */
+
+    while ((*p) && (strchr (" \t\r\f\n", *p)))
+    {
+        ++p;
+    }
+
+    if (*p == '\n')
+    {
+        *p = 0;
+    }
+
+    return p;
 }
 
 /* ------------------------------------------------------------------------ *
@@ -373,7 +508,7 @@ reg_ea(ci, j, op)
  */
 
 static char *
-#ifdef __STDIO__
+#ifdef __STDC__
 regwrite(char *s, char *ad, int low, int high, int slash)
 #else
 regwrite(s, ad, low, high, slash)
@@ -411,7 +546,7 @@ regwrite(s, ad, low, high, slash)
  */
 
 char *
-#ifdef __STDIO__
+#ifdef __STDC__
 regbyte(char *s, unsigned char regmask, char *ad, int doslash)
 #else
 regbyte (s, regmask, ad, doslash)
@@ -486,8 +621,8 @@ reglist (s, regmask, mode)
         regmask = revbits(regmask, 16);
     }
 
-    s = regbyte (s, regmask >> 8, "A", 0);
-    s = regbyte (s, regmask & 0xff, "D", s != t);
+    s = regbyte (s, (unsigned char)(regmask >> 8), "A", 0);
+    s = regbyte (s, (unsigned char)(regmask & 0xff), "D", s != t);
 
     if (s == t)
     {

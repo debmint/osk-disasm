@@ -17,8 +17,18 @@
 
 #ifdef _MAIN_
 #   define xt
+#   define xtst(s) s
 #else
 #   define xt extern
+#   define xtst
+#endif
+
+#ifdef _WIN32
+#   define BINREAD "rb"
+#   define BINWRITE "wb"
+#else
+#   define BINREAD "r"
+#   define BINWRITE "w"
 #endif
 
 #ifndef SEEK_SET
@@ -31,6 +41,22 @@ enum {
     SIZ_BYTE,
     SIZ_WORD,
     SIZ_LONG
+};
+
+/* Addressing Modes */
+
+enum {
+    AM_A0,
+    AM_A1,
+    AM_A2,
+    AM_A3,
+    AM_A4,
+    AM_A5,
+    AM_A6,
+    AM_A7,
+    AM_IMM,
+    AM_ABS,
+    AM_REL
 };
 
 /* The following two structures define
@@ -83,16 +109,30 @@ xt int M_Edit, M_Usage, M_Symbol, M_Parity,
     M_Exec, M_Except, M_Stack, M_IData,
     M_IRefs, M_Init, M_Term;
 /* The following are for the Device Descriptor.. (Do we need these?) */
-xt int M_Port, M_Vector, M_IRQLvl,
+/*xt int M_Port, M_Vector, M_IRQLvl,
     M_Prior, M_Mode, M_FMgr, M_PDev, M_DevCon, M_Opt,
     M_DType, M_PollSize, M_DevCnt, M_Procs, M_Paths, M_Params;
 xt int M_Sysgo, M_SysDev, M_Consol, M_Extens, M_Clock, M_Slice,
     M_IPID, M_Site, M_Instal, M_CPUTyp, M_OS9Lvl, M_OS9Rev,
     M_SysPri, M_MinPri, M_MaxAge, M_MDirSiz, M_Events, M_Compat,
-    M_Compat2, M_MemLst, M_IRQStk, M_ColdTrys, M_Id12;
+    M_Compat2, M_MemLst, M_IRQStk, M_ColdTrys, M_Id12; */
 
 xt int HdrEnd;   /* The first byte past end of header, usefule for begin of Pass 2 */
 xt int ModType;   /* The type of module */
+xt int LinNum;
+xt int PgWidth;
+xt int PgDepth;
+xt char *DefDir;
+xt int AMode;
+xt int NowClass;
+xt int PBytSiz;
+xt char *lblorder
+#ifdef _MAIN_
+= "!^$&@%ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+#endif
+;
+
+xt char DfltLbls[15];
 
 xt char DorA[]
 #ifdef _MAIN_
