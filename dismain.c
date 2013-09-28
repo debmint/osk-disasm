@@ -195,7 +195,7 @@ psect_setup()
         {
             CmdIt.cmd_wrd = hdrvals[c];
             sprintf (CmdIt.opcode, "%d", hdrvals[c]);
-            //strcpy(CmdIt.mnem, *prgsets[c]);
+            /*strcpy(CmdIt.mnem, *prgsets[c]);*/
             list_print (&CmdIt, hdrvals[c], *prgsets[c]);
         }
         else {
@@ -254,6 +254,7 @@ dopass(argc,argv,mypass)
         }
 
         do_cmd_file();
+
         PCPos = 0;
         get_modhead();
         PCPos = ftell(ModFP);
@@ -643,16 +644,16 @@ MovBytes (struct databndaries *db)
         PCPos += db->b_siz;
         ++cCount;
 
-        //process_label (&Ci, AMode, valu);
+        /*process_label (&Ci, AMode, valu);*/
 
 
         LblCalc (tmps, valu, AMode);
 
         if (Pass == 2)
         {
-            //char tmp[20];
+            /*char tmp[20];
 
-            //sprintf (tmp, xFmt[PBytSiz >> 1], valu);
+            sprintf (tmp, xFmt[PBytSiz >> 1], valu);*/
 
             if (cCount < maxLst)
             {
@@ -755,13 +756,13 @@ MovASC (int nb, char aclass)
     CMD_ITMS Ci;
     int cCount = 0;
 
-    //memset (pbuf, 0, sizeof (pbuf));
+    /*memset (pbuf, 0, sizeof (pbuf));*/
     strcpy (Ci.mnem, "dc.b");         /* Default mnemonic to "fcc" */
     CmdEnt = PCPos;
 
     *oper_tmp = '\0';
     Ci.cmd_wrd = 0;
-    //Ci.opcode[0] = '\0';
+    /*Ci.opcode[0] = '\0';*/
 
     while (nb--)
     {
@@ -775,11 +776,11 @@ MovASC (int nb, char aclass)
         {
             if (Pass == 2)
             {
-                //if (strlen (pbuf->instr) < 12)
-                //{
-                //    sprintf (c, "%02x ", x);
-                //    strcat (pbuf->instr, c);
-                //}
+                /*if (strlen (pbuf->instr) < 12)
+                {
+                    sprintf (c, "%02x ", x);
+                    strcat (pbuf->instr, c);
+                }*/
 
                 sprintf (c, "%c", x & 0x7f);
                 strcat (oper_tmp, c);
@@ -789,7 +790,7 @@ MovASC (int nb, char aclass)
                     Ci.cmd_wrd = (Ci.cmd_wrd << 8) | (x & 0xff);
                 }
 
-                //if ((x & 0x80))
+                /*if ((x & 0x80))
                 //{
                 //    strcpy (pbuf->mnem, "fcs");
                 //    AddDelims (pbuf->operand, oper_tmp);
@@ -797,19 +798,19 @@ MovASC (int nb, char aclass)
                 //    *oper_tmp = '\0';
                 //    CmdEnt = PCPos + 1;
                 //    strcpy (pbuf->mnem, "fcc");
-                //}
+                //}*/
 
                 if ((strlen (oper_tmp) > 24) ||
                     (strlen (oper_tmp) && findlbl (aclass, x)))
-                    //(strlen (oper_tmp) && findlbl (ListRoot (aclass), PCPos + 1)))
+                    /*(strlen (oper_tmp) && findlbl (ListRoot (aclass), PCPos + 1)))*/
                 {
                     AddDelims (Ci.opcode, oper_tmp);
                     list_print (&Ci, CmdEnt, NULL);
-                    //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
+                    /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
                     oper_tmp[0] = '\0';
                     CmdEnt = PCPos + 1;
                     Ci.cmd_wrd = 0;
-                    //strcpy (pbuf->mnem, "fcc");
+                    /*strcpy (pbuf->mnem, "fcc");*/
                 }
             }   /* end if (Pass2) */
         }
@@ -820,7 +821,7 @@ MovASC (int nb, char aclass)
                 AddDelims (Ci.opcode, oper_tmp);
                 list_print (&Ci, CmdEnt, NULL);
                 Ci.opcode[0] = '\0';
-                //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
+                /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
                 oper_tmp[0] = '\0';
                 CmdEnt = PCPos;
             }
@@ -843,18 +844,18 @@ MovASC (int nb, char aclass)
 
                 nlp = NULL;
 
-                //strcpy (pbuf->mnem, "fcb");
+                /*strcpy (pbuf->mnem, "fcb");*/
                 sprintf (Ci.opcode, "%d", x);
                 list_print (&Ci, CmdEnt, NULL);
                 Ci.opcode[0] = '\0';
-                //PrintLbl (Ci.opcode, '^', x, nlp);
+                /*PrintLbl (Ci.opcode, '^', x, nlp);
                 //sprintf (pbuf->instr, "%02x", x & 0xff);
                 //list_print (&Ci, CmdEnt, NULL);
                 //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
-                //strcpy (pbuf->mnem, "fcc");
+                //strcpy (pbuf->mnem, "fcc");*/
             }
 
-            //CmdEnt = PCPos + 2;
+            /*CmdEnt = PCPos + 2;*/
         }
 
         ++PCPos;
@@ -865,7 +866,7 @@ MovASC (int nb, char aclass)
     {
         AddDelims (Ci.opcode, oper_tmp);
         list_print (&Ci, CmdEnt, NULL);
-        //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
+        /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
         *oper_tmp = '\0';
     }
 
@@ -884,7 +885,7 @@ NsrtBnds (bp)
     struct databndaries *bp;
 #endif
 {
-    //memset (pbuf, 0, sizeof (struct printbuf));
+    /*memset (pbuf, 0, sizeof (struct printbuf));*/
     AMode = 0;                  /* To prevent LblCalc from defining class */
     NowClass = bp->b_class;
     PBytSiz = 1;                /* Default to one byte length */

@@ -242,6 +242,12 @@ do_cmd_file ()
    /* FILE *CmdFP;*/
     char miscbuf[240];
 
+    /* We will do our check for a specification for the CmdFile here */
+    if ( !CmdFP)
+    {
+        return;
+    }
+
     NxtBnd = 0;                 /* init Next boundary pointer */
 
     /*if ( ! (CmdFP = fopen (CmdFileName, "rb")))
@@ -999,7 +1005,7 @@ setoffset (char *p, struct ofsetree *oft)
     if (*(p = skipblank (p)) == ')')
     {
         addlbl(c, oft->of_maj, NULL);
-        //addlbl (oft->of_maj, c, NULL);
+        /*addlbl (oft->of_maj, c, NULL);*/
     }
     else {
         errexit ("Illegal character.. offset must end with \")\"");
@@ -1103,7 +1109,7 @@ setupbounds (char *lpos)
             /* Label types */
 
         case 'L':
-            //PBytSiz = 2;
+            /*PBytSiz = 2;*/
             lpos = skipblank (++lpos);
             
             switch (toupper (*(lpos++)))

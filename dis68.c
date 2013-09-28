@@ -6,7 +6,9 @@
 
 #include <ctype.h>
 #include <string.h>
-#include <io.h>
+#ifdef _WIN32
+#   include <io.h>
+#endif
 #include "disglobs.h"
 #include "userdef.h"
 #include "proto.h"
@@ -31,11 +33,11 @@ extern FILE *CmdFP;
 extern int DoingCmds;
 
 #ifdef __STDC__
-void getoptions(int,char**);
-void usage(void);
+static void getoptions(int,char**);
+static void usage(void);
 #else
-void getoptions();
-void usage();
+static void getoptions();
+static void usage();
 #endif
 
 int
@@ -131,28 +133,25 @@ build_path (p, faccs)
         return fp;
     }
 
-    /* If the string is a full path list, then we have an error */
-#ifdef _WIN32
-    if (strchr(p, '\\'))
-        return NULL;
-#endif
-
-    if (strchr (p, '/')) /* '/' is available to all systems as a path sep */
-        return NULL;
+    if (p[0] == '~')
+    {
+        if (c = getenv ("HOME"))   /* Try the HOME env variable */
+        {
+            /* We will make some assumptions here..
+             * We will assume the path is in the form "~/..."*/
+            sprintf (tmpnam, "%s%s", c, &p[1]);
+            
+            if ( !(fp = fopen (tmpnam, faccs)))
+            {
+                return NULL;
+            }
+        }
+    }
 
     if (DefDir)
     {
         sprintf (tmpnam, "%s/%s", DefDir, p);
 
-        if ( !(fp = fopen (tmpnam, faccs)))
-        {
-            return NULL;
-        }
-    }
-    else if (c = getenv ("HOME"))   /* Try the HOME env variable */
-    {
-        sprintf (tmpnam, "%s/%s", c, p);
-        
         if ( !(fp = fopen (tmpnam, faccs)))
         {
             return NULL;
@@ -242,7 +241,15 @@ do_opt (c)
         }
         else
         {
-            CmdFP = build_path (pass_eq (pt), BINREAD);
+            CmdFileName = pass_eq (pt);
+
+            if (!(CmdFP = build_path (CmdFileName, BINREAD)))
+            {
+                fprintf (stderr, "*** Failed to open Command file %s***\n",
+                        CmdFileName);
+                fprintf (stderr,
+                        "Continuing without using the Command file\n");
+            }
         }
 
         break;
