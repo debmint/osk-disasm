@@ -92,7 +92,13 @@ lblpos (lblclass, lblval)
  * ******************************************************************** */
 
 static void
+#ifdef __STDC__
 movchr (char *dst, unsigned char ch)
+#else
+movchr (dst, ch)
+    char *dst;
+    unsigned char ch;
+#endif
 {
     char mytmp[10];
     register LBLDEF *pp;
@@ -131,7 +137,15 @@ movchr (char *dst, unsigned char ch)
  * ******************************************************************** */
 
 void
+#ifdef __STDC__
 PrintLbl (char *dest, char clas, int adr, LBLDEF *dl)
+#else
+PrintLbl (dest, clas, adr, dl)
+    char *dest;
+    char clas;
+    int adr;
+    LBLDEF *dl;
+#endif
 {
     char tmp[10];
     short decn = adr & 0xffff;
@@ -530,7 +544,14 @@ parsetree(c)
  * **************************************************************** */
 
 int
+#ifdef __STDC__
 LblCalc (char *dst, int adr, int amod)
+#else
+LblCalc (dst, adr, amod)
+    char *dst;
+    int adr;
+    int amod;
+#endif
 {
     int raw = adr /*& 0xffff */ ;   /* Raw offset (postbyte) - was unsigned */
     char mainclass,                 /* Class for this location */

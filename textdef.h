@@ -14,13 +14,13 @@ userdef.h contains the define fields. It will be included at the start
 of every command, general, print, getline,main, and assembley routine.
 */
  
-#include"userdef.h"
+#include "userdef.h"
  
 /*
 vardef.h has the variables that are global and live in ram.
 */
  
-#include"vardef.h"
+#include "vardef.h"
 
 /*
  * proto.h includes defs for the jump routines in the tables

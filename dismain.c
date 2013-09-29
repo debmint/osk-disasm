@@ -1,3 +1,4 @@
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * dismain.c - The main disassembler routine.  This handles a single   $
  *      pass for the disassembler routine. For each command, it passes $
@@ -35,7 +36,7 @@ static void
 #ifdef __STDC__
 list_print (CMD_ITMS *ci, short ent, char *lblnam)
 #else
-list_print (ci)
+list_print (ci, ent, lblnam)
     CMD_ITMS *ci;
     short ent;
     char *lblnam;
@@ -149,7 +150,7 @@ struct modnam *
 modnam_find (struct modnam *pt, int desired)
 #else
 modnam_find (pt, desired)
-    struct modname *pt;
+    struct modnam *pt;
     int desired;
 #endif
 {
@@ -169,12 +170,15 @@ psect_setup()
     char *ProgLang = NULL;
     char *ProgAtts = NULL;
     /*char *StackAddL;*/
-    char **prgsets[4] = {&ProgType, &ProgLang, &ProgAtts, NULL};
+    char **prgsets[4];
     unsigned char hdrvals[3];
     int c;
     CMD_ITMS CmdIt;
-    char *psecfld[2] = {",((%s << 8)", " | %s)"};
+    char *psecfld[2];
 
+    prgsets[0] = &ProgType; prgsets[1] = &ProgLang;
+    prgsets[2] = &ProgAtts; prgsets[3] = NULL;
+    psecfld[0] = ",((%s << 8)"; psecfld[1] = " | %s)";
     ProgType = modnam_find (ModTyps, (unsigned char)M_Type)->name;
     hdrvals[0] = M_Type;
     ProgLang = modnam_find (ModLangs, (unsigned char)M_Lang)->name;
@@ -588,12 +592,20 @@ int fread_l(FILE *fp)
  * ******************************************************************** */
 
 static void
+#ifdef __STDC__
 MovBytes (struct databndaries *db)
+#else
+MovBytes (db)
+    struct databndaries *db;
+#endif
 {
     CMD_ITMS Ci;
     char tmps[20];
     int valu;
-    char *xFmt[3] = {"$%02x", "$%04x", "$ %08x"};
+#ifdef _OSK
+    static
+#endif
+    char *xFmt[3] = {"$%02x", "$%04x", "$%08x"};
     int cCount = 0,
         maxLst;
 
@@ -698,10 +710,16 @@ MovBytes (struct databndaries *db)
  * ********************************************************* */
 
 static void
+#ifdef __STDC__
 AddDelims (char *dest, char *src)
+#else
+AddDelims (dest, src)
+#endif
+    char *dest;
+    char *src;
 {
     char delim = '"';
-    char bestdelims[] = "\"'/#\\|$!";
+    static char bestdelims[] = "\"'/#\\|$!";
     char *dref = bestdelims;
 
     /* First, try to use some "preferred" delimiters */
@@ -750,7 +768,13 @@ AddDelims (char *dest, char *src)
  * ************************************************** */
 
 void
+#ifdef __STDC__
 MovASC (int nb, char aclass)
+#else
+MovASC (nb, aclass)
+#endif
+    int nb;
+    char aclass;
 {
     char oper_tmp[30];
     CMD_ITMS Ci;

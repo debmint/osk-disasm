@@ -9,9 +9,6 @@
 #include "userdef.h"
 #include "sysnames.h"
 
-#ifdef _OSK
-#include <osk.h>
-#endif
 #include "proto.h"
 
 enum {
