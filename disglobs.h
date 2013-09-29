@@ -10,6 +10,10 @@
 #ifndef HAVE_GLOBALS
 #define HAVE_GLOBALS
 
+#ifdef _OSK
+#   include <osk.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>

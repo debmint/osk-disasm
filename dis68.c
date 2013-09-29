@@ -4,7 +4,7 @@
  * $Id::                                                               $
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <ctype.h>
+/*#include <ctype.h>*/
 #include <string.h>
 #ifdef _WIN32
 #   include <io.h>

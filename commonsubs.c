@@ -726,3 +726,25 @@ link_unlk(ci, j, op)
 
     return 1;
 }
+
+#ifdef _OSK
+/*
+ * OSK does not have a built-in "strdup()"
+ */
+char *
+strdup (oldstr)
+    char *oldstr;
+{
+    char *newstr;
+    
+    if ((newstr = malloc (strlen(oldstr) +1)))
+    {
+        strcpy (newstr, oldstr);
+        return newstr;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+#endif

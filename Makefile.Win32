@@ -1,32 +1,64 @@
 # ************************************************************* *
+
 # Makefile for building dis68 for Windows                       $
+
 #                                                               $
+
 # $Id::                                                         $
+
 # ************************************************************* *
 
 
-LFLAGS = /ZI /nologo
-DISRELS = dis68.obj dismain.obj def68def.obj opcode00.obj commonsubs.obj opcodes020.obj lblfuncs.obj cmdfile.obj    
+
+
+
+LFLAGS = /ZI
+
+DISRELS = dis68.obj dismain.obj 68def.obj opcode00.obj commonsubs.obj opcodes020.obj
+
 XTRAS = disglobs.h Makefile.Win32
-CFLAGS = /ZI /D__STDC__ /nologo
+
+CFLAGS = /ZI /D__STDC__
+
 EXE = OskDis.exe
 
+
+
 $(EXE): $(DISRELS)
+
 	$(CC) $(LFLAGS) $(DISRELS) /Fe$(EXE)
 
+
+
 $(DISRELS): $(XTRAS)
+
 	$(CC) /c $(CFLAGS) $*.c
 
+
+
 # I broke down the dependencies for the object files
+
 # because I couldn't get the above to work...
 
+
+
 #dis68.obj: dis68.c $(XTRAS)
+
 #	$(CC) /c $(CFLAGS) $*.c
+
 #
+
+
 
 #dismain.obj: dismain.c $(XTRAS)
+
 #	$(CC) /c $(CFLAGS) $*.c
+
 #
 
+
+
 clean:
+
     del OskDis.exe *.obj
+
