@@ -95,7 +95,7 @@ int reg;
             a_pt = &ModeStrings[mode];
         }
 
-        sprintf(ea, a_pt->str);
+        sprintf(ea, a_pt->str, reg);
         return 1;
         break;
     case 5:             /* d{16}An */
