@@ -73,6 +73,7 @@ typedef struct opst
 	char *opwordstr;
 	short sizestartbit;
 	short sizeendbit;
+    int id;
     int (*opfunc)();    
 }OPSTRUCTURE;
 
@@ -82,6 +83,7 @@ typedef struct
 	short sizestr;		/* sizefield[size]   */
 	short source;		/* EAtype[source]    */
 	short dest;		/* EAtype[source]    */
+    int id;
 }COPROCSTRUCTURE;
 
 typedef struct

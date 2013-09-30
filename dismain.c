@@ -356,11 +356,34 @@ notimplemented (ci, tblno, op)
     return 0;
 }
 
+/*extern OPSTRUCTURE *instr00,*instr01,*instr04,*instr05,*instr06,
+       *instr07,*instr08,*instr09,*instr11,*instr12,*instr13,*instr14;*/
+OPSTRUCTURE *opmains[] =
+{
+    instr00,
+    instr01,
+    instr01,    /* Repeat 3 times for 3 move sizes */
+    instr01,
+    instr04,
+    instr05,
+    instr06,
+    instr07,
+    instr08,
+    instr09,
+    NULL,       /* No instr 010 */
+    instr11,
+    instr12,
+    instr13,
+    instr14,
+    NULL
+};
+
 static int
 get_asmcmd()
 {
-    extern OPSTRUCTURE syntax1[];
-    extern COPROCSTRUCTURE syntax2[];
+    /*extern OPSTRUCTURE syntax1[];
+    extern COPROCSTRUCTURE syntax2[];*/
+    register OPSTRUCTURE *optbl;
     extern int error;
 
     int opword;
@@ -375,16 +398,26 @@ get_asmcmd()
     /* Make adjustments for this being the command word */
     Instruction.cmd_wrd = Instruction.code[0];
     Instruction.wcount = 0; /* Set it back again */
-
-    for (j = 1; j <= MAXINST; j++)
+    
+    if (!(optbl = opmains[(opword >> 12) & 0x0f]))
     {
-        register OPSTRUCTURE *curop;
+        return 0;
+    }
+
+    for (j = 0; j <= MAXINST; j++)
+    {
+        OPSTRUCTURE *curop = &optbl[j];
+
         error = FALSE;
-        curop = tablematch (opword, j);
+
+        if (!(curop->name))
+            break;
+
+        curop = tablematch (opword, curop);
 
         if (!error)
         {
-            if (curop->opfunc(&Instruction, j, curop))
+            if (curop->opfunc(&Instruction, curop->id, curop))
             {
                 return 1;
             }
@@ -714,9 +747,9 @@ static void
 AddDelims (char *dest, char *src)
 #else
 AddDelims (dest, src)
-#endif
     char *dest;
     char *src;
+#endif
 {
     char delim = '"';
     static char bestdelims[] = "\"'/#\\|$!";
@@ -772,9 +805,9 @@ void
 MovASC (int nb, char aclass)
 #else
 MovASC (nb, aclass)
-#endif
     int nb;
     char aclass;
+#endif
 {
     char oper_tmp[30];
     CMD_ITMS Ci;
