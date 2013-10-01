@@ -75,6 +75,8 @@ int reg;
     char dispReg[4];
     struct extWbrief ew_b;
 
+    dispstr[0] = '\0';
+
     switch (mode)
     {
         MODE_STR *a_pt;
@@ -86,7 +88,7 @@ int reg;
     case 2:   /* (An) */
     case 3:   /* (An)+ */
     case 4:   /* -(An) */
-        if (reg == 6)
+        if (reg == 7)
         {
             a_pt = &SPStrings[mode];
         }
@@ -99,6 +101,7 @@ int reg;
         return 1;
         break;
     case 5:             /* d{16}An */
+        AMode = AM_A0 + reg;
         ext1 = getnext_w(ci);
        /*++(ci->wcount);*/
         displac_w = (ext1 & 0xffff);
@@ -112,9 +115,10 @@ int reg;
         }
 
         /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
-        sprintf(dispstr, "%d", displac_w);
+        LblCalc(dispstr, displac_w, AMode);
+        /*sprintf(dispstr, "%d", displac_w);*/
 
-        if (reg == 6)
+        if (reg == 7)
         {
             sprintf(ea, SPStrings[mode].str, dispstr);
         }
@@ -125,6 +129,8 @@ int reg;
         return 1;
         break;
     case 6:             /* d{8}(An)Xn or 68020-up */
+        AMode = AM_A0 + reg;
+
         if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
         {
             /* the displacement should be a string for it may sometimes
@@ -140,15 +146,15 @@ int reg;
                 a_disp[0] = '\0';
             }
 
-            if (reg == 6)
+            if (reg == 7)
             {
                 sprintf (ea, SPStrings[mode].str, a_disp,
-                        ew_b.d_a, ew_b.regno);
+                        ew_b.regNam, ew_b.regno);
             }
             else
             {
                 sprintf (ea, ModeStrings[mode].str, a_disp, reg,
-                        ew_b.d_a, ew_b.regno);
+                        ew_b.regNam, ew_b.regno);
             }
             return 1;
         }
@@ -164,6 +170,7 @@ int reg;
     case 7:
         switch (reg) {
         case 0:                 /* (xxx).W */
+            AMode = AM_REL;
             ext1 = getnext_w(ci);
             displac_w = ext1 & 0xffff;
             /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
@@ -171,6 +178,7 @@ int reg;
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 1:                /* (xxx).L */
+            AMode = AM_REL;
             ext1 = getnext_w(ci);
             /*++(ci->wcount);*/
             ext2 = getnext_w(ci);
@@ -179,6 +187,7 @@ int reg;
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 4:                 /* #<data> */
+            AMode = AM_IMM;
             ext1 = getnext_w(ci);
             /*++(ci->wcount);*/
 
@@ -204,6 +213,7 @@ int reg;
              sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 2:              /* (d16,PC) */
+            AMode = AM_REL;
             ext1 = getnext_w(ci);
             /*++(ci->wcount);*/
             sprintf (dispstr, "%d", ext1);
@@ -211,6 +221,7 @@ int reg;
             return 1;
         case 3:              /* d8(PC)Xn */
             /*ext1 = getnext_w(ci);*/
+            AMode = AM_REL;
 
             if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
             {
@@ -225,7 +236,7 @@ int reg;
                     a_disp[0] = '\0';
                 }
                 sprintf (ea, Mode07Strings[reg].str, a_disp,
-                        ew_b.d_a, ew_b.regno);
+                        ew_b.regNam, ew_b.regno);
                 return 1;
             }
             else
@@ -265,11 +276,23 @@ get_ext_wrd_brief (ci, extW, mode, reg)
     }
 
     /* get the values common to all */
-    extW->d_a = (ew & 0x8000) ? 'a' : 'd';
+    extW->regNam = (ew & 0x8000) ? 'a' : 'd';
     extW->regno = (ew >> 12) & 7;
-    extW->isize = (ew >> 11) & 1;
+    extW->isLong = (ew >> 11) & 1;
     extW->scale = (ew >> 9) * 3;
-    extW->displ = ew & 0xff;
+    extW->isFull = (ew >> 8) & 1;
+
+    if (extW->isFull)
+    {
+        extW->iiSel = ew & 7;
+        extW->bs = (ew >> 7) & 1;
+        extW->is = (ew >> 6) & 1;
+        extW->bdSize = (ew >> 4) & 3;
+    }
+    else
+    {
+        extW->displ = ew & 0xff;
+    }
     return 1;
 }
 

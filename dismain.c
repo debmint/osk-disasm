@@ -38,7 +38,7 @@ list_print (CMD_ITMS *ci, short ent, char *lblnam)
 #else
 list_print (ci, ent, lblnam)
     CMD_ITMS *ci;
-    short ent;
+    int ent;
     char *lblnam;
 #endif
 {
@@ -242,27 +242,28 @@ dopass(argc,argv,mypass)
 
     if (Pass == 1)
     {
-        /* Set Default Addressing Modes according to Module Type */
-        switch (ModType)
-        {
-        case MT_PROGRAM:
-            strcpy(DfltLbls, "LLLLLLDL&LL");
-            break;
-        case MT_DEVDRVR:
-            break;
-        }
-
         if (!(ModFP = fopen(ModFile, BINREAD)))
         {
             errexit("Cannot open Module file for read");
         }
 
-        do_cmd_file();
-
         PCPos = 0;
         get_modhead();
         PCPos = ftell(ModFP);
         process_label(&Instruction, 'L', M_Exec);
+        
+        /* Set Default Addressing Modes according to Module Type */
+        switch (ModType)
+        {
+        case MT_PROGRAM:
+            strcpy(DfltLbls, "&&&&&&D&&LL");
+            break;
+        case MT_DEVDRVR:
+            break;
+        }
+
+        do_cmd_file();
+
     }
     else   /* Do Pass 2 Setup */
     {

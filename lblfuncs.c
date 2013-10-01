@@ -352,7 +352,8 @@ create_lbldef (lblclass, val, name)
         }
         else
         {
-            sprintf (newlbl->sname, "%c%05x", toupper(lblclass), val);
+            /* Assume that a program label does not exceed 20 bits */
+            sprintf (newlbl->sname, "%c%05x", toupper(lblclass), val & 0x1ffff);
         }
 
         newlbl->myaddr = val;
@@ -631,6 +632,12 @@ LblCalc (dst, adr, amod)
         {
             return 0;
         }
+    }
+
+    /* Attempt to restrict class 'L' */
+    if (mainclass == 'L')
+    {
+        raw &= 0x1ffff;
     }
 
     if (Pass == 1)

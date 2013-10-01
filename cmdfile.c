@@ -760,12 +760,12 @@ getrange (pt, lo, hi, usize, allowopen)
     }
 }
 
-/* **************************************************************** *
- * do_mode() - Process a single Addressing Mode command.  called by *
- *      cmdamode(), which splits the command line up into single    *
- *      commands.                                                   *
- * Passed : lpos - Pointer to current character in command line.    *
- * **************************************************************** */
+/*
+ * do_mode() - Process a single Addressing Mode command.  called by
+ *      cmdamode(), which splits the command line up into single commands.
+ * Passed : lpos - Pointer to current character in command line.
+ *
+ */
 
 static int
 #ifdef __STDC__
@@ -797,9 +797,10 @@ do_mode (lpos)
         AMode = AM_A0;     /* Initial */
         c = *(lpos++);
 
+         /* Must be a0, a1, ..., a7 */
         if ((c > '0') && c < ('8'))
         {
-            AMode += (c = '0');
+            AMode += (c - '0');
         }
         else
         {
@@ -823,7 +824,7 @@ do_mode (lpos)
     mclass = *(lpos++);
     mclass = toupper (mclass);
 
-    if ( ! strchr (lblorder, mclass))
+    if ( ! strchr (lblorder, mclass)) /* Legal class ? */
     {
         errexit ("Illegal class definition");
     }
@@ -1208,6 +1209,9 @@ setupbounds (lpos)
 
         case 'A':    /* ASCII string  data */
             lclass = '^';
+            break;
+        case '>':
+            cmdamode (skipblank (++lpos));
             break;
         default:
             fprintf(stderr, "%s\n", lpos);

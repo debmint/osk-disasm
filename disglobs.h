@@ -50,7 +50,7 @@ enum {
 /* Addressing Modes */
 
 enum {
-    AM_A0,
+    AM_A0 = 1,
     AM_A1,
     AM_A2,
     AM_A3,
@@ -60,19 +60,24 @@ enum {
     AM_A7,
     AM_IMM,
     AM_ABS,
-    AM_REL
+    AM_REL,
+    AM_MAXMODES   /* Count of Modes */
 };
 
 /* The following two structures define
  * the extended word
  */
 struct extWbrief {
-    int is020;      /* 1 = 68020-type */
-    char d_a;     /* Index Register ('D' or 'A' */
+    int isFull;      /* 1 = 68020-type */
+    char regNam;     /* Index Register ('D' or 'A' */
     int regno;      /* Register # */
-    int isize;      /* Index size (W/L, 0 if sign-extended word */
+    int isLong;      /* Index size (W/L, 0 if sign-extended word */
     int scale;      /* Scale  00 = 1, 01 = 2, 03 = 4, 11= 8 */
     int displ;      /* Displacement (lower byte) */
+    int is;         /* Index Suppress */
+    int bs;         /* Base Displacement Suppress */
+    int bdSize;     /* BD Size */
+    int iiSel;      /* Index/Indirect Selection */
 };
 
 /* The following is part of the description for the full extended word */
@@ -136,7 +141,11 @@ xt char *lblorder
 #endif
 ;
 
-xt char DfltLbls[15];
+xt char DfltLbls[15]
+#ifdef _MAIN_
+="&&&&&&DLLLLLLLL"
+#endif
+;
 
 xt char DorA[]
 #ifdef _MAIN_
