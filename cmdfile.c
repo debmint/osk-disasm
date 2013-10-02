@@ -64,7 +64,7 @@ char BoundsNames[] = "ABCDLSW";
 
 
 /* ************************************************************************ *
- * asmcomment() Add comments to be placed into the assembler source/listing *
+ * AsmComment() Add comments to be placed into the assembler source/listing *
  *          on separate lines                                               *
  * Format for this entry:                                                   *
  *      " <Label class> addr <delim>Dtext<delim>                            *
@@ -76,9 +76,8 @@ char BoundsNames[] = "ABCDLSW";
  *      The delimiter can be the last character if it's doubled             *
  * ************************************************************************ */
 
-#ifdef HAVECOMMENT
 static int
-asmcomment (char *lpos, FILE *cmdfile)
+AsmComment (char *lpos, FILE *cmdfile)
 {
     int adr = 0;
     register char *txt;
@@ -204,14 +203,14 @@ asmcomment (char *lpos, FILE *cmdfile)
         }
 
         /* Now we can finally store the comment */
-        if ( ! (txt = calloc (1, strlen(lpos)+1)))
+        if ( ! (txt = (char *)calloc (1, strlen(lpos)+1)))
         {
             fprintf(stderr,"Error - cannot allocate memory for comment\n");
             exit(1);
         }
         strncpy (txt,lpos,strlen(lpos));
 
-        if ( ! (cline = calloc (1, sizeof (struct cmntline))))
+        if ( ! (cline = (struct cmntline *)calloc (1, sizeof (struct cmntline))))
         {
             fprintf (stderr,
                     "Error - cannot allocate memory for comment line\n");
@@ -245,7 +244,6 @@ asmcomment (char *lpos, FILE *cmdfile)
         }
     }
 }
-#endif   /* HAVECOMMENT */
 
 void
 do_cmd_file ()
@@ -304,7 +302,6 @@ do_cmd_file ()
                 exit (1);
             }
             continue;
-#ifdef HAVECOMMENT
         case '"':        /* Assembler file comment(s)    */
             if (AsmComment (++mbf, CmdFP) == -1)
             {
@@ -321,7 +318,6 @@ do_cmd_file ()
             }
 
             continue;
-#endif
         case '>':
             cmdamode (skipblank (++mbf));
             continue;
@@ -345,16 +341,15 @@ do_cmd_file ()
 }
 
 /* ************************************************************************ *
- * apndcmnt() - Add comments to the end of the assembler command line       *
+ * ApndCmnt() - Add comments to the end of the assembler command line       *
  * Format for this entry:                                                   *
  *      ' <Label Class> <hex addr> text                                     *
  *      ---                                                                 *
  * No delimiter is used, all text to the end of the line is included        *
  * ************************************************************************ */
 
-#ifdef HAVECOMMENT
 int
-apndcmnt (char *lpos)
+ApndCmnt (char *lpos)
 {
     char lblclass;
     int myadr,
@@ -414,7 +409,7 @@ apndcmnt (char *lpos)
 
     if (make_cmnt)
     {
-        mycmnt = calloc (1,sizeof (struct apndcmnt));
+        mycmnt = (struct apndcmnt *)calloc (1,sizeof (struct apndcmnt));
     }
 
     if ( ! mycmnt)
@@ -446,7 +441,7 @@ apndcmnt (char *lpos)
         *cline = '\0';
     }
 
-    mycmnt->CmPtr = malloc (strlen (lpos) + 1);
+    mycmnt->CmPtr = (char *)malloc (strlen (lpos) + 1);
 
     if (mycmnt->CmPtr)
     {
@@ -502,11 +497,7 @@ cmntsetup (char *cpos, char *clas, int *adrs)
 
     /* Now move up past address */
 
-#ifdef OSK
     while ((*cpos != ' ') && (*cpos != '\t'))
-#else
-    while ( ! (isblank(*cpos)))
-#endif
     {
         ++cpos;
     }
@@ -526,7 +517,7 @@ newcomment (int addrs, struct commenttree *parent)
 {
     struct commenttree *newtree;
 
-    if ( ! (newtree = calloc(1,sizeof (struct commenttree))))
+    if ( ! (newtree = (struct commenttree *)calloc(1,sizeof (struct commenttree))))
     {
         fprintf (stderr, "Cannot allocate memory for commenttree\n");
         exit (1);
@@ -536,7 +527,6 @@ newcomment (int addrs, struct commenttree *parent)
     newtree->cmtUp = parent;
     return newtree;
 }
-#endif       /* HAVECOMMENT */
 
 /* ****************************************** *
  * Process options found in command file line *

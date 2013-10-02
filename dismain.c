@@ -27,6 +27,14 @@ static int get_asmcmd(
 #endif
 );
 
+#ifdef __STDC__
+char *get_apcomment(char clas, int addr);
+void PrintComment(char lblclass, int cmdlow, int cmdhi);
+#else
+char *get_apcomment ();
+void PrintComment();
+#endif
+
 /*
  * list_print() - Handle printouts of lines of code.  Prints to the listing
  *        and prints to asm code file if specified
@@ -43,13 +51,22 @@ list_print (ci, ent, lblnam)
 #endif
 {
     register char *ListFmt = "%05x %04x %10.10s %s %s\n";
+    register char *CmntFmt = "%05x %04x %10.10s %s %s %s\n";
     char *lb;
 
     lb = (lblnam ? lblnam : lblstr('L', CmdEnt));
 
     /* When ready, need to provide for option whether to print or not */
-    printf(ListFmt, ent & 0xffff, ci->cmd_wrd, lb,
-                    ci->mnem, ci->opcode);
+    if (ci->comment)
+    {
+        printf(CmntFmt, ent & 0xffff, ci->cmd_wrd, lb,
+                        ci->mnem, ci->opcode, ci->comment);
+    }
+    else
+    {
+        printf(ListFmt, ent & 0xffff, ci->cmd_wrd, lb,
+                        ci->mnem, ci->opcode);
+    }
     /* Provide for printing to asm src listing */
 
 }
@@ -284,6 +301,7 @@ dopass(argc,argv,mypass)
     {
         struct databndaries *bp;
 
+        Instruction.comment = NULL;
         CmdEnt = PCPos;
 
         /* NOTE: The 6809 version did an "if" and it apparently worked,
@@ -299,6 +317,10 @@ dopass(argc,argv,mypass)
         {
             if (Pass == 2)
             {
+                char *ilcmnt;
+
+                PrintComment('L', CmdEnt, PCPos);
+                Instruction.comment = get_apcomment ('L', CmdEnt);
                 list_print (&Instruction, CmdEnt, NULL);
 
                 if (Instruction.wcount)
@@ -649,6 +671,7 @@ MovBytes (db)
      * to the appropriate value */
     strcpy (Ci.mnem, "dc");
     Ci.opcode[0] = '\0';
+    Ci.comment = NULL;
     Ci.cmd_wrd = 0;
     PBytSiz = db->b_siz;
 
@@ -820,6 +843,7 @@ MovASC (nb, aclass)
 
     *oper_tmp = '\0';
     Ci.cmd_wrd = 0;
+    Ci.comment = NULL;
     /*Ci.opcode[0] = '\0';*/
 
     while (nb--)
@@ -1030,3 +1054,123 @@ IsCmd (int *fbyte, int *csiz)
 }
 
 #endif           /* ifdef IsCmd */
+
+/* ******************************************************** *
+ * get_comment() - Checks for append comment for current    *
+ *              command line.                               *
+ * Passed: (1) class,                                       *
+ *         (2) entry address for command                    *
+ * Returns: ptr to comment string if present                *
+ *          ptr to empty string if none                     *
+ * ******************************************************** */
+
+static char *
+#ifdef __STDC__
+get_apcomment(char clas, int addr)
+#else
+get_apcomment (clas, addr)
+    char clas;
+    int addr;
+#endif
+{
+    struct apndcmnt *mytree = CmntApnd[strpos (lblorder, clas)];
+
+    if ( ! clas)
+    {
+        return NULL;
+    }
+
+    if (mytree)
+    {
+        while (1)
+        {
+            if (addr < mytree->adrs)
+            {
+                if (mytree->apLeft)
+                {
+                    mytree = mytree->apLeft;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            else
+            {
+                if (addr > mytree->adrs)
+                {
+                    if (mytree->apRight)
+                    {
+                        mytree = mytree->apRight;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    return mytree->CmPtr;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+
+/* print any comments appropriate */
+
+static void
+#ifdef __STDC__
+PrintComment(char lblclass, int cmdlow, int cmdhi)
+#else
+PrintComment(char lblclass, int cmdlow, int cmdhi)
+    char lblclass;
+    int cmdlow,
+        cmdhi;
+#endif
+{
+    register struct commenttree *me;
+    register int x;
+
+    for (x = cmdlow; x < cmdhi; x++)
+    {
+        me = Comments[strpos (lblorder, lblclass)];
+
+        while (me)
+        {
+            if (x < me->adrs)
+            {
+                me = me->cmtLeft;
+            }
+            else
+            {
+                if (x > me->adrs)
+                {
+                    me = me->cmtRight;
+                }
+                else        /* Assume for now it's equal */
+                {
+                    struct cmntline *line;
+
+                    line = me->commts;
+
+                    do {
+                        printf("%5d       * %s\n", LinNum++, line->ctxt);
+
+                        if (WrtSrc)
+                        {
+                            fprintf (AsmPath, "* %s\n", line->ctxt);
+                        }
+
+                    } while ((line = line->nextline));
+
+                    break;  /* This address done, proceed with next x */
+                }
+            }
+        }
+    }
+}
+

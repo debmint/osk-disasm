@@ -22,9 +22,6 @@
 #endif
 
 /* Some variables that are only used in one or two modules */
-FILE *AsmPath;
-int WrtSrc;
-int IsROF;
 int LblFilz;              /* Count of Label files specified     */
 char *LblFNam[MAX_LBFIL]; /* Pointers to the path names for the files */
 
