@@ -13,6 +13,7 @@ typedef struct cmditems {
     short code[10];
     int wcount;         /* The count of words in the instrct/.(except sea) */
     char opcode[200];   /* Possibly ovesized, but just to be safe */
+    char *comment;     /* Inline comment - NULL if none */
     /*struct extWbrief extend;*.   /* The extended command (if present) */
 } CMD_ITMS;
 
@@ -66,4 +67,38 @@ struct databndaries {
 
 
 #endif             /*    #define HAVE_STRUCTS */
+
+/* ******************************************** *
+ * xtndcmnt structures                          *
+ * These are comments that are appended to the  *
+ * end of the assembly line                     *
+ * ******************************************** */
+
+struct apndcmnt {
+    int adrs;
+    struct apndcmnt *apLeft;
+    struct apndcmnt *apRight;
+    char *CmPtr;
+};
+
+/* ************************************ *
+ * Stand-alone Comment structures       *
+ * ************************************ */
+
+/* Single line of a comment */
+struct cmntline {
+    struct cmntline *nextline;
+    char *ctxt;
+};
+
+/* Main tree */
+
+struct commenttree {
+    int adrs;
+    struct commenttree *cmtUp;
+    struct commenttree *cmtLeft;
+    struct commenttree *cmtRight;
+    struct cmntline *commts;
+};
+
 
