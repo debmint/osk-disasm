@@ -6,7 +6,8 @@
 
 
 LFLAGS = /ZI
-DISRELS = dis68.obj dismain.obj def68def.obj opcode00.obj commonsubs.obj lblfuncs.c opcodes020.obj cmdfile.obj
+DISRELS = dis68.obj dismain.obj def68def.obj opcode00.obj commonsubs.obj lblfuncs.c opcodes020.obj\
+                cmdfile.obj dprint.obj
 XTRAS = disglobs.h Makefile.Win32
 CFLAGS = /ZI /D__STDC__
 EXE = OskDis.exe

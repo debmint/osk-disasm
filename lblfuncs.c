@@ -191,7 +191,7 @@ PrintLbl (dest, clas, adr, dl)
             sprintf (dest, "$%s", tmp);
             break;
         case '&':       /* Decimal */
-            sprintf (dest, "%d", decn);
+            sprintf (dest, "%d", adr);
             break;
         case '^':       /* ASCII */
             *dest = '\0';
@@ -592,7 +592,7 @@ LblCalc (dst, adr, amod)
                 if (kls->dofst->incl_pc)
                 {
                     raw += CmdEnt;
-                    addlbl (raw, kls->dofst->oclas_maj, NULL);
+                    addlbl (kls->dofst->oclas_maj, raw, NULL);
                 }
             }
         }

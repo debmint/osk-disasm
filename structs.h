@@ -9,6 +9,7 @@
 
 typedef struct cmditems {
     int cmd_wrd;        /* The single effective address word (the command) */
+    char *lblname;
     char mnem[50];
     short code[10];
     int wcount;         /* The count of words in the instrct/.(except sea) */
@@ -99,6 +100,49 @@ struct commenttree {
     struct commenttree *cmtLeft;
     struct commenttree *cmtRight;
     struct cmntline *commts;
+};
+
+/* ***************************************** *
+ * Structures for ROF files                  *
+ * ***************************************** */
+
+/* ROF header structure */
+
+struct rof_hdr {
+            int   sync[2],
+                  ty_lan;
+            char  valid,
+                  rdate[5],
+                  edition,
+                  version;
+            int   udatsz,
+                  udpsz,
+                  idatsz,
+                  idpsz,
+                  codsz,
+                  stksz,
+                  modent;
+            char  rname[20];
+} ROFHD;
+
+/* Global definitions */
+
+struct rof_glbl {
+            char  name[100];
+            char  Type;
+            int   Ofst;
+};
+
+/* External references */
+
+struct rof_extrn {
+            char  name[100];        /* External name                  */
+            char  Type;             /* Type Flag                      */
+            int   Ofst;             /* Offset into code               */
+            int   Extrn;            /* Flag that it's an external ref */
+            struct rof_extrn *up,
+                             *LNext,
+                             *RNext;
 };
 
 

@@ -20,20 +20,13 @@
 static int HdrLen;
 
 extern struct databndaries *dbounds;
+extern char realcmd[], pseudcmd[];
 
 static int get_asmcmd(
 #ifdef __STDC__
     void
 #endif
 );
-
-#ifdef __STDC__
-char *get_apcomment(char clas, int addr);
-void PrintComment(char lblclass, int cmdlow, int cmdhi);
-#else
-char *get_apcomment ();
-void PrintComment();
-#endif
 
 /*
  * list_print() - Handle printouts of lines of code.  Prints to the listing
@@ -118,16 +111,14 @@ get_modhead()
         case MT_DEVDRVR:
             M_Exec = fread_l(ModFP);
             M_Except = fread_l(ModFP);
-
             HdrEnd = ftell(ModFP); /* We'll keep changing it if necessary */
 
             if ((M_Type != MT_SYSTEM) && (M_Type != MT_FILEMAN))
             {
-
+                M_Mem = fread_l(ModFP);
                 M_Stack = fread_l(ModFP);
                 M_IData = fread_l(ModFP);
                 M_IRefs = fread_l( ModFP);
-
                 HdrEnd = ftell(ModFP);  /* Update it again */
 
                 if (M_Type == MT_TRAPLIB)
@@ -140,6 +131,7 @@ get_modhead()
         }
 
         fseek (ModFP, 0, SEEK_END);
+
         if (ftell(ModFP) < M_Size)
         {
             errexit ("\n*** ERROR!  File size < Module Size... Aborting...! ***\n");
@@ -177,62 +169,6 @@ modnam_find (pt, desired)
     }
 
     return (pt->val ? pt : NULL);
-}
-
-static void
-psect_setup()
-{
-    register struct modnam *pt;
-    char *ProgType = NULL;
-    char *ProgLang = NULL;
-    char *ProgAtts = NULL;
-    /*char *StackAddL;*/
-    char **prgsets[4];
-    unsigned char hdrvals[3];
-    int c;
-    CMD_ITMS CmdIt;
-    char *psecfld[2];
-
-    prgsets[0] = &ProgType; prgsets[1] = &ProgLang;
-    prgsets[2] = &ProgAtts; prgsets[3] = NULL;
-    psecfld[0] = ",((%s << 8)"; psecfld[1] = " | %s)";
-    ProgType = modnam_find (ModTyps, (unsigned char)M_Type)->name;
-    hdrvals[0] = M_Type;
-    ProgLang = modnam_find (ModLangs, (unsigned char)M_Lang)->name;
-    hdrvals[1] = M_Lang;
-    ProgAtts = modnam_find (ModAtts, (unsigned char)M_Attr)->name;
-    hdrvals[2] = M_Attr;
-    strcpy (CmdIt.mnem, "set");
-#ifdef _WIN32
-    strcpy (EaString, strrchr(ModFile, '\\') + 1);
-#else
-    strcpy (EaString, strrchr(ModFile, '/') + 1);
-#endif
-    strcat (EaString, "_a");
-
-    for (c = 0; prgsets[c]; c++)
-    {
-        if (*prgsets[c])
-        {
-            CmdIt.cmd_wrd = hdrvals[c];
-            sprintf (CmdIt.opcode, "%d", hdrvals[c]);
-            /*strcpy(CmdIt.mnem, *prgsets[c]);*/
-            list_print (&CmdIt, hdrvals[c], *prgsets[c]);
-        }
-        else {
-            sprintf (CmdIt.mnem, "%d", hdrvals[c]);
-        }
-
-        sprintf (CmdIt.opcode, psecfld[c % 2], *prgsets[c]);
-        strcat (EaString, CmdIt.opcode);
-    }
-
-    sprintf (&EaString[strlen(EaString)], "|%d)", M_Edit);
-    strcat (EaString, ",0");    /* For the time being, don't add any stack */
-    sprintf (&EaString[strlen(EaString)], ",%s", findlbl ('L', M_Exec)->sname);
-    strcpy (CmdIt.opcode, EaString);
-    strcpy (CmdIt.mnem, "psect");
-    list_print (&CmdIt, M_Exec, NULL);
 }
 
 /* ******************************************************************* *
@@ -284,7 +220,7 @@ dopass(argc,argv,mypass)
     }
     else   /* Do Pass 2 Setup */
     {
-        psect_setup();
+        PrintPsect();
     }
 
     /* NOTE: This is just a temporary kludge The begin _SHOULD_ be
@@ -319,21 +255,33 @@ dopass(argc,argv,mypass)
             {
                 char *ilcmnt;
 
-                PrintComment('L', CmdEnt, PCPos);
+                /*PrintComment('L', CmdEnt, PCPos);*/
                 Instruction.comment = get_apcomment ('L', CmdEnt);
-                list_print (&Instruction, CmdEnt, NULL);
+                /*list_print (&Instruction, CmdEnt, NULL);*/
+                PrintLine (pseudcmd, &Instruction, 'L', CmdEnt, PCPos);
 
                 if (Instruction.wcount)
                 {
-                    int count;
-                    printf("%6s", "");
+                    int count = Instruction.wcount;
+                    int wpos = 0;
+                    /*printf("%6s", "");*/
 
-                    for (count = 0; count < Instruction.wcount; count++)
+                    while (count)
                     {
-                       printf("%04x ", Instruction.code[count] & 0xffff);
+                        if (count > 1)
+                        {
+                            PrintAllCodLine(Instruction.code[wpos], Instruction.code[wpos + 1]);
+                            count -= 2;
+                            wpos += 2;
+                        }
+                        else
+                        {
+                            PrintAllCodL1(Instruction.code[wpos]);
+                            --count;
+                            ++wpos;
+                        }
+                       /*printf("%04x ", Instruction.code[count] & 0xffff);*/
                     }
-
-                    printf("\n");
                 }
             }
         }
@@ -343,9 +291,8 @@ dopass(argc,argv,mypass)
             {
                 strcpy (Instruction.mnem, "ds.w");
                 sprintf (Instruction.opcode, "$%x", Instruction.cmd_wrd & 0xffff);
-                /* To do the following, we need to set it up in Pass 1 */
-                /*process_label (&Instruction, 'L', CmdEnt);*/
-                list_print (&Instruction, CmdEnt, NULL);
+                /*list_print (&Instruction, CmdEnt, NULL);*/
+                
             }
         }
     }
@@ -741,6 +688,7 @@ MovBytes (db)
             if ( (strlen (Ci.opcode) > 22) || findlbl ('L', PCPos))
             {
                 list_print(&Ci, CmdEnt, NULL);
+                PrintLine(pseudcmd, &Ci, 'L', CmdEnt, PCPos);
                 Ci.opcode[0] = '\0';
                 Ci.cmd_wrd = 0;
                 CmdEnt = PCPos/* _ PBytSiz*/;
@@ -756,6 +704,7 @@ MovBytes (db)
     if ((Pass==2) && strlen (Ci.opcode))
     {
         list_print (&Ci, (short)CmdEnt, NULL);
+        PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
         /*PrintLine (pseudcmd, pbuf, 'L', CmdEnt, PCPos);*/
     }
 }
@@ -844,6 +793,7 @@ MovASC (nb, aclass)
     *oper_tmp = '\0';
     Ci.cmd_wrd = 0;
     Ci.comment = NULL;
+    Ci.lblname = "";
     /*Ci.opcode[0] = '\0';*/
 
     while (nb--)
@@ -881,17 +831,18 @@ MovASC (nb, aclass)
                 //    CmdEnt = PCPos + 1;
                 //    strcpy (pbuf->mnem, "fcc");
                 //}*/
-
+                    
                 if ((strlen (oper_tmp) > 24) ||
                     (strlen (oper_tmp) && findlbl (aclass, x)))
                     /*(strlen (oper_tmp) && findlbl (ListRoot (aclass), PCPos + 1)))*/
                 {
                     AddDelims (Ci.opcode, oper_tmp);
-                    list_print (&Ci, CmdEnt, NULL);
+                    PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
                     /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
                     oper_tmp[0] = '\0';
                     CmdEnt = PCPos + 1;
                     Ci.cmd_wrd = 0;
+                    Ci.wcount = 0;
                     /*strcpy (pbuf->mnem, "fcc");*/
                 }
             }   /* end if (Pass2) */
@@ -901,10 +852,12 @@ MovASC (nb, aclass)
             if ((Pass == 2) && (strlen (oper_tmp)))
             {
                 AddDelims (Ci.opcode, oper_tmp);
-                list_print (&Ci, CmdEnt, NULL);
+                PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
                 Ci.opcode[0] = '\0';
+                Ci.cmd_wrd = 0;
                 /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
                 oper_tmp[0] = '\0';
+                cCount = 0;
                 CmdEnt = PCPos;
             }
 
@@ -928,8 +881,11 @@ MovASC (nb, aclass)
 
                 /*strcpy (pbuf->mnem, "fcb");*/
                 sprintf (Ci.opcode, "%d", x);
-                list_print (&Ci, CmdEnt, NULL);
+                Ci.cmd_wrd = x;
+                PrintLine (pseudcmd, &Ci, aclass, CmdEnt, PCPos);
                 Ci.opcode[0] = '\0';
+                Ci.cmd_wrd = 0;
+                cCount = 0;
                 /*PrintLbl (Ci.opcode, '^', x, nlp);
                 //sprintf (pbuf->instr, "%02x", x & 0xff);
                 //list_print (&Ci, CmdEnt, NULL);
@@ -947,8 +903,8 @@ MovASC (nb, aclass)
     if ((Pass == 2) && (strlen (Ci.opcode)) )       /* Clear out any pending string */
     {
         AddDelims (Ci.opcode, oper_tmp);
-        list_print (&Ci, CmdEnt, NULL);
-        /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
+        /*list_print (&Ci, CmdEnt, NULL);*/
+        PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
         *oper_tmp = '\0';
     }
 
@@ -1054,123 +1010,4 @@ IsCmd (int *fbyte, int *csiz)
 }
 
 #endif           /* ifdef IsCmd */
-
-/* ******************************************************** *
- * get_comment() - Checks for append comment for current    *
- *              command line.                               *
- * Passed: (1) class,                                       *
- *         (2) entry address for command                    *
- * Returns: ptr to comment string if present                *
- *          ptr to empty string if none                     *
- * ******************************************************** */
-
-static char *
-#ifdef __STDC__
-get_apcomment(char clas, int addr)
-#else
-get_apcomment (clas, addr)
-    char clas;
-    int addr;
-#endif
-{
-    struct apndcmnt *mytree = CmntApnd[strpos (lblorder, clas)];
-
-    if ( ! clas)
-    {
-        return NULL;
-    }
-
-    if (mytree)
-    {
-        while (1)
-        {
-            if (addr < mytree->adrs)
-            {
-                if (mytree->apLeft)
-                {
-                    mytree = mytree->apLeft;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            else
-            {
-                if (addr > mytree->adrs)
-                {
-                    if (mytree->apRight)
-                    {
-                        mytree = mytree->apRight;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    return mytree->CmPtr;
-                }
-            }
-        }
-    }
-
-    return NULL;
-}
-
-
-/* print any comments appropriate */
-
-static void
-#ifdef __STDC__
-PrintComment(char lblclass, int cmdlow, int cmdhi)
-#else
-PrintComment(char lblclass, int cmdlow, int cmdhi)
-    char lblclass;
-    int cmdlow,
-        cmdhi;
-#endif
-{
-    register struct commenttree *me;
-    register int x;
-
-    for (x = cmdlow; x < cmdhi; x++)
-    {
-        me = Comments[strpos (lblorder, lblclass)];
-
-        while (me)
-        {
-            if (x < me->adrs)
-            {
-                me = me->cmtLeft;
-            }
-            else
-            {
-                if (x > me->adrs)
-                {
-                    me = me->cmtRight;
-                }
-                else        /* Assume for now it's equal */
-                {
-                    struct cmntline *line;
-
-                    line = me->commts;
-
-                    do {
-                        printf("%5d       * %s\n", LinNum++, line->ctxt);
-
-                        if (WrtSrc)
-                        {
-                            fprintf (AsmPath, "* %s\n", line->ctxt);
-                        }
-
-                    } while ((line = line->nextline));
-
-                    break;  /* This address done, proceed with next x */
-                }
-            }
-        }
-    }
-}
 
