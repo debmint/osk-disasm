@@ -140,6 +140,7 @@ int reg;
             if (ew_b.displ)
             {
                 sprintf (a_disp, "%d", ew_b.displ);
+                LblCalc (a_disp, ew_b.displ, AMode);
             }
             else
             {
@@ -195,28 +196,25 @@ int reg;
             {
                 char b;
             case SIZ_BYTE:
-                b = ext1 & 0xff;
-                sprintf (dispstr, "%d", (int)b);
+                displac_l = ext1 & 0xff;
                 break;
             case SIZ_WORD:
-                displac_w = ext1 & 0xffff;
-                sprintf (dispstr, "%d", displac_w);
+                displac_l = ext1 & 0xffff;
                 break;
             case SIZ_LONG:
                 ext2 = getnext_w(ci);
-                /*++(ci->wcount);*/
-                displac_l = (ext1 << 16) | ext2;
-                sprintf (dispstr, "%d", displac_l);
+                displac_l = (ext1 << 16) | (ext2 & 0xffff);
                 break;
             }
 
-             sprintf (ea, Mode07Strings[reg].str, dispstr);
+            LblCalc (dispstr, displac_l, AMode);
+            sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 2:              /* (d16,PC) */
             AMode = AM_REL;
             ext1 = getnext_w(ci);
             /*++(ci->wcount);*/
-            sprintf (dispstr, "%d", ext1);
+            LblCalc(dispstr, ext1, AMode);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 3:              /* d8(PC)Xn */

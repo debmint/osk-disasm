@@ -10,6 +10,8 @@
 #ifndef HAVE_GLOBALS
 #define HAVE_GLOBALS
 
+#define VERSION "0.1.0"
+
 #ifdef _OSK
 #   include <osk.h>
 #endif
@@ -118,7 +120,7 @@ xt long M_Size, M_Owner, M_Name;
 xt int M_Accs;
 xt char M_Type, M_Lang, M_Attr, M_Revs;
 xt int M_Edit, M_Usage, M_Symbol, M_Parity,
-    M_Exec, M_Except, M_Stack, M_IData,
+    M_Exec, M_Except, M_Mem, M_Stack, M_IData,
     M_IRefs, M_Init, M_Term;
 /* The following are for the Device Descriptor.. (Do we need these?) */
 /*xt int M_Port, M_Vector, M_IRQLvl,
@@ -132,8 +134,16 @@ xt int M_Sysgo, M_SysDev, M_Consol, M_Extens, M_Clock, M_Slice,
 xt int HdrEnd;   /* The first byte past end of header, usefule for begin of Pass 2 */
 xt int ModType;   /* The type of module */
 xt int LinNum;
-xt int PgWidth;
-xt int PgDepth;
+xt int PgWidth
+#ifdef _MAIN_
+    = 80
+#endif
+;
+xt int PgDepth
+#ifdef _MAIN_
+    = 66
+#endif
+;
 xt char *DefDir;
 xt int AMode;
 xt int NowClass;
@@ -150,7 +160,7 @@ xt char *lblorder
 #endif
 ;
 
-xt char DfltLbls[15]
+xt char DfltLbls[16]
 #ifdef _MAIN_
 ="&&&&&&DLLLLLLLL"
 #endif

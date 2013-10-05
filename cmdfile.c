@@ -457,11 +457,11 @@ ApndCmnt (char *lpos)
     return 1;
 }
 
-/* ***************************************************** *
+/* 
  * cmntsetup() - Get Label class and address for comment *
- * Passed: the command line string                       *
- *         ptr to Class variable                         *
- *         ptr to Address variable                       *
+ * Passed: (1) - the command line string
+ *         (2) - ptr to Class variable
+ *         (3) - ptr to Address variable                       *
  * Returns current position in command line string       *
  *         positioned on the first char of the comment   *
  *         (either the delim for self-standing comments  *
@@ -471,6 +471,8 @@ ApndCmnt (char *lpos)
 char *
 cmntsetup (char *cpos, char *clas, int *adrs)
 {
+    register char *p;
+
     cpos = skipblank (cpos);
 
     *clas = *(cpos++);       /* first element is Label Class */
@@ -503,6 +505,14 @@ cmntsetup (char *cpos, char *clas, int *adrs)
     }
 
     /* Now cpos is begin of (first) line of text */
+    p = cpos;
+
+    while ((*p != ';') && (*p != '\n') && (*p != '\r') && (*p))
+    {
+        ++p;
+    }
+
+    *p = '\0';
     return (cpos = skipblank (cpos));
 }
 
