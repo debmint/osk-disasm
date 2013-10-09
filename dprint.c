@@ -1289,7 +1289,6 @@ ListInitData (ldf, nBytes, lclass)
                 }
 
                 strcpy (Ci.opcode, il->lbl->sname);
-                //strcpy (Ci.opcode, findlbl (il->IClass, val)->sname);
                 strcpy (Ci.mnem, "dc.l");
                 OutputLine (pseudcmd, &Ci);
                 il = il->Next;
@@ -1327,7 +1326,6 @@ ListInitData (ldf, nBytes, lclass)
             {
                 PrevEnt = PCPos;
                 OutputLine (pseudcmd, &Ci);
-                //PrintLine(pseudcmd, &Ci, 'D', mystart, mystart);
                 Ci.lblname = "";
                 Ci.opcode[0] = '\0';
                 Ci.wcount = 0;
@@ -1339,7 +1337,6 @@ ListInitData (ldf, nBytes, lclass)
         {
             PrevEnt = PCPos;
             OutputLine (pseudcmd, &Ci);
-            /*PrintLine (pseudcmd, &Ci, 'D', CmdEnt, PCPos);*/
             Ci.wcount = 0;
             Ci.opcode[0] = '\0';
         }
