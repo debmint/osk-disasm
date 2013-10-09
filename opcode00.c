@@ -1183,7 +1183,15 @@ trap(ci, j, op)
             case 0:
                 if (strlen (SysNames[vector]))
                 {
-                    strcpy (ci->opcode, SysNames[syscall]);
+                    if (Pass == 1)
+                    {
+                        addlbl ('!', syscall, SysNames[syscall]);
+                    }
+                    else
+                    {
+                        strcpy (ci->opcode, SysNames[syscall]);
+                    }
+
                     strcpy (ci->mnem, "os9");
                     return 1;
                 }

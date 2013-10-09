@@ -99,7 +99,6 @@ get_modhead()
     switch (M_ID)
     {
     case 0x4afc:
-        ModType = MT_PROGRAM;
         /* Now get any further Mod-type specific headers */
 
         switch (M_Type)
@@ -127,6 +126,15 @@ get_modhead()
                     M_Term = fread_l(ModFP);
                     HdrEnd = ftell(ModFP);  /* The final change.. */
                 }
+            }
+
+            if (M_IData)
+            {
+                fseek (ModFP, M_IData, SEEK_SET);
+                IDataBegin = fread_l (ModFP);
+                IDataCount = fread_l (ModFP);
+                /* Insure we have an entry for the first Initialized Data */
+                addlbl ('D', IDataBegin, "");
             }
         }
 
@@ -171,13 +179,13 @@ modnam_find (pt, desired)
     return (pt->val ? pt : NULL);
 }
 
-/* ******************************************************************* *
- * dopass() - Do a complete single pass through the module.            *
- *      The first pass establishes the addresses of necessary labels   *
- *      On the second pass, the desired label names have been inserted *
- *      and printing of the listing and writing of the source file is  *
- *      done, if either or both is desired.                            *
- * ******************************************************************* */
+/*
+ * dopass() - Do a complete single pass through the module.
+ *      The first pass establishes the addresses of necessary labels
+ *      On the second pass, the desired label names have been inserted
+ *      and printing of the listing and writing of the source file is
+ *      done, if either or both is desired.
+ */
 
 int
 #ifdef __STDC__
@@ -185,7 +193,7 @@ dopass(int argc,char **argv,int mypass)
 #else
 dopass(argc,argv,mypass)
     int argc;
-    int argv;
+    char **argv;
     int mypass;
 #endif
 {
@@ -203,10 +211,11 @@ dopass(argc,argv,mypass)
         PCPos = 0;
         get_modhead();
         PCPos = ftell(ModFP);
-        process_label(&Instruction, 'L', M_Exec);
+        /*process_label(&Instruction, 'L', M_Exec);*/
+        addlbl ('L', M_Exec, NULL);
         
         /* Set Default Addressing Modes according to Module Type */
-        switch (ModType)
+        switch (M_Type)
         {
         case MT_PROGRAM:
             strcpy(DfltLbls, "&&&&&&D&&LL");
@@ -215,12 +224,24 @@ dopass(argc,argv,mypass)
             break;
         }
 
+        GetIRefs();
         do_cmd_file();
 
     }
     else   /* Do Pass 2 Setup */
     {
+        /*parsetree ('A');*/
+        WrtEquates (1);
+        WrtEquates (0);
         PrintPsect();
+
+        /*if (IsROF)
+        {
+        }
+        else*/
+        {
+            OS9DataPrint();
+        }
     }
 
     /* NOTE: This is just a temporary kludge The begin _SHOULD_ be
@@ -233,11 +254,12 @@ dopass(argc,argv,mypass)
 
     PCPos = HdrEnd;
 
-    while (PCPos < M_Size - 3)   /* Temporarily ignore the CRC */
+    while (PCPos < M_IData)
     {
         struct databndaries *bp;
 
         Instruction.comment = NULL;
+        Instruction.lblname = "";
         CmdEnt = PCPos;
 
         /* NOTE: The 6809 version did an "if" and it apparently worked,
@@ -289,8 +311,10 @@ dopass(argc,argv,mypass)
         {
             if (Pass == 2)
             {
-                strcpy (Instruction.mnem, "ds.w");
+                strcpy (Instruction.mnem, "dc.w");
                 sprintf (Instruction.opcode, "$%x", Instruction.cmd_wrd & 0xffff);
+                PrintLine (pseudcmd, &Instruction, 'L', CmdEnt, PCPos);
+                CmdEnt = PCPos;
                 /*list_print (&Instruction, CmdEnt, NULL);*/
                 
             }
@@ -366,8 +390,14 @@ get_asmcmd()
     Instruction.wcount = 0;
     opword = getnext_w (&Instruction);
     /* Make adjustments for this being the command word */
-    Instruction.cmd_wrd = Instruction.code[0];
+    Instruction.cmd_wrd = Instruction.code[0] & 0xffff;
     Instruction.wcount = 0; /* Set it back again */
+
+    /* This may be temporary.  Opword %1111xxxxxxxxxxxx is available
+     * for 68030-68040 CPU's, but we are not yet making this available
+     */
+    if ((opword & 0xf000) == 0xf000)
+        return 0;
     
     if (!(optbl = opmains[(opword >> 12) & 0x0f]))
     {
@@ -473,7 +503,7 @@ getnext_b(ci)
  *    the word is stored in the proper Info->code position                      *
  * **************************************************************************** */
 
-short
+int
 #ifdef __STDC__
 getnext_w(CMD_ITMS *ci)
 #else
@@ -594,7 +624,7 @@ int fread_l(FILE *fp)
  *          printing if in pass 2).                                     *
  * ******************************************************************** */
 
-static void
+void
 #ifdef __STDC__
 MovBytes (struct databndaries *db)
 #else
@@ -687,7 +717,7 @@ MovBytes (db)
 
             if ( (strlen (Ci.opcode) > 22) || findlbl ('L', PCPos))
             {
-                list_print(&Ci, CmdEnt, NULL);
+                /*list_print(&Ci, CmdEnt, NULL);*/
                 PrintLine(pseudcmd, &Ci, 'L', CmdEnt, PCPos);
                 Ci.opcode[0] = '\0';
                 Ci.cmd_wrd = 0;
@@ -715,7 +745,7 @@ MovBytes (db)
  *              and copies string with delims to destination *
  * ********************************************************* */
 
-static void
+void
 #ifdef __STDC__
 AddDelims (char *dest, char *src)
 #else
@@ -786,23 +816,36 @@ MovASC (nb, aclass)
     CMD_ITMS Ci;
     int cCount = 0;
 
-    /*memset (pbuf, 0, sizeof (pbuf));*/
     strcpy (Ci.mnem, "dc.b");         /* Default mnemonic to "fcc" */
     CmdEnt = PCPos;
-
     *oper_tmp = '\0';
     Ci.cmd_wrd = 0;
     Ci.comment = NULL;
     Ci.lblname = "";
-    /*Ci.opcode[0] = '\0';*/
 
     while (nb--)
     {
         register int x;
         char c[6];
 
+        if ((strlen (oper_tmp) > 24) ||
+            (strlen (oper_tmp) && findlbl (aclass, PCPos)))
+            /*(strlen (oper_tmp) && findlbl (ListRoot (aclass), PCPos + 1)))*/
+        {
+            AddDelims (Ci.opcode, oper_tmp);
+            PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
+            /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
+            oper_tmp[0] = '\0';
+            CmdEnt = PCPos;
+            Ci.lblname = "";
+            Ci.cmd_wrd = 0;
+            Ci.wcount = 0;
+            cCount = 0;
+        }
+
         x = fgetc (ModFP);
         ++cCount;
+        ++PCPos;
 
         if (isprint (x))
         {
@@ -821,74 +864,45 @@ MovASC (nb, aclass)
                 {
                     Ci.cmd_wrd = (Ci.cmd_wrd << 8) | (x & 0xff);
                 }
-
-                /*if ((x & 0x80))
-                //{
-                //    strcpy (pbuf->mnem, "fcs");
-                //    AddDelims (pbuf->operand, oper_tmp);
-                //    PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
-                //    *oper_tmp = '\0';
-                //    CmdEnt = PCPos + 1;
-                //    strcpy (pbuf->mnem, "fcc");
-                //}*/
-                    
-                if ((strlen (oper_tmp) > 24) ||
-                    (strlen (oper_tmp) && findlbl (aclass, x)))
-                    /*(strlen (oper_tmp) && findlbl (ListRoot (aclass), PCPos + 1)))*/
-                {
-                    AddDelims (Ci.opcode, oper_tmp);
-                    PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
-                    /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
-                    oper_tmp[0] = '\0';
-                    CmdEnt = PCPos + 1;
-                    Ci.cmd_wrd = 0;
-                    Ci.wcount = 0;
-                    /*strcpy (pbuf->mnem, "fcc");*/
-                }
             }   /* end if (Pass2) */
         }
         else            /* then it's a control character */
         {
-            if ((Pass == 2) && (strlen (oper_tmp)))
-            {
-                AddDelims (Ci.opcode, oper_tmp);
-                PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
-                Ci.opcode[0] = '\0';
-                Ci.cmd_wrd = 0;
-                /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
-                oper_tmp[0] = '\0';
-                cCount = 0;
-                CmdEnt = PCPos;
-            }
-
             if (Pass == 1)
             {
                 if ((x & 0x7f) < 33)
                 {
-                    addlbl (aclass, x & 0xff, "");
+                    char lbl[10];
+                    sprintf (lbl, "ASC%02x", x);
+                    addlbl (aclass, x & 0xff, lbl);
                 }
             }
-            else
+            else       /* Pass 2 */
             {
-                /* a dummy ptr to pass to Printlbl() to satify prototypes */
-                struct nlist *nlp;
+                /* Print any unprinted ASCII characters */
+                if (strlen (oper_tmp))
+                {
+                    AddDelims (Ci.opcode, oper_tmp);
+                    PrintLine (pseudcmd, &Ci, aclass, CmdEnt, CmdEnt);
+                    Ci.opcode[0] = '\0';
+                    Ci.cmd_wrd = 0;
+                    Ci.lblname = "";
+                    /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
+                    oper_tmp[0] = '\0';
+                    cCount = 0;
+                    CmdEnt = PCPos - 1; /* We already have the byte */
+                }
 
-                /* do the following to keep gcc quiet about uninitialized
-                 * variable.. If we're wrong, we'll get a segfault letting
-                 * us know of our mistake.. */
-
-                nlp = NULL;
-
-                /*strcpy (pbuf->mnem, "fcb");*/
                 sprintf (Ci.opcode, "%d", x);
                 Ci.cmd_wrd = x;
                 PrintLine (pseudcmd, &Ci, aclass, CmdEnt, PCPos);
+                Ci.lblname = "";
                 Ci.opcode[0] = '\0';
                 Ci.cmd_wrd = 0;
                 cCount = 0;
+                CmdEnt = PCPos;
                 /*PrintLbl (Ci.opcode, '^', x, nlp);
                 //sprintf (pbuf->instr, "%02x", x & 0xff);
-                //list_print (&Ci, CmdEnt, NULL);
                 //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
                 //strcpy (pbuf->mnem, "fcc");*/
             }
@@ -896,15 +910,16 @@ MovASC (nb, aclass)
             /*CmdEnt = PCPos + 2;*/
         }
 
-        ++PCPos;
+        /*++PCPos;*/
     }       /* end while (nb--) - all chars moved */
 
     /* Finally clean up any remaining data. */
-    if ((Pass == 2) && (strlen (Ci.opcode)) )       /* Clear out any pending string */
+    if ((Pass == 2) && (strlen (oper_tmp)) )       /* Clear out any pending string */
     {
         AddDelims (Ci.opcode, oper_tmp);
         /*list_print (&Ci, CmdEnt, NULL);*/
         PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
+        Ci.lblname = "";
         *oper_tmp = '\0';
     }
 

@@ -128,13 +128,13 @@ movchr (dst, ch)
     }
 }
 
-/* ******************************************************************** *
- * PrintLbl () - Prints out the label to "dest", in the format needed.  *
- * Passed : (1) dest - The string buffer into which to print the label. *
- *          (2) clas - The Class Letter for the label.                  *
- *          (3)  adr - The label's address.                             *
- *          (4)   dl - ptr to the nlist tree for the label              *
- * ******************************************************************** */
+/*
+ * PrintLbl () - Prints out the label to "dest", in the format needed.
+ * Passed : (1) dest - The string buffer into which to print the label.
+ *          (2) clas - The Class Letter for the label.
+ *          (3)  adr - The label's address.
+ *          (4)   dl - ptr to the nlist tree for the label
+ */
 
 void
 #ifdef __STDC__
@@ -157,7 +157,7 @@ PrintLbl (dest, clas, adr, dl)
     {
         if ( (adr <= 9) ||
              ((PBytSiz == 1) && adr > 244) ||
-             ((PBytSiz == 2) && adr > 65526)  )
+             ((PBytSiz == 2) && adr > 65526) )
         {
             clas = '&';
         }
@@ -208,7 +208,11 @@ PrintLbl (dest, clas, adr, dl)
         case '%':       /* Binary */
             strcpy (dest, "%");
 
-            if (adr > 0xff)
+            if (adr > 0xffff)
+            {
+                mask = 0x80000000;
+            }
+            else if (adr > 0xff)
             {
                 mask = 0x8000;
             }
@@ -353,7 +357,7 @@ create_lbldef (lblclass, val, name)
         else
         {
             /* Assume that a program label does not exceed 20 bits */
-            sprintf (newlbl->sname, "%c%05x", toupper(lblclass), val & 0x1ffff);
+            sprintf (newlbl->sname, "%c%05x", toupper(lblclass), val & 0x3ffff);
         }
 
         newlbl->myaddr = val;
@@ -367,6 +371,17 @@ create_lbldef (lblclass, val, name)
 
     return newlbl;
 }
+
+/* ************************
+ * addlbl() - Add a label to the list
+ *        Does nothing for class '^', '@', '$', or '&'
+ *        if the label exists, and a different name is provided, renames the label
+ * Passed : (1) char label class
+ *          (2) int the address for the label
+ *          (3) char * - the name for the label 
+ *              If NULL or empty string, the hex address of the label prepended with
+ *              the class letter is used.
+ */
 
 LBLDEF *
 #ifdef __STDC__
@@ -397,7 +412,7 @@ addlbl (lblclass, val, newname)
 
         if (oldlbl->myaddr == val)   /* Simply a rename */
         {
-            if (newname)
+            if ((newname) && strlen (newname))
             {
                 if (strcmp(newname, oldlbl->sname))
                 {
@@ -489,7 +504,7 @@ process_label (ci, lblclass, addr)
     {
         addlbl (lblclass, addr, NULL);
     }
-    else
+    else   /* Pass 2, find it */
     {
         register LBLDEF *me;
 
@@ -514,16 +529,20 @@ parsetree(c)
 #endif
 {
     LBLDEF *l;
+    LBLCLAS *lc;
     int x;
 
     if (Pass == 1)
         return;
 
-    for (x = 0; x < sizeof(LblList)/sizeof(LblList[0]); x++)
-    {
-        l = LblList[x].cEnt;
+    lc = LblList;
 
-        if (l)
+
+    while (lc->lclass)
+    {
+        c = lc->lclass;
+
+        if ((l = labelclass (c)->cEnt))
         {
             printf ("\nLabel definitions for Class '%c'\n\n", c);
 
@@ -533,16 +552,17 @@ parsetree(c)
                 l = l->Next;
             }
         }
+
+        ++lc;
     }
 }
 
-/* **************************************************************** *
- * LblCalc() - Calculate the Label for a location                   *
- * Passed:  (1) dst - pointer to character string into which to     *    
- *              APPEND result                                       *
- *          (2) adr -  the address of the label                     *
- *          (3) amod - the AMode desired                            *
- * **************************************************************** */
+/*
+ * LblCalc() - Calculate the Label for a location
+ * Passed:  (1) dst - pointer to character string into which to APPEND result                                       *
+ *          (2) adr -  the address of the label
+ *          (3) amod - the AMode desired
+ */
 
 int
 #ifdef __STDC__
@@ -624,7 +644,7 @@ LblCalc (dst, adr, amod)
 
                 if (kls->dofst->incl_pc)
                 {
-                    raw += PCPos;
+                    raw += CmdEnt;
                 }
             }
         }
@@ -637,7 +657,7 @@ LblCalc (dst, adr, amod)
     /* Attempt to restrict class 'L' */
     if (mainclass == 'L')
     {
-        raw &= 0x1ffff;
+        raw &= 0x3ffff;
     }
 
     if (Pass == 1)

@@ -16,13 +16,13 @@ typedef struct modestrs {
 } MODE_STR;
 
 MODE_STR ModeStrings[] = {
-    {"D%d", 0},
-    {"A%d", 0},
-    {"(A%d)", 0},
-    {"(A%d)+", 0},
-    {"-(A%d)", 0},
-    {"%s(A%d)", 0},
-    {"%s(A%d,%c%d)", 0}
+    {"d%d", 0},
+    {"a%d", 0},
+    {"(a%d)", 0},
+    {"(a%d)+", 0},
+    {"-(a%d)", 0},
+    {"%s(a%d)", 0},
+    {"%s(a%d,%c%d)", 0}
 };
 
 /* The above strings for when the register is A6 (sp) */
@@ -67,9 +67,9 @@ int mode;
 int reg;
 #endif
 {
-    short ext1;
-    short ext2;
-    short displac_w;
+    int ext1;
+    int ext2;
+    int displac_w;
     int displac_l;
     char dispstr[50];
     char dispReg[4];
@@ -104,7 +104,8 @@ int reg;
         AMode = AM_A0 + reg;
         ext1 = getnext_w(ci);
        /*++(ci->wcount);*/
-        displac_w = (ext1 & 0xffff);
+        displac_w = ext1;
+        /*displac_w = (ext1 & 0xffff);*/
 
         /* The system biases the data Pointer (a6) by 0x8000 bytes,
          * so compensate
@@ -213,8 +214,8 @@ int reg;
         case 2:              /* (d16,PC) */
             AMode = AM_REL;
             ext1 = getnext_w(ci);
-            /*++(ci->wcount);*/
-            LblCalc(dispstr, ext1, AMode);
+            /* (ext1 - 2) to reflect PCPos before getnext_w */
+            LblCalc(dispstr, ext1 - 2, AMode);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 3:              /* d8(PC)Xn */
