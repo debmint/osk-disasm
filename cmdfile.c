@@ -108,7 +108,7 @@ AsmComment (char *lpos, FILE *cmdfile)
 
     /* Now locate or set up an appropriate tree structure */
 
-    /*treebase = Comments[strpos (lblorder, lblclass)];*/
+    treebase = Comments[strpos (lblorder, lblclass)];
 
     if ( ! treebase)
     {

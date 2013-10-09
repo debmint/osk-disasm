@@ -131,8 +131,9 @@ xt int M_Sysgo, M_SysDev, M_Consol, M_Extens, M_Clock, M_Slice,
     M_SysPri, M_MinPri, M_MaxAge, M_MDirSiz, M_Events, M_Compat,
     M_Compat2, M_MemLst, M_IRQStk, M_ColdTrys, M_Id12; */
 
+xt int IDataBegin;
+xt int IDataCount;
 xt int HdrEnd;   /* The first byte past end of header, usefule for begin of Pass 2 */
-xt int ModType;   /* The type of module */
 xt int LinNum;
 xt int PgWidth
 #ifdef _MAIN_
