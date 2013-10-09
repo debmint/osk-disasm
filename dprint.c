@@ -29,6 +29,8 @@
 #define CNULL '\0'
 static int PgLin;
 
+static void BlankLine();
+
 #ifdef __STDC__
 static void PrintFormatted (char *pfmt, CMD_ITMS *ci);
 static void NonBoundsLbl (char cClass);
@@ -117,11 +119,6 @@ tabinit ()
     strcpy (pseudcmd, "%5d\t%04X\t%s\t\t%s\t%s\t%s\n");
 }
 
-/*
- * PrintPsect() - Set up the Psect for printout
- *
- */
-
 void
 #ifdef __STDC__
 PrintAllCodLine (int w1, int w2)
@@ -153,6 +150,11 @@ PrintAllCodL1 (w1)
         StartPage();
     }
 }
+
+/* ****
+ * PrintPsect() - Set up the Psect for printout
+ *
+ */
 
 void
 PrintPsect()
@@ -186,6 +188,7 @@ PrintPsect()
 #endif
     strcat (EaString, "_a");
     Ci.comment = "";
+    BlankLine();
 
     for (c = 0; prgsets[c]; c++)
     {
@@ -193,7 +196,7 @@ PrintPsect()
         {
             Ci.cmd_wrd = hdrvals[c];
             sprintf (Ci.opcode, "%d", hdrvals[c]);
-            strcpy(Ci.lblname, *prgsets[c]);
+            Ci.lblname = *prgsets[c];
             PrintLine (pseudcmd, &Ci, CNULL, 0, 0); 
         }
         else {
@@ -209,10 +212,13 @@ PrintPsect()
     sprintf (&EaString[strlen(EaString)], ",%s", findlbl ('L', M_Exec)->sname);
     strcpy (Ci.opcode, EaString);
     strcpy (Ci.mnem, "psect");
+    Ci.lblname = "";
     /* Be sure to have enough space to write psect */
     pgWdthSave = PgWidth;
     PgWidth = 200;
-    PrintLine (pseudcmd, &Ci, CNULL, 0, 0); 
+    BlankLine();
+    PrintLine (pseudcmd, &Ci, CNULL, 0, 0);
+    BlankLine();
     PgWidth = pgWdthSave;
 }
 
