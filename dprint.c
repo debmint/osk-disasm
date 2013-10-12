@@ -1249,12 +1249,21 @@ ListInitData (ldf, nBytes, lclass)
             {
                 char tmpbuf[30];
 
-                strncpy (tmpbuf, curpos, 24);
+                if (*curpos == '"')
+                {
+                    strcpy (tmpbuf, "\""); /* To make the resets work */
+                    strcpy (Ci.opcode, "'\"");
+                }
+                else
+                {
+                    strncpy (tmpbuf, curpos, 24);
 
-                if (strlen(tmpbuf) >= 24)
-                    tmpbuf[24] = '\0';
+                    if (strlen(tmpbuf) >= 24)
+                        tmpbuf[24] = '\0';
 
-                AddDelims (Ci.opcode, tmpbuf);
+                    sprintf (Ci.opcode, "\"%s\"", tmpbuf);
+                }
+
                 curpos += strlen(tmpbuf);
                 lblCount -= strlen(tmpbuf);
                 nBytes -= strlen(tmpbuf);

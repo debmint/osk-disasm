@@ -741,73 +741,13 @@ MovBytes (db)
     {
         list_print (&Ci, (short)CmdEnt, NULL);
         PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
-        /*PrintLine (pseudcmd, pbuf, 'L', CmdEnt, PCPos);*/
     }
 }
 
-/* ********************************************************* *
- * AddDelims() - Add delimiters for fcc/fcs operand -        *
- *              checks string for nonexistand delimiter      *
- *              and copies string with delims to destination *
- * ********************************************************* */
 
-void
-#ifdef __STDC__
-AddDelims (char *dest, char *src)
-#else
-AddDelims (dest, src)
-    char *dest;
-    char *src;
-#endif
-{
-    char delim = '"';
-    static char bestdelims[] = "\"'/#\\|$!";
-    char *dref = bestdelims;
-
-    /* First, try to use some "preferred" delimiters */
-
-    while (strchr (src, *dref))
-    {
-        ++dref;
-
-        if (*dref == '\0')
-        {
-            break;
-        }
-    }
-
-    delim = *dref;
-
-    if (delim == '\0')
-    {
-        /* OK.. we didn't find a delim in the above..  Now let's
-         * start off basically where we left off and parse through
-         * the whole ASCII set to find one
-         */
-
-        delim = '\x25';
-
-        while ( ! strchr(src, delim))
-        {
-            ++delim;
-
-            /* This should never happen, but just in case */
-
-            if (delim == '\x7f')
-            {
-                fprintf (stderr,
-                         "Error, string contains ALL ASCII Characters???\n");
-                exit(1);
-            }
-        }
-    }
-
-    sprintf (dest, "%c%s%c", delim, src, delim);
-}
-
-/* ************************************************** *
- * MovAsc() - Move nb byes int fcc (or fcs) statement *
- * ************************************************** */
+/* ******************************************
+ * MovAsc() - Move nb byes fordcb" statement
+ */
 
 void
 #ifdef __STDC__
@@ -838,9 +778,8 @@ MovASC (nb, aclass)
             (strlen (oper_tmp) && findlbl (aclass, PCPos)))
             /*(strlen (oper_tmp) && findlbl (ListRoot (aclass), PCPos + 1)))*/
         {
-            AddDelims (Ci.opcode, oper_tmp);
+            sprintf (Ci.opcode, "\"%s\"", oper_tmp);
             PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
-            /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
             oper_tmp[0] = '\0';
             CmdEnt = PCPos;
             Ci.lblname = "";
@@ -853,7 +792,7 @@ MovASC (nb, aclass)
         ++cCount;
         ++PCPos;
 
-        if (isprint (x))
+        if (isprint (x) && (x != '"'))
         {
             if (Pass == 2)
             {
@@ -888,18 +827,25 @@ MovASC (nb, aclass)
                 /* Print any unprinted ASCII characters */
                 if (strlen (oper_tmp))
                 {
-                    AddDelims (Ci.opcode, oper_tmp);
+                    sprintf (Ci.opcode, "\"%s\"", oper_tmp);
                     PrintLine (pseudcmd, &Ci, aclass, CmdEnt, CmdEnt);
                     Ci.opcode[0] = '\0';
                     Ci.cmd_wrd = 0;
                     Ci.lblname = "";
-                    /*PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);*/
                     oper_tmp[0] = '\0';
                     cCount = 0;
                     CmdEnt = PCPos - 1; /* We already have the byte */
                 }
 
-                sprintf (Ci.opcode, "%d", x);
+                if (isprint(x))
+                {
+                    sprintf (Ci.opcode, "'%c'", x);
+                }
+                else
+                {
+                    sprintf (Ci.opcode, "$%x", x);
+                }
+
                 Ci.cmd_wrd = x;
                 PrintLine (pseudcmd, &Ci, aclass, CmdEnt, PCPos);
                 Ci.lblname = "";
@@ -907,22 +853,14 @@ MovASC (nb, aclass)
                 Ci.cmd_wrd = 0;
                 cCount = 0;
                 CmdEnt = PCPos;
-                /*PrintLbl (Ci.opcode, '^', x, nlp);
-                //sprintf (pbuf->instr, "%02x", x & 0xff);
-                //PrintLine (pseudcmd, pbuf, aclass, CmdEnt, PCPos);
-                //strcpy (pbuf->mnem, "fcc");*/
             }
-
-            /*CmdEnt = PCPos + 2;*/
         }
-
-        /*++PCPos;*/
     }       /* end while (nb--) - all chars moved */
 
     /* Finally clean up any remaining data. */
     if ((Pass == 2) && (strlen (oper_tmp)) )       /* Clear out any pending string */
     {
-        AddDelims (Ci.opcode, oper_tmp);
+        sprintf (Ci.opcode, "\"%s\"", oper_tmp);
         /*list_print (&Ci, CmdEnt, NULL);*/
         PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
         Ci.lblname = "";
