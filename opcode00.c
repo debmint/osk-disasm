@@ -1024,6 +1024,16 @@ typedef struct add_sub_def {
     int allmodes;
 } ADDSUBDEF;
 
+/* ********************
+ * add_sub() - Handles add, sub, and, or, eor instructions
+ *   Cmd modes:
+ *     1000 - "or"
+ *     1001 - "sub"
+ *     1011 - "eor"
+ *     1100 - "and"
+ *     1101 - "add"
+ */
+
 int
 #ifdef __STDC__
 add_sub(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
@@ -1038,6 +1048,8 @@ add_sub(ci, j, op)
     int datareg = (ci->cmd_wrd >> 9) & 7;
     int ea_mode = (ci->cmd_wrd >> 3) & 7;
     int ea_reg = ci->cmd_wrd & 7;
+    register int opmode = (ci->cmd_wrd >>6) & 7;
+    register int cmdcode = ci->cmd_wrd >> 12;
     static ADDSUBDEF AddSubDefs[] = {
         {SIZ_BYTE, EA2REG, 'd', 0},
         {SIZ_WORD, EA2REG, 'd', 0},
@@ -1046,14 +1058,33 @@ add_sub(ci, j, op)
         {SIZ_BYTE, REG2EA, 'd', 0},
         {SIZ_WORD, REG2EA, 'd', 0},
         {SIZ_LONG, REG2EA, 'd', 0},
-        {SIZ_LONG, EA2REG, 'a', 1}
+        {SIZ_LONG, EA2REG, 'a', 1} 
     };
-    register ADDSUBDEF *asDef = &AddSubDefs[(ci->cmd_wrd >> 6) & 7];
+    register ADDSUBDEF *asDef = &AddSubDefs[opmode];
     char ea[50];
 
-    if ((asDef->direction == REG2EA) && !(asDef->allmodes))
+    if (asDef->direction == EA2REG)
     {
-        if (ea_mode < 2)
+
+        if (cmdcode == 0x1011)    /* eor */
+        {
+            return 0;
+        }
+
+        if ((cmdcode & 3) == 0)     /* and / or */
+        {
+            if (ea_mode == 1)
+            {
+                return 0;
+            }
+        }
+    }
+    else       /* else asDef->Direction = REG2EA */
+    {
+        if ((cmdcode != 0x0b) && (ea_mode < 2))  /* Only "eor" allows Dn dest for <ea>*/
+            return 0;
+
+        if (ea_mode == 2)
             return 0;
 
         if ((ea_mode == 7) && (ea_reg < 2))
