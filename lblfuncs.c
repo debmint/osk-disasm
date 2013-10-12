@@ -619,7 +619,7 @@ LblCalc (dst, adr, amod)
         else
         {
             /*mainclass = DEFAULTCLASS;*/
-            mainclass = DfltLbls[AMode-1];
+            mainclass = DfltLbls[amod - 1];
         }
     }
     else              /* amod=0, it's a boundary def  */
@@ -669,7 +669,6 @@ LblCalc (dst, adr, amod)
         char tmpname[20];
 
         if ((mylabel = findlbl (mainclass, raw)))
-        /*if ((mylabel = FindLbl (LblList[strpos (lblorder, mainclass)], raw)))*/
         {
             PrintLbl (tmpname, mainclass, raw, mylabel);
             strcat (dst, tmpname);

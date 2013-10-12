@@ -302,9 +302,9 @@ OPSTRUCTURE instr00[]=
 	     {"dc",		  13,8,21,   "xxxxxxxxxxxxxxxx",0,0,   0, notimplemented},
 /*1*/    {"ori.",     0,8,0,     "00000000xxxxxxxx",7,6,     1,  biti_size},
 /* OR Immediate to CCR */
-/*2*/    {"ori.",     1,8,17,    "0000000000111100",0,0,     2,  biti_reg},
+/*2*/    {"ori",     1,8,17,    "0000000000111100",0,0,     2,  biti_reg},
 /* OR Immediate to SR */
-/*3*/    {"ori.",     2,8,18,    "0000000001111100",0,0,     3,  biti_reg},
+/*3*/    {"ori",     2,8,18,    "0000000001111100",0,0,     3,  biti_reg},
 /* DYNAMIC  BIT */
 /*4*/    {"btst.",    3,4,2,     "0000xxx100xxxxxx",5,3,     4,  bit_dynamic},
 /*5*/    {"bchg.",    3,4,0,     "0000xxx101xxxxxx",5,3,     5,  bit_dynamic},
@@ -314,9 +314,9 @@ OPSTRUCTURE instr00[]=
 /*8*/    {"movep.",   4,19,4,    "0000xxx10x001xxx",6,6,     8,  movep},
 /*9*/    {"movep.",   4,4,19,    "0000xxx11x001xxx",6,6,     9,  movep},
 /* AND Immediate to CCR */
-/*10*/   {"andi.",    1,8,17,    "0000001000111100",0,0,    10,  biti_reg},
+/*10*/   {"andi",    1,8,17,    "0000001000111100",0,0,    10,  biti_reg},
 /* AND Immediate to SR */
-/*11*/   {"andi.",    2,8,18,    "0000001001111100",0,0,    11,  biti_reg},
+/*11*/   {"andi",    2,8,18,    "0000001001111100",0,0,    11,  biti_reg},
 /* AND Immediate */
 /*12*/   {"andi.",    0,8,0,     "00000010xxxxxxxx",7,6,    12,  biti_size},
 /* SUB Immediate */
@@ -329,9 +329,9 @@ OPSTRUCTURE instr00[]=
 /*17*/   {"bclr.",    3,8,0,     "0000100010xxxxxx",5,3,    17,  bit_static},
 /*18*/   {"bset.",    3,8,0,     "0000100011xxxxxx",5,3,    18,  bit_static},
 /* EOR IMMEDIATE to CCR */ 
-/*19*/   {"eori.",    1,8,17,    "0000101000111100",0,0,    19,  biti_reg},
+/*19*/   {"eori",    1,8,17,    "0000101000111100",0,0,    19,  biti_reg},
 /* EOR IMMEDIATE to SR*/ 
-/*20*/   {"eori.",    2,8,18,    "0000101001111100",0,0,    20,  biti_reg},
+/*20*/   {"eori",    2,8,18,    "0000101001111100",0,0,    20,  biti_reg},
 /* EOR IMMEDIATE */ 
 /*21*/   {"eori.",    0,8,0,     "00001010xxxxxxxx",7,6,    21,  biti_size},
 /* CMP IMMEDIATE */ 
@@ -379,7 +379,7 @@ OPSTRUCTURE instr04[]=
 /* SWAP */ 
 /*38*/   {"swap.",    2,4,21,    "0100100001000xxx",3,3,    38,  one_ea},
 /* PEA */ 
-/*39*/   {"pea.",     5,5,21,    "0100100001xxxxxx",7,7,    39,  one_ea},
+/*39*/   {"pea",      5,5,21,    "0100100001xxxxxx",7,7,    39,  one_ea},
 /* MOVEM Registers to EA */ 
 /*40*/   {"movem.",   4,20,6,    "010010001xxxxxxx",6,6,    40,  movem_cmd},
 /*ILLEGAL  */ 
