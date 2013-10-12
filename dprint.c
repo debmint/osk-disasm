@@ -151,7 +151,7 @@ PrintAllCodL1 (w1)
     }
 }
 
-/* ****
+/* **********
  * PrintPsect() - Set up the Psect for printout
  *
  */
@@ -173,7 +173,7 @@ PrintPsect()
 
     prgsets[0] = &ProgType; prgsets[1] = &ProgLang;
     prgsets[2] = &ProgAtts; prgsets[3] = NULL;
-    psecfld[0] = ",((%s << 8)"; psecfld[1] = " | %s)";
+    psecfld[0] = ",((%s<<8)"; psecfld[1] = "|%s)";
     ProgType = modnam_find (ModTyps, (unsigned char)M_Type)->name;
     hdrvals[0] = M_Type;
     ProgLang = modnam_find (ModLangs, (unsigned char)M_Lang)->name;
@@ -207,7 +207,8 @@ PrintPsect()
         strcat (EaString, Ci.opcode);
     }
 
-    sprintf (&EaString[strlen(EaString)], "|%d)", M_Edit);
+    sprintf (&EaString[strlen(EaString)], "|%d)", M_Revs);
+    sprintf (&EaString[strlen(EaString)], ",%d", M_Edit);
     strcat (EaString, ",0");    /* For the time being, don't add any stack */
     sprintf (&EaString[strlen(EaString)], ",%s", findlbl ('L', M_Exec)->sname);
     strcpy (Ci.opcode, EaString);
@@ -253,7 +254,7 @@ char *pfmt; CMD_ITMS *ci;
 
     if (WrtSrc)
     {
-        fprintf (AsmPath, "%s %s %s", lbl, ci->mnem, ci->opcode);
+        fprintf (AsmPath, "%s %s %s", ci->lblname, ci->mnem, ci->opcode);
 
         if (strlen (ci->comment))
         {
@@ -833,7 +834,7 @@ WrtEnds()
 
     BlankLine();
 
-    PrintFormatted (realcmd, &Ci);
+    PrintFormatted (pseudcmd, &Ci);
 
     if (WrtSrc)
     {
@@ -1170,13 +1171,13 @@ ListInitData (ldf, nBytes, lclass)
     register char *curpos;
     struct ireflist *il;
     char *hexFmt;
+    char *what = "* Initialized Data Definitions";
 
     Ci.cmd_wrd = 0;
     Ci.comment = "";
     Ci.mnem[0] = '\0';
     Ci.lblname = "";
     Ci.wcount = 0;
-    strcpy (Ci.opcode, "* Initialized Data Definitions");
     NowClass = 'D';
     PCPos = IDataBegin;        /* MovBytes/MovASC use PCPos */
     CmdEnt = PCPos;
@@ -1184,10 +1185,18 @@ ListInitData (ldf, nBytes, lclass)
     il = IRefs;
 
     curpos = IBuf;
-    BlankLine();
-    PrintLine (pseudcmd, &Ci, lclass, ldf->myaddr, ldf->myaddr);
-    Ci.opcode[0] = '\0';
-    BlankLine();
+
+    BlankLine ();
+    printf ("%5d %22s%s\n", LinNum++, "", what);
+    ++PgLin;
+
+    if (WrtSrc)
+    {
+        fprintf (AsmPath, "%s\n", what);
+    }
+
+    BlankLine ();
+
     AMode = 0;             /* Mode for Data             */
 
     while (nBytes > 0)

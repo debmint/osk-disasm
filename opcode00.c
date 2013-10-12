@@ -16,7 +16,7 @@ enum {
     REG2EA
 };
 
-char *SizSufx[] = {"s", "w", "l"};
+char *SizSufx[] = {"b", "w", "l"};
 
 extern CONDITIONALS typecondition[];
 int
@@ -285,7 +285,7 @@ bitModeRegLegal(mode, reg)
 //    return 0;
 //}*/
 
-/*
+/* ******************
  * Immediate bit operations involving the status registers
  * Returns 1 on success, 0 on failure
  *
@@ -302,14 +302,24 @@ biti_reg(ci, j, op)
 #endif
 {
     static char *sr[2] = {"ccr", "sr"};
-    register int size = (ci->code[1] >> 6) & 1;
+    register int size;
 
-    ci->code[1] = getnext_w(ci);
+    register int ext1 = getnext_w(ci);
+    size = (ext1 >> 6) & 1;
 
-    if (ci->code[1] & 0xff00)
+/*    if (ext1 & 0xff00)
     {
         ungetnext_w(ci);
         return 0;
+    }*/
+
+    if (size == 0)
+    {
+        if ((ext1 < -128) || (ext1 > 0x7f))
+        {
+            ungetnext_w(ci);
+            return 0;
+        }
     }
 
     /* Add functions to retrieve label */
@@ -341,7 +351,7 @@ biti_size(ci, j, op)
     register int reg;
     register int firstword = ci->wcount;
     char ea[30];
-    long data;
+    int data;
 
     if (size > SIZ_LONG)
     {
@@ -360,17 +370,28 @@ biti_size(ci, j, op)
         return 0;
     }
 
-    ci->code[firstword] = getnext_w(ci);
+    data = getnext_w(ci);
 
     switch (size)
     {
     case SIZ_BYTE:
+        if ((data < -128) || (data > 0xff))
+        {
+            ungetnext_w(ci);
+            return 0;
+        }
+
+        break;
     case SIZ_WORD:
-        data = ci->code[firstword];
+        if ((data < -32768) || (data > 0xffff))
+        {
+            ungetnext_w(ci);
+            return 0;
+        }
+
         break;
     case SIZ_LONG:
-        ci->code[ci->wcount] = getnext_w(ci);
-        data = (ci->code[firstword] << 8) | ci->code[firstword + 1];
+        data = (data << 16) | (getnext_w(ci) & 0xffff);
         break;
     }
     if (get_eff_addr(ci, ea, mode, reg, SIZ_LONG))
@@ -720,6 +741,14 @@ one_ea(ci, j, op)
     int size = (ci->cmd_wrd >> 6) & 3;
     char ea[50];
 
+    if (strchr(op->name, '.'))
+    {
+        if (size >= sizeof(SizSufx)/sizeof(SizSufx[0]))
+        {
+            return 0;
+        }
+    }
+
     if (j == 38)       /* swap */
     {
         sprintf(ci->opcode, "d%d", ci->cmd_wrd & 7);
@@ -825,14 +854,14 @@ branch_displ (ci, cmd_word, siz_suffix)
             strcpy (siz_suffix, "w");
             break;
         case 0xff:
-            displ = (getnext_w(ci) << 8) | (getnext_w(ci) & 0xff);
+            displ = (getnext_w(ci) << 16) | (getnext_w(ci) & 0xffff);
             strcpy (siz_suffix, "l");
             break;
         default:
             /* Sign extend the 8-bit displacement */
             if (displ & 0x80)
             {
-                displ |= 0xff00;
+                displ |= (-1 ^ 0xff);
             }
 
             strcpy (siz_suffix, "s");
@@ -929,7 +958,7 @@ bit_rotate_reg(ci, j, op)
     switch ((ci->cmd_wrd >> 5) & 1)
     {
         case 0:
-            sprintf (ci->opcode, "#%d,", count_reg);
+            sprintf (ci->opcode, "#%d,", (count_reg == 0) ? 8 : count_reg);
             break;
         default:
             sprintf (ci->opcode, "D%d,", count_reg);
@@ -938,7 +967,13 @@ bit_rotate_reg(ci, j, op)
     sprintf(dest_ea, "D%d", ci->cmd_wrd & 7);
     strcat (ci->opcode, dest_ea);
     strcpy (ci->mnem, op->name);
-    strcat(ci->mnem, SizSufx[(ci->cmd_wrd >> 6) & 3]);
+
+    if ((count_reg = (ci->cmd_wrd >> 6) & 3) > 2)
+    {
+        return 0;
+    }
+
+    strcat(ci->mnem, SizSufx[count_reg]);
     return 1;
 }
 
@@ -1082,7 +1117,8 @@ cmp_cmpa(ci, j, op)
 
     if (get_eff_addr(ci, EaString, mode, reg, size))
     {
-        sprintf (ci->opcode, "%s,%c%d", EaString, regName, (ci->cmd_wrd >>6) & 7);
+        sprintf (ci->opcode, "%s,%c%d", EaString, regName,
+                (ci->cmd_wrd >> 9) & 7);
         strcpy (ci->mnem, op->name);
         strcat (ci->mnem, SizSufx[size]);
         return 1;
@@ -1255,8 +1291,13 @@ cmd_dbcc(ci, j, op)
         offset = getnext_w(ci);
         dest  = br_from + offset;
 
-        process_label (ci, 'L', dest);
-        sprintf (ci->opcode, "d%d,#%s", ci->cmd_wrd & 7, EaString);
+        /*process_label (ci, 'L', dest);*/
+        AMode = AM_REL;
+        PCPos -= 2;
+        EaString[0] = '\0';
+        LblCalc (EaString, offset, AM_REL);
+        PCPos += 2;
+        sprintf (ci->opcode, "d%d,%s", ci->cmd_wrd & 7, EaString);
 
         return 1;
     }

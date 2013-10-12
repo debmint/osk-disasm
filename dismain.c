@@ -321,6 +321,11 @@ dopass(argc,argv,mypass)
         }
     }
 
+    if (Pass == 2)
+    {
+        WrtEnds();
+    }
+
     return 0;
 }
 
@@ -648,6 +653,7 @@ MovBytes (db)
      * to the appropriate value */
     strcpy (Ci.mnem, "dc");
     Ci.opcode[0] = '\0';
+    Ci.lblname = "";
     Ci.comment = NULL;
     Ci.cmd_wrd = 0;
     PBytSiz = db->b_siz;

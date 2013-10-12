@@ -32,8 +32,8 @@ MODE_STR SPStrings[] = {
     {"(sp)", 0},
     {"(sp)+", 0},
     {"-(sp)", 0},
-    {"%s{sp}", 0},
-    {"%s{sp,%c%d", 0}
+    {"%s(sp)", 0},
+    {"%s(sp,%c%d)", 0}
 };
 
 /* Need to add for 68020-up modes.  Don't know if they can be included in these two arrays or not..*/
@@ -103,8 +103,6 @@ int reg;
     case 5:             /* d{16}An */
         AMode = AM_A0 + reg;
         ext1 = getnext_w(ci);
-       /*++(ci->wcount);*/
-        displac_w = ext1;
         /*displac_w = (ext1 & 0xffff);*/
 
         /* The system biases the data Pointer (a6) by 0x8000 bytes,
@@ -112,11 +110,11 @@ int reg;
          */
 
         if (reg == 6) {
-            displac_w += 0x8000;
+            ext1 += 0x8000;
         }
 
         /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
-        LblCalc(dispstr, displac_w, AMode);
+        LblCalc(dispstr, ext1, AMode);
         /*sprintf(dispstr, "%d", displac_w);*/
 
         if (reg == 7)
@@ -129,7 +127,7 @@ int reg;
         }
         return 1;
         break;
-    case 6:             /* d{8}(An)Xn or 68020-up */
+    case 6:             /* d{8}(An,Xn) or 68020-up */
         AMode = AM_A0 + reg;
 
         if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
@@ -138,14 +136,21 @@ int reg;
              * be a label */
             char a_disp[50];
 
+            a_disp[0] = '\0';
+
+            /* This is for cpu's < 68020
+             * for 68020-up, the bd can be up to 32 bits
+             */
+            if (abs(ew_b.displ) > 0x80)
+            {
+                ungetnext_w(ci);
+                return 0;
+            }
+
             if (ew_b.displ)
             {
-                sprintf (a_disp, "%d", ew_b.displ);
+                /*sprintf (a_disp, "%d", ew_b.displ);*/
                 LblCalc (a_disp, ew_b.displ, AMode);
-            }
-            else
-            {
-                a_disp[0] = '\0';
             }
 
             if (reg == 7)
@@ -197,18 +202,28 @@ int reg;
             {
                 char b;
             case SIZ_BYTE:
-                displac_l = ext1 & 0xff;
+                if ((ext1 < -128) || (ext1 > 0xff))
+                {
+                    ungetnext_w(ci);
+                    return 0;
+                }
+
                 break;
             case SIZ_WORD:
-                displac_l = ext1 & 0xffff;
+                if ((ext1 < -32768) || (ext1 > 0xffff))
+                {
+                    ungetnext_w(ci);
+                    return 0;
+                }
+
                 break;
             case SIZ_LONG:
                 ext2 = getnext_w(ci);
-                displac_l = (ext1 << 16) | (ext2 & 0xffff);
+                ext1 = (ext1 << 16) | (ext2 & 0xffff);
                 break;
             }
 
-            LblCalc (dispstr, displac_l, AMode);
+            LblCalc (dispstr, ext1, AMode);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 2:              /* (d16,PC) */
@@ -287,10 +302,16 @@ get_ext_wrd_brief (ci, extW, mode, reg)
         extW->bs = (ew >> 7) & 1;
         extW->is = (ew >> 6) & 1;
         extW->bdSize = (ew >> 4) & 3;
+        extW->displ = 0;
     }
     else
     {
         extW->displ = ew & 0xff;
+
+        if (extW->displ & 0x80)
+        {
+            extW->displ = extW->displ | (-1 ^ 0xff);
+        }
     }
     return 1;
 }
