@@ -305,7 +305,7 @@ biti_reg(ci, j, op)
     register int size;
 
     register int ext1 = getnext_w(ci);
-    size = (ext1 >> 6) & 1;
+    size = (ci->cmd_wrd >> 6) & 1;
 
 /*    if (ext1 & 0xff00)
     {
@@ -313,19 +313,16 @@ biti_reg(ci, j, op)
         return 0;
     }*/
 
-    if (size == 0)
+    if ((size == 0) && (ext1 > 0x1f))
     {
-        if ((ext1 < -128) || (ext1 > 0x7f))
-        {
-            ungetnext_w(ci);
-            return 0;
-        }
+        ungetnext_w(ci);
+        return 0;
     }
 
     /* Add functions to retrieve label */
     if (Pass == 2) {
         strcpy (ci->mnem, op->name);
-        sprintf (ci->opcode, "#%d,%s", ci->code[1], sr[size]);
+        sprintf (ci->opcode, "#%d,%s", ext1, sr[size]);
     }
 
     return 1;
@@ -365,9 +362,13 @@ biti_size(ci, j, op)
    
     reg = (ci->cmd_wrd) & 7;
 
-    if ((mode == 7) && (reg > 3))
+    if (mode == 7)
     {
-        return 0;
+            /* Note: for "cmpi"(0x0cxx), 68020-up allow all codes < 4 */
+            if (reg > 1)
+            {
+                return 0;
+            }
     }
 
     data = getnext_w(ci);
@@ -555,19 +556,24 @@ move_instr(ci, j, op)
             {
                 strcat(ci->mnem, "a");
             }
-            else
+
+            switch (size)
             {
-                switch (size)
+            case SIZ_BYTE:
+                if (((ci->cmd_wrd >> 6) & 7) == 1)
                 {
-                case SIZ_BYTE:
-                    strcat(ci->mnem, ".b");
-                    break;
-                case SIZ_WORD:
-                    strcat(ci->mnem, ".w");
-                    break;
-                case SIZ_LONG:
-                    strcat(ci->mnem, ".l");
+                    return 0;
                 }
+                else
+                {
+                    strcat(ci->mnem, ".b");
+                }
+                break;
+            case SIZ_WORD:
+                strcat(ci->mnem, ".w");
+                break;
+            case SIZ_LONG:
+                strcat(ci->mnem, ".l");
             }
 
             return 1;
@@ -588,20 +594,31 @@ move_ccr_sr(ci, j, op)
 #endif
 {
     /* direction is actually 2 bytes, but this lets REG2EA/EA2REG to work */
-    int dir = REG2EA;
+    int dir;
     char *statReg;
     int mode = (ci->cmd_wrd >> 3) & 7;
     int reg = ci->cmd_wrd & 7;
 
-    switch (ci->cmd_wrd & 0x0300)
+    switch (ci->cmd_wrd & 0x0f00)
     {
     case 0:
         statReg = "sr";
+        dir = REG2EA;
         break;
-    case 0x200:
-        dir = EA2REG;
-    case 0x100:
+    case 0x0200:
         statReg = "ccr";
+        dir = REG2EA;
+        break;
+    case 0x400:
+        statReg = "ccr";
+        dir = EA2REG;
+        break;
+    case 0x600:
+        statReg = "sr";
+        dir = EA2REG;
+        break;
+    default:
+        return 0;
     }
 
     if (get_eff_addr (ci, EaString, mode, reg, SIZ_WORD))
@@ -611,12 +628,14 @@ move_ccr_sr(ci, j, op)
         switch (dir)
         {
         case EA2REG:
-            sprintf (ci->opcode, "%s,%s", statReg, EaString);
-        default:
             sprintf (ci->opcode, "%s,%s", EaString, statReg);
+            break;
+        default:
+            sprintf (ci->opcode, "%s,%s", statReg, EaString);
         }
 
         strcpy (ci->mnem, op->name);
+
         if ((dot = strchr(ci->mnem, '.')))
         {
             *dot = '\0';
@@ -831,9 +850,11 @@ one_ea(ci, j, op)
 }
 
 /* ------------------------------------------------------------------- *
- * branch_displ - Calculates the size of a branch and places the size  *
- *          suffix in the string provided in the parameters.           *
- * ------------------------------------------------------------------- */
+ * branch_displ - Calculates the size of a branch and places the size
+ *          suffix in the string provided in the parameters.
+ * Returns: The branch size (sign extended) if valid, 0 on uneven branch size
+ *
+ */
 
 static int
 #ifdef __STDC__
@@ -851,13 +872,31 @@ branch_displ (ci, cmd_word, siz_suffix)
     {
         case 0:
             displ = getnext_w(ci);
+
+            if (displ & 1)
+            {
+                ungetnext_w(ci);
+                return 0;
+            }
+
             strcpy (siz_suffix, "w");
             break;
         case 0xff:
             displ = (getnext_w(ci) << 16) | (getnext_w(ci) & 0xffff);
+
+            if (displ & 1)
+            {
+                ungetnext_w(ci);
+                ungetnext_w(ci);
+                return 0;
+            }
+
             strcpy (siz_suffix, "l");
             break;
         default:
+            if (displ & 1)
+                return 0;
+
             /* Sign extend the 8-bit displacement */
             if (displ & 0x80)
             {
@@ -884,7 +923,11 @@ bra_bsr(ci, j, op)
     register int jmp_base = PCPos;
     char siz[4];
 
-    displ = branch_displ(ci, ci->cmd_wrd, siz);
+    if ((displ = branch_displ(ci, ci->cmd_wrd, siz)) == 0)
+    {
+        return 0;
+    }
+
     dstAddr = jmp_base + displ;
 
     process_label (ci, 'L', dstAddr);
@@ -968,12 +1011,12 @@ bit_rotate_reg(ci, j, op)
     strcat (ci->opcode, dest_ea);
     strcpy (ci->mnem, op->name);
 
-    if ((count_reg = (ci->cmd_wrd >> 6) & 3) > 2)
+    if ((count_reg = (ci->cmd_wrd >> 9) & 3) > 2)
     {
         return 0;
     }
 
-    strcat(ci->mnem, SizSufx[count_reg]);
+    strcat(ci->mnem, SizSufx[(ci->cmd_wrd >> 6) & 3]);
     return 1;
 }
 
@@ -990,8 +1033,13 @@ br_cond(ci, j, op)
     register int jmp_base = PCPos;
     register char *condit = typecondition[(ci->cmd_wrd >> 8) & 0x0f].condition;
     char siz[5];
-    register int displ = branch_displ(ci, ci->cmd_wrd, siz);
+    register int displ;
     char *subst;
+
+    if ((displ = branch_displ(ci, ci->cmd_wrd, siz)) == 0)
+    {
+        return 0;
+    }
 
     strcpy(ci->mnem, op->name);
 
@@ -1065,29 +1113,45 @@ add_sub(ci, j, op)
 
     if (asDef->direction == EA2REG)
     {
+        if ((ea_reg == 1) && (asDef->size < SIZ_WORD))
+        {
+            return 0;
+        }
 
         if (cmdcode == 0x1011)    /* eor */
         {
             return 0;
         }
 
-        if ((cmdcode & 3) == 0)     /* and / or */
+        if ((cmdcode & 3) != 1)     /* Only "add"/"sub" allow An direct */
         {
             if (ea_mode == 1)
             {
                 return 0;
             }
         }
+
+        /* If not "add" or "sub", An cannot be a Dest */
+        if ((cmdcode != 0x09) && (cmdcode != 0x0d))
+        {
+            if (asDef->regname == 'a')
+                return 0;
+        }
     }
     else       /* else asDef->Direction = REG2EA */
     {
-        if ((cmdcode != 0x0b) && (ea_mode < 2))  /* Only "eor" allows Dn dest for <ea>*/
-            return 0;
+        if (cmdcode == 0x0b) /* "eor" allows Dn, others don't */
+        {
+            if (ea_mode == 1)
+                return 0;
+        }
+        else
+        {
+            if (ea_mode < 2)
+                return 0;
+        }
 
-        if (ea_mode == 2)
-            return 0;
-
-        if ((ea_mode == 7) && (ea_reg < 2))
+        if ((ea_mode == 7) && (ea_reg > 1))
         {
             return 0;
         }
@@ -1318,7 +1382,7 @@ cmd_dbcc(ci, j, op)
     {
         register int offset;
 
-        strcpy(condpos, typecondition[(ci->cmd_wrd >> 8) & 7].condition);
+        strcpy(condpos, typecondition[(ci->cmd_wrd >> 8) & 0x0f].condition);
         offset = getnext_w(ci);
         dest  = br_from + offset;
 
@@ -1346,8 +1410,8 @@ cmd_scc(ci, j, op)
     OPSTRUCTURE *op;
 #endif
 {
-    int mode = (ci->cmd_wrd >> 8) & 7;
-    int reg = ci->cmd_wrd & 8;
+    int mode = (ci->cmd_wrd >> 3) & 7;
+    int reg = ci->cmd_wrd & 7;
     char *condpos;
 
     if (mode == 1)
@@ -1364,11 +1428,11 @@ cmd_scc(ci, j, op)
 
     if (condpos = strchr(ci->mnem, '~'))
     {
-        strcpy(condpos, typecondition[(ci->cmd_wrd >> 8) & 7].condition);
+        strcpy(condpos, typecondition[(ci->cmd_wrd >> 8) & 0x0f].condition);
 
         if ( get_eff_addr(ci, EaString, mode, reg, SIZ_BYTE))
         {
-            strcpy(ci->mnem, EaString);
+            strcpy(ci->opcode, EaString);
             return 1;
         }
     }

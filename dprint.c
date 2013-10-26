@@ -900,7 +900,7 @@ ParseIRefs(rClass)
         {
             struct ireflist *il, *ilpt;
             register int lblLoc;
-            char *lblPos;
+            unsigned char *lblPos;
             int pCount;
 
             if ( !(il = (struct ireflist *)calloc (1, sizeof(struct ireflist))))
@@ -917,7 +917,11 @@ ParseIRefs(rClass)
                 lblLoc = (lblLoc << 8) | (*(lblPos++));
             }
 
-            il->lbl = addlbl (rClass, lblLoc, NULL);
+            if ((rClass == 'D') || ((lblLoc >= HdrEnd) && (lblLoc <= M_Size)))
+            {
+                il->lbl = addlbl (rClass, lblLoc, NULL);
+            }
+
             il->IClass = rClass;
 
             if (IRefs)   /* First entry? */
@@ -1222,7 +1226,8 @@ ListInitData (ldf, nBytes, lclass)
         isAsc = 0;
 
         /* Check to see if the whole block might be ASCII */
-        if ((il->dAddr >= PCPos + lblCount) && (isprint(*curpos) || isspace(*curpos)))
+        if ((il->dAddr >= PCPos + lblCount)
+                && (isprint(*curpos) || isspace(*curpos)))
         {
             register char *ch = curpos;
             isAsc = 1;
@@ -1275,7 +1280,7 @@ ListInitData (ldf, nBytes, lclass)
                 Ci.opcode[0] = '\0';
             }
             /*MovASC (lblCount, lclass);*/
-        }
+        }  /* End isASC */
 
         /* We might ought to provide for longs, but it might
         * be more confusing */
@@ -1307,17 +1312,35 @@ ListInitData (ldf, nBytes, lclass)
                 val = 0;
                 tmp[0] = '\0';
 
+                if (strlen(Ci.opcode))
+                {
+                    OutputLine(pseudcmd, &Ci);
+                    Ci.lblname = "";
+                    CmdEnt = PCPos;
+                    Ci.opcode[0] = '\0';
+                }
+
                 for (count = 0; count < 4; count++)
                 {
                     val = (val << 8) | ((*curpos++) & 0xff);
                 }
 
-                strcpy (Ci.opcode, il->lbl->sname);
+                if (il->lbl)
+                {
+                    strcpy (Ci.opcode, il->lbl->sname);
+                }
+                else
+                {
+                    sprintf (Ci.opcode, "$%04x", val);
+                }
+
                 strcpy (Ci.mnem, "dc.l");
                 OutputLine (pseudcmd, &Ci);
                 il = il->Next;
                 Ci.lblname = "";
                 Ci.opcode[0] = '\0';
+                /* Reset mnem to original status */
+                strcpy (Ci.mnem, PBytSiz == 1 ? "dc.b" : "dc.w");
                 PCPos += 4;
                 CmdEnt = PCPos;
                 ppos -= 4;
