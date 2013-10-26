@@ -330,11 +330,13 @@ dopass(argc,argv,mypass)
 }
 
 static struct cmditems *
-initcmditems ()
+initcmditems (CMD_ITMS *ci)
 {
-    Instruction.mnem[0] = 0;
-    Instruction.wcount = 0;
-    return &Instruction;
+    ci->mnem[0] = 0;
+    ci->wcount = 0;
+    ci->opcode[0] ='\0';
+    ci->comment = NULL;
+    return ci;
 }
 
 /*
@@ -425,6 +427,15 @@ get_asmcmd()
             if (curop->opfunc(&Instruction, curop->id, curop))
             {
                 return 1;
+            }
+            else
+            {
+                if (ftell(ModFP) != CmdEnt + 2)
+                {
+                    fseek(ModFP, CmdEnt + 2, SEEK_SET);
+                    PCPos = CmdEnt + 2;
+                    initcmditems(&Instruction);
+                }
             }
         }
     }
@@ -819,7 +830,7 @@ MovASC (nb, aclass)
                 {
                     char lbl[10];
                     sprintf (lbl, "ASC%02x", x);
-                    addlbl (aclass, x & 0xff, lbl);
+                    addlbl ('^', x & 0xff, lbl);
                 }
             }
             else       /* Pass 2 */

@@ -22,7 +22,7 @@ MODE_STR ModeStrings[] = {
     {"(a%d)+", 0},
     {"-(a%d)", 0},
     {"%s(a%d)", 0},
-    {"%s(a%d,%c%d)", 0}
+    {"%s(a%d,%s)", 0}
 };
 
 /* The above strings for when the register is A6 (sp) */
@@ -33,7 +33,7 @@ MODE_STR SPStrings[] = {
     {"(sp)+", 0},
     {"-(sp)", 0},
     {"%s(sp)", 0},
-    {"%s(sp,%c%d)", 0}
+    {"%s(sp,%s)", 0}
 };
 
 /* Need to add for 68020-up modes.  Don't know if they can be included in these two arrays or not..*/
@@ -41,13 +41,69 @@ MODE_STR Mode07Strings[] = {
     {"%s.w", 0},
     {"%s.l", 0},
     {"%s(pc)",0},
-    {"%s(pc,%c%d)", 0},
+    {"%s(pc,%s)", 0},
     {"#%s", 0}
 };
 
 char dispRegNam[2] = {'d','a'};
 
 extern char *SizSufx[];
+
+/* *************
+ * set_indirect_idx()
+ *     Sets up the string for the Index register for
+ *     Indirect Addressing mode for either
+ *     Address register or PC
+ * Passed:  (1) dest - The location to store the string
+ *          (2) extW - The extWbrief struct containing the
+ *                     extended word information.
+ * Returns: Pointer to the newly-filled dest
+ *
+ */
+
+static char *
+#ifdef __STDC__
+set_indirect_idx (char *dest, struct extWbrief *extW)
+#else
+set_indirect_idx (dest, extW)
+    char *dest;
+    struct extWbrief *extW;
+#endif
+{
+    char rgnum[3];
+
+    /* Scale not allowed for < 68020 */
+    if (cpu < 20)
+    {
+        if (extW->scale)
+        {
+            return 0;
+        }
+    }
+
+    *dest = extW->regNam;
+    dest[1] = '\0';
+    sprintf (rgnum, "%d", extW->regno);
+    strcat (dest, rgnum);
+    strcat (dest, extW->isLong ? ".l" : ".w");
+
+    switch (extW->scale)
+    {
+        default:
+            break;  /* No need to specify scale if it's 1 */
+        case 1:
+            strcat(dest, "*2");
+            break;
+        case 2:
+            strcat(dest, "*4");
+            break;
+        case 3:
+            strcat(dest, "*8");
+            break;
+    }
+
+    return dest;
+}
 
 /*
  * get_eff_addr() - Build the appropriate opcode string for the command
@@ -85,6 +141,8 @@ int reg;
         sprintf(ea, ModeStrings[mode].str, reg);
         return 1;
     case 1:   /* "An" */
+        if (size < SIZ_WORD)
+            return 0;
     case 2:   /* (An) */
     case 3:   /* (An)+ */
     case 4:   /* -(An) */
@@ -135,6 +193,7 @@ int reg;
             /* the displacement should be a string for it may sometimes
              * be a label */
             char a_disp[50];
+            char idxstr[30];
 
             a_disp[0] = '\0';
 
@@ -153,16 +212,21 @@ int reg;
                 LblCalc (a_disp, ew_b.displ, AMode);
             }
 
+            if (!set_indirect_idx (idxstr, &ew_b))
+            {
+                ungetnext_w(ci);
+                return 0;
+            }
+
             if (reg == 7)
             {
-                sprintf (ea, SPStrings[mode].str, a_disp,
-                        ew_b.regNam, ew_b.regno);
+                sprintf (ea, SPStrings[mode].str, a_disp, idxstr);
             }
             else
             {
-                sprintf (ea, ModeStrings[mode].str, a_disp, reg,
-                        ew_b.regNam, ew_b.regno);
+                sprintf (ea, ModeStrings[mode].str, a_disp, reg, idxstr);
             }
+
             return 1;
         }
         else
@@ -173,7 +237,9 @@ int reg;
         /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
         break;
 
-        /* We now go to mode %111, where the mode is determined by the register field */
+        /* We now go to mode %111, where the mode is determined
+         * by the register field
+         */
     case 7:
         switch (reg) {
         case 0:                 /* (xxx).W */
@@ -190,7 +256,7 @@ int reg;
             /*++(ci->wcount);*/
             ext2 = getnext_w(ci);
             /*++(ci->wcount);*/
-            sprintf (dispstr, "%d", (ext1 <<16) | ext2);
+            sprintf (dispstr, "%d", (ext1 << 16) | (ext2 & 0xffff));
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 4:                 /* #<data> */
@@ -233,13 +299,15 @@ int reg;
             LblCalc(dispstr, ext1 - 2, AMode);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
-        case 3:              /* d8(PC)Xn */
+        case 3:              /* d8(PC,Xn) */
             /*ext1 = getnext_w(ci);*/
             AMode = AM_REL;
 
             if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
             {
                 char a_disp[50];
+                char idxstr[30];
+
 
                 if (ew_b.displ)
                 {
@@ -249,8 +317,15 @@ int reg;
                 {
                     a_disp[0] = '\0';
                 }
-                sprintf (ea, Mode07Strings[reg].str, a_disp,
-                        ew_b.regNam, ew_b.regno);
+
+                if (!set_indirect_idx (idxstr, &ew_b))
+                {
+                    ungetnext_w(ci);
+                    return 0;
+                }
+
+                sprintf (ea, Mode07Strings[reg].str, a_disp, idxstr);
+
                 return 1;
             }
             else
@@ -290,11 +365,11 @@ get_ext_wrd_brief (ci, extW, mode, reg)
     }
 
     /* get the values common to all */
-    extW->regNam = (ew & 0x8000) ? 'a' : 'd';
-    extW->regno = (ew >> 12) & 7;
     extW->isLong = (ew >> 11) & 1;
-    extW->scale = (ew >> 9) * 3;
+    extW->scale = (ew >> 9) & 3;
+    extW->regno = (ew >> 12) & 7;
     extW->isFull = (ew >> 8) & 1;
+    extW->regNam = dispRegNam[(ew >> 15) & 1];
 
     if (extW->isFull)
     {
@@ -503,7 +578,9 @@ reg_ea(ci, j, op)
                     return 0;
             }
         case 31:       /* lea */
-            if (! ctl_addrmodesonly(mode,reg))
+            if ((mode < 2) || (mode == 3) || (mode == 4))
+                return 0;
+            if ((mode == 7) && (reg == 4))
                 return 0;
     }
 
@@ -711,8 +788,14 @@ movem_cmd(ci, j, op)
             return 0;
     }
 
-    get_eff_addr(ci, ea, mode, reg, size);
     regmask = getnext_w(ci);
+    
+    if (!get_eff_addr(ci, ea, mode, reg, size))
+    {
+        ungetnext_w(ci);
+        return 0;
+    }
+
     reglist (regnames, regmask, mode);
     strcpy (ci->mnem, op->name);
     strcat (ci->mnem, SizSufx[size]);

@@ -551,7 +551,7 @@ OPSTRUCTURE instr14[]=
 /*101*/  {"ror.",     0,4,4,     "1110xxx0xx111xxx",7,6,   101,  bit_rotate_reg},
 /* SHIFT ROTATE */ 
 /*102*/  {"roxl.",    0,8,4,     "1110xxx1xx010xxx",7,6,   102,  bit_rotate_reg},
-/*103*/  {"roxl.",    0,4,4,     "1110xxx1xx110xxx",7,6,   103,  bit_rotate_mem},
+/*103*/  {"roxl.",    0,4,4,     "1110xxx1xx110xxx",7,6,   103,  bit_rotate_reg},
 /* SHIFT ROTATE */ 
 /*104*/  {"roxr.",    0,8,4,     "1110xxx0xx010xxx",7,6,   104,  bit_rotate_reg},
 /*105*/  {"roxr.",    0,4,4,     "1110xxx0xx110xxx",7,6,   105,  bit_rotate_reg},
