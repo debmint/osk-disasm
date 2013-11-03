@@ -37,7 +37,6 @@ static struct databndaries *prevbnd ;
 #ifdef __STDC__
 static char *cpyhexnum (char *dst, char *src);
 static char *cpy_digit_str (char *dst, char *src);
-static void setupbounds (char *lpos);
 static int do_mode (char *lpos);
 static char *setoffset (char *p, struct ofsetree *oft);
 static int optincmd (char *lpos);
@@ -48,7 +47,6 @@ static struct commenttree *newcomment (int addrs,
 #else
 static char *cpyhexnum ();
 static char *cpy_digit_str ();
-static void setupbounds ();
 static int do_mode ();
 static char *setoffset ();
 static int optincmd ();
@@ -258,6 +256,7 @@ do_cmd_file ()
     }
 
     NxtBnd = 0;                 /* init Next boundary pointer */
+    DoingCmds = 1;
 
     /*if ( ! (CmdFP = fopen (CmdFileName, "rb")))
     {
@@ -294,7 +293,7 @@ do_cmd_file ()
         switch (*mbf)
         {
         case '*':         /* Comment */
-            break;           /*yes, ignore   */
+            continue;           /*yes, ignore   */
         case '+':         /* Options */
             if (optincmd (++mbf) == -1)
             {   /* an error in an option would probably be fatal, anyway */
@@ -338,6 +337,8 @@ do_cmd_file ()
             exit (1);
         }
     }
+
+    DoingCmds = 0;
 }
 
 /* ************************************************************************ *
@@ -1131,7 +1132,7 @@ bdinsert (bb)
  * Passed : lpos = current position in cmd line                     *
  * **************************************************************** */
 
-static void
+void
 #ifdef __STDC__
 setupbounds (char *lpos)
 #else

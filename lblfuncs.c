@@ -311,7 +311,12 @@ findlbl (lblclass, lblval)
 
     found = lblpos (lblclass, lblval);
 
-    return (found->myaddr == lblval) ? found : NULL;
+    if (found)
+    {
+        return (found->myaddr == lblval) ? found : NULL;
+    }
+
+    return NULL;
 }
 
 char *
