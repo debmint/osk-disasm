@@ -90,10 +90,9 @@ struct modnam ModLangs[] = {
 };
 
 struct modnam ModAtts[] = {
-    {"ReEnt", 0x80},
-    {"Ghost", 0x40},
     {"SupStat", 0x20},
-    {"SupStat+ReEnt", 0xa0},
+    {"Ghost", 0x40},
+    {"ReEnt", 0x80},
     {"",0}
 };
 
@@ -163,52 +162,88 @@ PrintPsect()
     register struct modnam *pt;
     char *ProgType = NULL;
     char *ProgLang = NULL;
-    char *ProgAtts = NULL;
+    char ProgAtts[50];
     /*char *StackAddL;*/
-    char **prgsets[4];
+    char *prgsets[4];
     unsigned char hdrvals[3];
     int c;
     CMD_ITMS Ci;
     char *psecfld[2];
     int pgWdthSave;
 
-    prgsets[0] = &ProgType; prgsets[1] = &ProgLang;
-    prgsets[2] = &ProgAtts; prgsets[3] = NULL;
-    psecfld[0] = ",((%s<<8)"; psecfld[1] = "|%s)";
-    ProgType = modnam_find (ModTyps, (unsigned char)M_Type)->name;
-    hdrvals[0] = M_Type;
-    ProgLang = modnam_find (ModLangs, (unsigned char)M_Lang)->name;
-    hdrvals[1] = M_Lang;
-    ProgAtts = modnam_find (ModAtts, (unsigned char)M_Attr)->name;
-    hdrvals[2] = M_Attr;
+    Ci.comment = "";
     strcpy (Ci.mnem, "set");
+    psecfld[0] = ",((%s<<8)"; psecfld[1] = "|%s)";
+    BlankLine();
+
+    /* Module name */
 #ifdef _WIN32
     strcpy (EaString, strrchr(ModFile, '\\') + 1);
 #else
     strcpy (EaString, strrchr(ModFile, '/') + 1);
 #endif
     strcat (EaString, "_a");
-    Ci.comment = "";
-    BlankLine();
+
+    /* Type/Language */
+    ProgType = modnam_find (ModTyps, (unsigned char)M_Type)->name;
+    Ci.lblname = ProgType;
+    sprintf (Ci.opcode, "$%x", M_Type);
+    PrintLine(pseudcmd, &Ci, CNULL, 0, 0);
+    //hdrvals[0] = M_Type;
+    ProgLang = modnam_find (ModLangs, (unsigned char)M_Lang)->name;
+    Ci.lblname = ProgLang;
+    sprintf (Ci.opcode, "$%02x", M_Lang);
+    PrintLine(pseudcmd, &Ci, CNULL, 0, 0);
+    //hdrvals[1] = M_Lang;
+    sprintf (&EaString[strlen(EaString)], ",%s|%s", ProgType, ProgLang);
+
+    /* Att/Rev */
+    ProgAtts[0] = '\0';
+
+    for (c = 0; ModAtts[c].val; c++)
+    {
+        if ((M_Attr & 0xff) & ModAtts[c].val)
+        {
+            if (strlen(ProgAtts))
+            {
+                strcat(ProgAtts, "+");
+                strcat(ProgAtts, ModAtts[c].name);
+            }
+            else
+            {
+                strcpy(ProgAtts, ModAtts[c].name);
+            }
+
+            Ci.lblname = ModAtts[c].name;
+            sprintf (Ci.opcode, "$%02x",ModAtts[c].val);
+            PrintLine (pseudcmd, &Ci, CNULL, 0, 0); 
+        }
+    }
+
+    /*prgsets[0] = ProgType; prgsets[1] = ProgLang;
+    prgsets[2] = ProgAtts; prgsets[3] = NULL;*/
+    //ProgAtts = modnam_find (ModAtts, (unsigned char)M_Attr)->name;
+    /*hdrvals[2] = M_Attr;
 
     for (c = 0; prgsets[c]; c++)
     {
-        if (*prgsets[c])
+        if (prgsets[c])
         {
             Ci.cmd_wrd = hdrvals[c];
-            sprintf (Ci.opcode, "%d", hdrvals[c]);
-            Ci.lblname = *prgsets[c];
+            sprintf (Ci.opcode, "$%02x", hdrvals[c]);
+            Ci.lblname = prgsets[c];
             PrintLine (pseudcmd, &Ci, CNULL, 0, 0); 
         }
         else {
-            sprintf (Ci.mnem, "%d", hdrvals[c]);
+            sprintf (Ci.mnem, "$%02x", hdrvals[c]);
         }
 
-        sprintf (Ci.opcode, psecfld[c % 2], *prgsets[c]);
+        sprintf (Ci.opcode, psecfld[c % 2], prgsets[c]);
         strcat (EaString, Ci.opcode);
     }
 
-    sprintf (&EaString[strlen(EaString)], "|%d)", M_Revs);
+    sprintf (&EaString[strlen(EaString)], "|%d)", M_Revs);*/
+    sprintf (&EaString[strlen(EaString)], ",%s|%d)", ProgAtts, M_Revs);
     sprintf (&EaString[strlen(EaString)], ",%d", M_Edit);
     strcat (EaString, ",0");    /* For the time being, don't add any stack */
     sprintf (&EaString[strlen(EaString)], ",%s", findlbl ('L', M_Exec)->sname);

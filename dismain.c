@@ -452,6 +452,7 @@ dopass(argc,argv,mypass)
         GetLabels();
         WrtEquates (1);
         WrtEquates (0);
+        CmdEnt = 0;
         PrintPsect();
 
         /*if (IsROF)
