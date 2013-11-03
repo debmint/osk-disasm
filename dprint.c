@@ -93,6 +93,7 @@ struct modnam ModAtts[] = {
     {"ReEnt", 0x80},
     {"Ghost", 0x40},
     {"SupStat", 0x20},
+    {"SupStat+ReEnt", 0xa0},
     {"",0}
 };
 

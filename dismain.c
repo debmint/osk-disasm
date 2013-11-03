@@ -17,7 +17,16 @@
 #include <string.h>
 #include "proto.h"
 
+#ifdef _WIN32
+#   define strcasecmp _stricmp
+#endif
+
+/* Some variables that are only used in one or two modules */
+int LblFilz;              /* Count of Label files specified     */
+char *LblFNam[MAX_LBFIL]; /* Pointers to the path names for the files */
+
 static int HdrLen;
+static int CodeEnd;
 
 extern struct databndaries *dbounds;
 extern char realcmd[], pseudcmd[];
@@ -64,6 +73,61 @@ list_print (ci, ent, lblnam)
 
 }
 
+static char *DrvrJmps[] = {
+    "Init", "Read", "Write", "GetStat", "SetStat", "Term", "Except", NULL
+};
+
+static char *FmanJmps[] = {"Open", "Create", "Makdir", "Chgdir", "Delete", "Seek",
+        "Read", "Write", "Readln", "Writeln", "Getstat", "Setstat", "Close", NULL};
+
+/* ***********************
+ * get_drvr_jmps()
+ *    Read the Driver initialization table and set up
+ *    label names.
+ */
+
+static void
+#ifdef __STDC__
+get_drvr_jmps(int mty)
+#else
+get_drvr_jmps(mty)
+    int mty;
+#endif
+{
+    register char **pt;
+    register int jmpdst;
+    int jmpbegin = ftell (ModFP);
+    char boundstr[50];
+
+    if (mty == MT_DEVDRVR)
+    {
+        pt = DrvrJmps;
+    }
+    else
+    {
+        pt = FmanJmps;
+    }
+
+    while (*pt)
+    {
+        jmpdst = fread_w(ModFP);
+
+        if (jmpdst)
+        {
+            addlbl ('L', jmpdst, *pt);
+            sprintf (boundstr, "L W L %x-%x", jmpbegin, ftell(ModFP) - 1);
+        }
+        else
+        {
+            sprintf (boundstr, "L W & %x-%x", jmpbegin, ftell(ModFP) - 1);
+        }
+
+        setupbounds (boundstr);
+        jmpbegin = ftell(ModFP);
+        ++pt;
+    }
+
+}
 
 /* ****************************************************** *
  * Get the module header.  We will do this only in Pass 1 *
@@ -115,27 +179,43 @@ get_modhead()
             if ((M_Type != MT_SYSTEM) && (M_Type != MT_FILEMAN))
             {
                 M_Mem = fread_l(ModFP);
-                M_Stack = fread_l(ModFP);
-                M_IData = fread_l(ModFP);
-                M_IRefs = fread_l( ModFP);
-                HdrEnd = ftell(ModFP);  /* Update it again */
 
-                if (M_Type == MT_TRAPLIB)
+                if (M_Type != MT_DEVDRVR)
                 {
-                    M_Init = fread_l(ModFP);
-                    M_Term = fread_l(ModFP);
-                    HdrEnd = ftell(ModFP);  /* The final change.. */
+                    M_Stack = fread_l(ModFP);
+                    M_IData = fread_l(ModFP);
+                    M_IRefs = fread_l( ModFP);
+                    HdrEnd = ftell(ModFP);  /* Update it again */
+
+                    if (M_Type == MT_TRAPLIB)
+                    {
+                        M_Init = fread_l(ModFP);
+                        M_Term = fread_l(ModFP);
+                        HdrEnd = ftell(ModFP);  /* The final change.. */
+                    }
                 }
             }
 
-            if (M_IData)
+            if ((M_Type == MT_DEVDRVR) || (M_Type == MT_FILEMAN))
+            {
+                fseek (ModFP, M_Exec, SEEK_SET);
+                get_drvr_jmps (M_Type);
+            }
+
+           if (M_IData)
             {
                 fseek (ModFP, M_IData, SEEK_SET);
                 IDataBegin = fread_l (ModFP);
                 IDataCount = fread_l (ModFP);
                 /* Insure we have an entry for the first Initialized Data */
                 addlbl ('D', IDataBegin, "");
+                CodeEnd = M_IData;
             }
+           else
+           {
+               /* This may be incorrect */
+               CodeEnd = M_Size - 3;
+           }
         }
 
         fseek (ModFP, 0, SEEK_END);
@@ -177,6 +257,133 @@ modnam_find (pt, desired)
     }
 
     return (pt->val ? pt : NULL);
+}
+
+/* ******************************************************************** *
+ * RdLblFile() - Reads a label file and stores label values into label  *
+ *      tree if value (or address) is present in tree                   *
+ *      Path to file has already been opened and is stored in "inpath"  *
+ * ******************************************************************** */
+
+static void
+#ifdef __STDC__
+RdLblFile (FILE *inpath)
+#else
+RdLblFile (inpath)
+    FILE *inpath;
+#endif
+{
+    char labelname[30],
+         clas,
+         eq[10],
+         strval[8],
+        *lbegin;
+    int address;
+    LBLDEF *nl;
+
+    while ( ! feof (inpath))
+    {
+        char rdbuf[81];
+
+        fgets (rdbuf, 80, inpath);
+
+        if ( ! (lbegin = skipblank (rdbuf)) || (*lbegin == '*'))
+        {
+            continue;
+        }
+
+        if (sscanf (rdbuf, "%s %s %s %c", labelname, eq, strval, &clas) == 4)
+        {
+            clas = toupper (clas);
+
+            if ( ! strcasecmp (eq, "equ"))
+            {
+                /* Store address in proper place */
+
+                if (strval[0] == '$')   /* if represented in hex */
+                {
+                    sscanf (&strval[1], "%x", &address);
+                }
+                else
+                {
+                    address = atoi (strval);
+                }
+
+                nl = findlbl (clas, address);
+
+                if (nl)
+                {
+                    strncpy (nl->sname, labelname, sizeof(nl->sname) - 1);
+                    nl->sname[sizeof(nl->sname)] = '\0';
+                    nl->stdname = 1;
+                }
+            }
+        }
+    }
+}
+
+/* ******************************************************** *
+ * GetLabels() - Set up all label definitions               *
+ *      Reads in all default label files and then reads     *
+ *      any files specified by the '-s' option.             *
+ * ******************************************************** */
+
+static void
+GetLabels ()                    /* Read the labelfiles */
+{
+    register int x;
+    register struct nlist *nl;
+    char  filename[500];
+
+    /* First, get built-in ascii definitions.  Later, if desired,
+     * they can be redefined */
+
+    /*for (x = 0; x < 33; x++)
+    {
+        if ((nl = FindLbl (ListRoot ('^'), x)))
+        {
+            strcpy (nl->sname, CtrlCod[x]);
+        }
+    }
+
+    if ((nl = FindLbl (ListRoot ('^'), 0x7f)))
+    {
+        strcpy (nl->sname, "del");
+    }*/
+
+    /* Next read in the Standard systems names file */
+
+    /*if ((OSType == OS_9) || (OSType == OS_Moto))
+    {
+        tmpnam = build_path ("sysnames");
+
+        if ( ! (inpath = fopen (tmpnam, "rb")))
+            fprintf (stderr, "Error in opening Sysnames file..%s\n",
+                              filename);
+        else
+        {
+            RdLblFile ();
+            fclose (inpath);
+        }
+    }*/
+
+    /* Now read in label files specified on the command line */
+
+    for (x = 0; x < LblFilz; x++)
+    {
+        register FILE *inpath;
+
+        if ((inpath = build_path (LblFNam[x], BINREAD)))
+        {
+            RdLblFile (inpath);
+            fclose (inpath);
+        }
+        else
+        {
+            fprintf (stderr, "ERROR! cannot open Label File %s for read\n",
+                     tmpnam);
+        }
+    }
 }
 
 /*
@@ -221,6 +428,17 @@ dopass(argc,argv,mypass)
             strcpy(DfltLbls, "&&&&&&D&&LL");
             break;
         case MT_DEVDRVR:
+            /*  Init/Term:
+                 (a1)=Device Dscr
+                Read/Write,Get/SetStat:
+                 (a1)=Path Dscr, (a5)=Caller's Register Stack
+                All:
+                 (a1)=Path Dscr
+                 (a2)=Static Storage, (a4)=Process Dscr, (a6)=System Globals
+
+               (a1) & (a5) default to Read/Write, etc.  For Init/Term, specify
+               AModes for these with Boundary Defs*/
+            strcpy (DfltLbls, "&ZD&PG&&&LL");
             break;
         }
 
@@ -231,6 +449,7 @@ dopass(argc,argv,mypass)
     else   /* Do Pass 2 Setup */
     {
         /*parsetree ('A');*/
+        GetLabels();
         WrtEquates (1);
         WrtEquates (0);
         PrintPsect();
@@ -254,7 +473,7 @@ dopass(argc,argv,mypass)
 
     PCPos = HdrEnd;
 
-    while (PCPos < M_IData)
+    while (PCPos < CodeEnd)
     {
         struct databndaries *bp;
 
@@ -720,7 +939,7 @@ MovBytes (db)
 
             if (cCount < maxLst)
             {
-                Ci.cmd_wrd =  ((Ci.cmd_wrd << (PBytSiz * 8)) | valu);
+                Ci.cmd_wrd =  ((Ci.cmd_wrd << (PBytSiz * 8)) | (valu & 0xff));
             }
 
             if (strlen(Ci.opcode))
@@ -734,10 +953,10 @@ MovBytes (db)
 
             if ( (strlen (Ci.opcode) > 22) || findlbl ('L', PCPos))
             {
-                /*list_print(&Ci, CmdEnt, NULL);*/
                 PrintLine(pseudcmd, &Ci, 'L', CmdEnt, PCPos);
                 Ci.opcode[0] = '\0';
                 Ci.cmd_wrd = 0;
+                Ci.lblname = NULL;
                 CmdEnt = PCPos/* _ PBytSiz*/;
                 cCount = 0;
             }
@@ -750,7 +969,6 @@ MovBytes (db)
 
     if ((Pass==2) && strlen (Ci.opcode))
     {
-        list_print (&Ci, (short)CmdEnt, NULL);
         PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
     }
 }

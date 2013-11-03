@@ -4,7 +4,7 @@
  * $Id::                                                               $
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-/*#include <ctype.h>*/
+#include <ctype.h>
 #include <string.h>
 #ifdef _WIN32
 #   include <io.h>
@@ -13,60 +13,35 @@
 #include "userdef.h"
 #include "proto.h"
 
-#define MAX_LBFIL 32
-
 #ifdef _WIN32
 #   define strdup _strdup
 #   define access _access
 #   define R_OK 4
 #endif
 
-/* Some variables that are only used in one or two modules */
-int LblFilz;              /* Count of Label files specified     */
-char *LblFNam[MAX_LBFIL]; /* Pointers to the path names for the files */
-
+extern int LblFilz;              /* Count of Label files specified     */
+extern char *LblFNam[]; /* Pointers to the path names for the files */
 extern char *CmdFileName;        /* The path for the Command File Name */
 extern FILE *CmdFP;
 extern int DoingCmds;
 
-#ifdef __STDC__
-static void getoptions(int,char**);
-static void usage(void);
-#else
-static void getoptions();
-static void usage();
-#endif
+/* **********************
+ * usage() - Print Help message
+ *
+ * ***** */
 
-int
-#ifdef __STDC__
-main(int argc,char **argv)
-#else
-main(argc,argv)
-    int argc;
-    char **argv;
-#endif
+static void
+usage()
 {
-    int ret;
-    char buf[100];
-
-    /* Process command-line options first */
-
-    /*while ((ret = getopt(argc, argv, "abc:d")) != -1)
-    {
-    }*/
-    getoptions(argc, argv);
-
-    /* We must have a file to disassemble */
-    if (ModFile == NULL)
-        errexit("You must specify a file to disassemble");
-
-    /*ModFile = argv[1];*/
-    Pass = 1;
-    dopass(argc,argv,1);
-    Pass = 2;
-    dopass(argc, argv, Pass);
-
-    return 0;
+    fprintf (stderr, "\nOSKDis: Disassemble an OS9-68K Module\n");
+    fprintf (stderr, "  Options:\n");
+    fprintf (stderr, "    -c      Specify the command file\n");
+    fprintf (stderr, "    -m=<x>  Specify CPU");
+    fprintf (stderr, "        x = 0  - 68000 (default)");
+    fprintf (stderr, "            8  - 68008");
+    fprintf (stderr, "            20 - 68020");
+    fprintf (stderr, "    -s      Specify a label file (%d allowed)\n", MAX_LBFIL);
+    fprintf (stderr, "    -?, -h  Show this help\n");
 }
 
 /* **************************************************************** *
@@ -107,10 +82,42 @@ char **argv;
     }
 }
 
-/*
+int
+#ifdef __STDC__
+main(int argc,char **argv)
+#else
+main(argc,argv)
+    int argc;
+    char **argv;
+#endif
+{
+    int ret;
+    char buf[100];
+
+    /* Process command-line options first */
+
+    /*while ((ret = getopt(argc, argv, "abc:d")) != -1)
+    {
+    }*/
+    getoptions(argc, argv);
+
+    /* We must have a file to disassemble */
+    if (ModFile == NULL)
+        errexit("You must specify a file to disassemble");
+
+    /*ModFile = argv[1];*/
+    Pass = 1;
+    dopass(argc,argv,1);
+    Pass = 2;
+    dopass(argc, argv, Pass);
+
+    return 0;
+}
+
+/* *************************
  * build_path() - Verify that the path is a valid path.
  *    If the path is not valid, try some alternatives.
- */
+ * ***** */
 
 FILE *
 #ifdef __STDC__
@@ -176,11 +183,55 @@ do_opt (c)
 {
     char *pt = c;
     char *AsmFile;
+    int v;
 
     switch (tolower (*(pt++)))
     {
     case 'a':
         /*Show8bit = 1;   Probably will use this to show all bytes in the command*/    
+        break;
+    case 'c':                  /* Specify Command file */
+        if (CmdFileName)
+        {
+            fprintf (stderr, "Command file already defined\n");
+            fprintf (stderr, "Ignoring %s\n", pass_eq (pt));
+        }
+        else
+        {
+            CmdFileName = pass_eq (pt);
+
+            if (!(CmdFP = build_path (CmdFileName, BINREAD)))
+            {
+                fprintf (stderr, "*** Failed to open Command file %s***\n",
+                        CmdFileName);
+                fprintf (stderr,
+                        "Continuing without using the Command file\n");
+            }
+        }
+
+        break;
+    case 'm':      /* Target CPU */
+        pt = pass_eq(pt);
+        
+        switch (v = strtol(pt, &pt, 10))
+        {
+        case 68000:
+        case 68008:
+        case 68010:
+        case 68020:
+            cpu = v - 68000;
+            break;
+        case 0:
+        case 8:
+        case 10:
+        case 20:
+            cpu = v;
+            break;
+        default:
+            fprintf (stderr, "Error: %d is not a valid CPU... Ignoring\n", v);
+            break;
+        }
+
         break;
     case 'o':                  /* output asm src file */
         AsmFile = pass_eq(pt);
@@ -221,7 +272,14 @@ do_opt (c)
                 /* In the OS9 version we used build_path here,
                  * but let's try waiting till we read the file
                  */
-                LblFNam[LblFilz++] = pt;
+                if (DoingCmds)
+                {
+                    LblFNam[LblFilz++] = strdup(pt);
+                }
+                else
+                {
+                    LblFNam[LblFilz++] = pt;
+                }
             }
         }
         else
@@ -229,29 +287,6 @@ do_opt (c)
             fprintf (stderr, "Max label files allotted -- Ignoring \'%s\'\n",
                      pass_eq (pt));
         }
-        break;
-    case 'c':                  /* Specify Command file */
-        if (CmdFileName)
-        {
-            fprintf (stderr, "Command file already defined\n");
-            fprintf (stderr, "Ignoring %s\n", pass_eq (pt));
-        }
-        else
-        {
-            CmdFileName = pass_eq (pt);
-
-            if (!(CmdFP = build_path (CmdFileName, BINREAD)))
-            {
-                fprintf (stderr, "*** Failed to open Command file %s***\n",
-                        CmdFileName);
-                fprintf (stderr,
-                        "Continuing without using the Command file\n");
-            }
-        }
-
-        break;
-    case 'u':                  /* Translate to upper-case */
-        /*UpCase = 1;*/
         break;
     case 'g':                 /* tabs (g-print-capable) */
         /*tabinit ();*/
@@ -269,6 +304,9 @@ do_opt (c)
             usage ();
             exit (1);
             break;
+    case 'u':                  /* Translate to upper-case */
+        /*UpCase = 1;*/
+        break;
         }
     case 'd':
         if ( ! DoingCmds)
@@ -328,15 +366,5 @@ void filereadexit()
     {
         errexit ("Error reading file...\nAborting");
     }
-}
-
-static void
-usage()
-{
-    fprintf (stderr, "\nOSKDis: Disassemble an OS9-68K Module\n");
-    fprintf (stderr, "  Options:\n");
-    fprintf (stderr, "    -c      Specify the command file\n");
-    fprintf (stderr, "    -s      Specify a label file (%d allowed)\n", MAX_LBFIL);
-    fprintf (stderr, "    -?, -h  Show this help\n");
 }
 

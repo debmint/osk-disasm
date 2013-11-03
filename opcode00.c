@@ -537,7 +537,7 @@ move_instr(ci, j, op)
     d_mode = (ci->cmd_wrd >> 6) & 7;
     d_reg = (ci->cmd_wrd >> 9) & 7;
 
-    if ((d_mode == 7) && (d_mode > 1))
+    if ((d_mode == 7) && (d_reg > 1))
     {
         return 0;
     }
