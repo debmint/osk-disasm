@@ -1011,12 +1011,14 @@ bit_rotate_reg(ci, j, op)
     strcat (ci->opcode, dest_ea);
     strcpy (ci->mnem, op->name);
 
-    if ((count_reg = (ci->cmd_wrd >> 9) & 3) > 2)
+    /* Use count_reg to hold Size... */
+
+    if ((count_reg = (ci->cmd_wrd >> 6) & 3) > 2)
     {
         return 0;
     }
 
-    strcat(ci->mnem, SizSufx[(ci->cmd_wrd >> 6) & 3]);
+    strcat(ci->mnem, SizSufx[count_reg]);
     return 1;
 }
 
