@@ -29,12 +29,19 @@
 #   define xtst
 #endif
 
+#ifdef _OSK
+#   define strchr index
+#   define strrchr rindex
+#endif
+
 #ifdef _WIN32
 #   define BINREAD "rb"
 #   define BINWRITE "wb"
+#   define PATHSEP '\\'
 #else
 #   define BINREAD "r"
 #   define BINWRITE "w"
+#   define PATHSEP '/'
 #endif
 
 #define MAX_LBFIL 32

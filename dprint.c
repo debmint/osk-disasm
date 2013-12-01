@@ -177,11 +177,15 @@ PrintPsect()
     BlankLine();
 
     /* Module name */
-#ifdef _WIN32
-    strcpy (EaString, strrchr(ModFile, '\\') + 1);
-#else
-    strcpy (EaString, strrchr(ModFile, '/') + 1);
-#endif
+    if (strrchr(ModFile, PATHSEP))
+    {
+        strcpy (EaString, strrchr(ModFile, PATHSEP) + 1);
+    }
+    else
+    {
+        strcpy (EaString, ModFile);
+    }
+
     strcat (EaString, "_a");
 
     /* Type/Language */
@@ -195,7 +199,7 @@ PrintPsect()
     sprintf (Ci.opcode, "$%02x", M_Lang);
     PrintLine(pseudcmd, &Ci, CNULL, 0, 0);
     //hdrvals[1] = M_Lang;
-    sprintf (&EaString[strlen(EaString)], ",%s|%s", ProgType, ProgLang);
+    sprintf (&EaString[strlen(EaString)], ",(%s<<8)|%s", ProgType, ProgLang);
 
     /* Att/Rev */
     ProgAtts[0] = '\0';
@@ -243,7 +247,7 @@ PrintPsect()
     }
 
     sprintf (&EaString[strlen(EaString)], "|%d)", M_Revs);*/
-    sprintf (&EaString[strlen(EaString)], ",%s|%d)", ProgAtts, M_Revs);
+    sprintf (&EaString[strlen(EaString)], ",(%s<<8)|%d", ProgAtts, M_Revs);
     sprintf (&EaString[strlen(EaString)], ",%d", M_Edit);
     strcat (EaString, ",0");    /* For the time being, don't add any stack */
     sprintf (&EaString[strlen(EaString)], ",%s", findlbl ('L', M_Exec)->sname);
