@@ -1004,10 +1004,10 @@ bit_rotate_reg(ci, j, op)
             sprintf (ci->opcode, "#%d,", (count_reg == 0) ? 8 : count_reg);
             break;
         default:
-            sprintf (ci->opcode, "D%d,", count_reg);
+            sprintf (ci->opcode, "d%d,", count_reg);
     }
 
-    sprintf(dest_ea, "D%d", ci->cmd_wrd & 7);
+    sprintf(dest_ea, "d%d", ci->cmd_wrd & 7);
     strcat (ci->opcode, dest_ea);
     strcpy (ci->mnem, op->name);
 
