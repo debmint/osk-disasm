@@ -45,6 +45,13 @@ MODE_STR Mode07Strings[] = {
     {"#%s", 0}
 };
 
+MODE_STR Mode020Strings[] = {
+    {"(%s,A%d)"},           /* (disp.w,An) */
+    {"(%s,%s,%s)"},         /* (bd,An,Xn) | (bd,PC,Xn) */
+    {"([%d,%s],%s,%d)"},    /* ([bd,An],Xn,disp) | ([bd,PC],Xn,disp) */
+    {"([%d,%s,%s],%d)"},    /* ([bd,An,Xn],disp) | ([bd,PC,Xn],disp) */
+};
+
 char dispRegNam[2] = {'d','a'};
 
 extern char *SizSufx[];
@@ -61,7 +68,7 @@ extern char *SizSufx[];
  *
  */
 
-static char *
+static int
 #ifdef __STDC__
 set_indirect_idx (char *dest, struct extWbrief *extW)
 #else
@@ -73,6 +80,7 @@ set_indirect_idx (dest, extW)
     char rgnum[3];
 
     /* Scale not allowed for < 68020 */
+    /* Note: we might be able to ignore this */
     if (cpu < 20)
     {
         if (extW->scale)
@@ -81,11 +89,13 @@ set_indirect_idx (dest, extW)
         }
     }
 
-    *dest = extW->regNam;
+    sprintf (dest, "%c%d.%c", extW->regNam, extW->regno,
+            extW->isLong ? 'l' : 'w');
+    /**dest = extW->regNam;
     dest[1] = '\0';
     sprintf (rgnum, "%d", extW->regno);
     strcat (dest, rgnum);
-    strcat (dest, extW->isLong ? ".l" : ".w");
+    strcat (dest, extW->isLong ? ".l" : ".w");*/
 
     switch (extW->scale)
     {
@@ -102,14 +112,338 @@ set_indirect_idx (dest, extW)
             break;
     }
 
-    return dest;
+    return 1;
 }
 
-/*
+/* ------------------------------------------------------------------ *
+ * get_ext_wrd() - Retrieves the extended command word, and sets up   *
+ *      the values.                                                   *
+ * Returns 1 if valid, 0 if cpu < 68020 && is Full Extended Word      *
+ * ------------------------------------------------------------------ */
+
+static int
+#ifdef __STDC__
+get_ext_wrd (CMD_ITMS *ci, struct extWbrief *extW, int mode, int reg)
+#else
+get_ext_wrd (ci, extW, mode, reg)
+    CMD_ITMS *ci;
+    struct extWbrief *extW;
+    int mode, reg;
+#endif
+{
+    int ew;     /* A local copy of the extended word (stored in ci->code[0] */
+
+    ew = getnext_w(ci);
+
+    if ((cpu < 20) && (ew & 0x0100))
+    {
+        ungetnext_w(ci);
+        return 0;
+    }
+
+    /* get the values common to all */
+    extW->isLong = (ew >> 11) & 1;
+    extW->scale = (ew >> 9) & 3;
+    extW->regno = (ew >> 12) & 7;
+    extW->isFull = (ew >> 8) & 1;
+    extW->regNam = dispRegNam[(ew >> 15) & 1];
+
+    if (extW->isFull)
+    {
+        if (ew & 0x08)  /* Bit 3 must be 0 */
+        {
+            ungetnext_w(ci);
+            return 0;
+        }
+
+        extW->iiSel = ew & 7;
+        extW->bs = (ew >> 7) & 1;
+        extW->is = (ew >> 6) & 1;
+        
+        if ((extW->bdSize = (ew >> 4) & 3) == 0)
+        {
+            ungetnext_w(ci);
+            return 0;
+        }
+
+        extW->displ = 0;
+    }
+    else
+    {
+        extW->displ = ew & 0xff;
+
+        if (extW->displ & 0x80)
+        {
+            extW->displ = extW->displ | (-1 ^ 0xff);
+        }
+    }
+
+    return 1;
+}
+
+/* *********************
+ * get_displ() - Get the displacement for either the base displacement
+ *          or the outer displacement, if not suppressed
+ */
+
+static void
+#ifdef __STDC__
+get_displ(CMD_ITMS *ci, char *dst, int siz_flag)
+#else
+get_displ(dst, siz_flag)
+    CMD_ITMS *ci; char *dst; int siz_flag;
+#endif
+{
+    switch (siz_flag)
+    {
+        case 2:   /* Word Displacement */
+            sprintf (dst, "%d.w", getnext_w(ci));
+            break;
+        case 3:  /* Long Displacement */
+            sprintf (dst, "%d",
+                    (getnext_w(ci) << 16) | (getnext_w(ci) & 0xffff));
+            break;
+        default:
+            break;
+    }
+}
+
+/* -------------------------
+ * process_extended_word_full() - Process the extended word for
+ *          indexed modes
+ */
+
+static int
+#ifdef __STDC__
+process_extended_word_full(CMD_ITMS *ci, char *dststr, struct extWbrief *ew, int mode,
+        int reg, int size)
+#else
+process_extended_word_full(ci, mode, reg, size)
+    CMD_ITMS *ci; struct extWfull *ew, int mode; int reg; int size;
+#endif
+{
+    char base_str[50];
+    char idx_reg[20];
+    char od_str[30];
+
+    /* Base Displacement */
+    base_str[0] = '\0';
+
+    /* Base Register */
+
+    if (ew->bdSize > 1)
+    {
+        int pcadj;
+
+        get_displ(ci, base_str, ew->bdSize);
+
+        if (mode == 7)  /* Adjust for PC-Rel mode */
+        {
+            sscanf (base_str, "%d", &pcadj);
+            sprintf (base_str, "%d", pcadj - 2);
+        }
+    }
+
+    if (ew->bs == 0)        /* If not suppressed ... */
+    {
+        char br_str[3];
+
+        if (strlen(base_str))
+        {
+            strcat (base_str, ",");
+        }
+
+        switch (mode)
+        {
+            case 6:
+                sprintf(br_str, "a%d", reg);
+                strcat (base_str, br_str);
+                break;
+            case 7:
+                strcat(base_str, "pc");
+        }
+    }
+
+    /* Index Register */
+    idx_reg[0] = '\0';
+    
+    if (!ew->is)
+    {
+        sprintf(idx_reg, "%c%d.%c", ew->regNam, ew->regno,
+                ew->isLong ? 'l' : 'w');
+
+        if (ew->scale)
+        {
+            register int s = 1;
+            register int m = ew->scale;
+
+            while (m--)
+            {
+                s *= 2;
+            }
+
+            sprintf (&idx_reg[strlen(idx_reg)], "*%d", s);
+        }
+    }
+
+    /* Outer Displacement */
+    od_str[0] = '\0';
+
+    if ((ew->iiSel & 3) > 1)
+    {
+        get_displ(ci, od_str, ew->iiSel & 3);
+    }
+
+    if(ew->is == 0)
+    {
+        switch (ew->iiSel & 4)
+        {
+        case 0:          /* PreIndexed */
+            if ((strlen(base_str)) && (strlen(idx_reg)))
+            {
+                strcat (base_str, ",");
+                strcat (base_str, idx_reg);
+            }
+            else if (strlen(idx_reg))   /* no base_str */
+            {
+                strcpy (base_str, idx_reg);
+            }
+
+            if (strlen(od_str))
+            {
+                strcpy(idx_reg, od_str);
+            }
+            else
+            {
+                idx_reg[0] = '\0';
+            }
+
+            break;
+        default:         /* PostIndexed */
+            if ((strlen(idx_reg)) && (strlen(od_str)))
+            {
+                strcat (idx_reg, ",");
+                strcat(idx_reg, od_str);
+            }
+            else if (strlen(od_str))
+            {
+                strcpy (idx_reg, od_str);
+            }
+        }
+    }
+    else        /* else ew->is = 1 */
+    {
+        if (ew->iiSel >= 4)
+        {
+            while (ci->wcount)
+            {
+                ungetnext_w(ci);
+            }
+
+            return 0;
+        }
+
+        /* We have base_str already - empty string if no bd or reg */
+
+        if (strlen(od_str))
+        {
+            strcpy (idx_reg, od_str);
+        }
+    }
+
+
+    if (ew->iiSel & 7)
+    {
+        sprintf (dststr, "([%s]", base_str);
+    }
+    else
+    {
+        sprintf (dststr, "(%s", base_str);
+    }
+
+    if (strlen(idx_reg))
+    {
+        if (strlen(base_str) || (ew->iiSel & 3))
+        {
+            strcat (dststr, ",");
+        }
+
+        strcat (dststr, idx_reg);
+    }
+
+    strcat(dststr, ")");
+
+    return 1;
+}
+
+static int
+#ifdef __STDC__
+process_extended_word_brief(CMD_ITMS *ci, char *dststr, struct extWbrief *ew_b,
+        int mode, int reg, int size)
+#else
+process_extended_word_brief(ci, dststr, mode, reg, size)
+    CMD_ITMS *ci; char *dststr, struct extWbrief *ew_b, int mode; int reg; int size;
+#endif
+{
+    char a_disp[50];
+    char idxstr[30];
+
+    a_disp[0] = '\0';
+
+    /* This is for cpu's < 68020
+     * for 68020-up, the bd can be up to 32 bits
+     */
+    /*if (abs(ew_b.displ) > 0x80)
+    {
+        ungetnext_w(ci);
+        return 0;
+    }*/
+
+    if (ew_b->displ)
+    {
+        if (mode == 7)
+        {
+            ew_b->displ -= 2;
+        }
+
+        LblCalc (a_disp, ew_b->displ, AMode);
+    }
+
+    if (!set_indirect_idx (idxstr, ew_b))
+    {
+        ungetnext_w(ci);
+        return 0;
+    }
+
+    switch (mode)
+    {
+        case 6:
+            switch (reg)
+            {
+                case 7:
+                    sprintf (dststr, SPStrings[mode].str, a_disp, idxstr);
+                    break;
+                default:
+                    sprintf (dststr, ModeStrings[mode].str, a_disp,
+                            reg, idxstr);
+                    break;
+            }
+            break;
+        case 7:     /* PCRel */
+            sprintf (dststr, Mode07Strings[reg].str, a_disp, idxstr);
+            break;
+        default:
+            return 0;
+    }
+
+    return 1;
+}
+
+/* ------------------------
  * get_eff_addr() - Build the appropriate opcode string for the command
  *     and store it in the command structure opcode string
  *
- */
+ * ------------------------- */
 
 int
 #ifdef __STDC__
@@ -161,7 +495,6 @@ int reg;
     case 5:             /* d{16}An */
         AMode = AM_A0 + reg;
         ext1 = getnext_w(ci);
-        /*displac_w = (ext1 & 0xffff);*/
 
         /* The system biases the data Pointer (a6) by 0x8000 bytes,
          * so compensate
@@ -173,7 +506,6 @@ int reg;
 
         /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
         LblCalc(dispstr, ext1, AMode);
-        /*sprintf(dispstr, "%d", displac_w);*/
 
         if (reg == 7)
         {
@@ -188,44 +520,51 @@ int reg;
     case 6:             /* d{8}(An,Xn) or 68020-up */
         AMode = AM_A0 + reg;
 
-        if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
+        if (get_ext_wrd (ci, &ew_b, mode, reg))
         {
-            /* the displacement should be a string for it may sometimes
-             * be a label */
-            char a_disp[50];
-            char idxstr[30];
-
-            a_disp[0] = '\0';
-
-            /* This is for cpu's < 68020
-             * for 68020-up, the bd can be up to 32 bits
-             */
-            if (abs(ew_b.displ) > 0x80)
+            if (ew_b.isFull)
             {
-                ungetnext_w(ci);
-                return 0;
-            }
-
-            if (ew_b.displ)
-            {
-                /*sprintf (a_disp, "%d", ew_b.displ);*/
-                LblCalc (a_disp, ew_b.displ, AMode);
-            }
-
-            if (!set_indirect_idx (idxstr, &ew_b))
-            {
-                ungetnext_w(ci);
-                return 0;
-            }
-
-            if (reg == 7)
-            {
-                sprintf (ea, SPStrings[mode].str, a_disp, idxstr);
+                return process_extended_word_full(ci, ea, &ew_b, mode, reg, size);
             }
             else
             {
-                sprintf (ea, ModeStrings[mode].str, a_disp, reg, idxstr);
+                return process_extended_word_brief(ci, ea, &ew_b, mode, reg, size);
             }
+            ///* the displacement should be a string for it may sometimes
+            // * be a label */
+            //char a_disp[50];
+            //char idxstr[30];
+
+            //a_disp[0] = '\0';
+
+            ///* This is for cpu's < 68020
+            // * for 68020-up, the bd can be up to 32 bits
+            // */
+            ///*if (abs(ew_b.displ) > 0x80)
+            //{
+            //    ungetnext_w(ci);
+            //    return 0;
+            //}*/
+
+            //if (ew_b.displ)
+            //{
+            //    LblCalc (a_disp, ew_b.displ, AMode);
+            //}
+
+            //if (!set_indirect_idx (idxstr, &ew_b))
+            //{
+            //    ungetnext_w(ci);
+            //    return 0;
+            //}
+
+            //if (reg == 7)
+            //{
+            //    sprintf (ea, SPStrings[mode].str, a_disp, idxstr);
+            //}
+            //else
+            //{
+            //    sprintf (ea, ModeStrings[mode].str, a_disp, reg, idxstr);
+            //}
 
             return 1;
         }
@@ -237,32 +576,30 @@ int reg;
         /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
         break;
 
-        /* We now go to mode %111, where the mode is determined
-         * by the register field
-         */
+            /* We now go to mode %111, where the mode is determined
+             * by the register field
+             */
     case 7:
         switch (reg) {
         case 0:                 /* (xxx).W */
             AMode = AM_REL;
             ext1 = getnext_w(ci);
             displac_w = ext1 & 0xffff;
-            /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
+            /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT
+             * IS A LABEL ??? */
             sprintf (dispstr, "%d", displac_w);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 1:                /* (xxx).L */
             AMode = AM_REL;
             ext1 = getnext_w(ci);
-            /*++(ci->wcount);*/
             ext2 = getnext_w(ci);
-            /*++(ci->wcount);*/
             sprintf (dispstr, "%d", (ext1 << 16) | (ext2 & 0xffff));
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 4:                 /* #<data> */
             AMode = AM_IMM;
             ext1 = getnext_w(ci);
-            /*++(ci->wcount);*/
 
             switch (size)
             {
@@ -295,17 +632,24 @@ int reg;
         case 2:              /* (d16,PC) */
             AMode = AM_REL;
             ext1 = getnext_w(ci);
-            /* (ext1 - 2) to reflect PCPos before getnext_w */
+                    /* (ext1 - 2) to reflect PCPos before getnext_w */
             LblCalc(dispstr, ext1 - 2, AMode);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 3:              /* d8(PC,Xn) */
-            /*ext1 = getnext_w(ci);*/
             AMode = AM_REL;
 
-            if (get_ext_wrd_brief (ci, &ew_b, mode, reg))
+            if (get_ext_wrd (ci, &ew_b, mode, reg))
             {
-                char a_disp[50];
+                if (ew_b.isFull)
+                {
+                    return process_extended_word_full(ci, ea, &ew_b, mode, reg, size);
+                }
+                else
+                {
+                    return process_extended_word_brief(ci, ea, &ew_b, mode, reg, size);
+                }
+                /*char a_disp[50];
                 char idxstr[30];
 
 
@@ -330,65 +674,12 @@ int reg;
             }
             else
             {
-                return 0;
+                return 0;*/
             }
         }
     }
 
     return 0;    /* Return 0 means no effective address was found */
-}
-
-/* ------------------------------------------------------------------------ *
- * get_ext_wrd_brief() - Retrieves the extended command word, and sets up   *
- *      the values.                                                         *
- * Returns 1 if valid, 0 if not                                             *
- * ------------------------------------------------------------------------ */
-
-int
-#ifdef __STDC__
-get_ext_wrd_brief (CMD_ITMS *ci, struct extWbrief *extW, int mode, int reg)
-#else
-get_ext_wrd_brief (ci, extW, mode, reg)
-    CMD_ITMS *ci;
-    struct extWbrief *extW;
-    int mode, reg;
-#endif
-{
-    int ew;     /* A local copy of the extended word (stored in ci->code[0] */
-
-    ew = getnext_w(ci);
-
-    if ((cpu < 20) && (ew & 0x0100))
-    {
-        ungetnext_w(ci);
-        return 0;
-    }
-
-    /* get the values common to all */
-    extW->isLong = (ew >> 11) & 1;
-    extW->scale = (ew >> 9) & 3;
-    extW->regno = (ew >> 12) & 7;
-    extW->isFull = (ew >> 8) & 1;
-    extW->regNam = dispRegNam[(ew >> 15) & 1];
-
-    if (extW->isFull)
-    {
-        extW->iiSel = ew & 7;
-        extW->bs = (ew >> 7) & 1;
-        extW->is = (ew >> 6) & 1;
-        extW->bdSize = (ew >> 4) & 3;
-        extW->displ = 0;
-    }
-    else
-    {
-        extW->displ = ew & 0xff;
-
-        if (extW->displ & 0x80)
-        {
-            extW->displ = extW->displ | (-1 ^ 0xff);
-        }
-    }
-    return 1;
 }
 
 /*
@@ -874,3 +1165,173 @@ strdup (oldstr)
     }
 }
 #endif
+
+/* ************************************************************************* *
+ * fread_* functions - These are partly convenience functions but mostly are *
+ * used to enable retrieving multi-byte values regardless of the             *
+ * "ENDIAN"ness of the CPU                                                   *
+ * If the read fails, the program is immediately exited.                     *
+ * ************************************************************************* */
+
+char
+#ifdef __STDC__
+fread_b(FILE *fp)
+#else
+fread_b(fp)
+    FILE *fp;
+#endif
+{
+    char b;
+
+    if (fread(&b, 1, 1, fp) < 1)
+    {
+        filereadexit();
+    }
+
+    return b;
+}
+
+char
+#ifdef __STDC__
+getnext_b(CMD_ITMS *ci)
+#else
+getnext_b(ci)
+    CMD_ITMS *ci;
+#endif
+{
+    char b;
+
+    if (fread(&b, 1, 1, ModFP) < 1)
+    {
+        filereadexit();
+    }
+
+    ++PCPos;
+    /* We won't store this into the buffers
+     * as it is not a command */
+    return b;
+}
+
+/* **************************************************************************** *
+ * getnext_w() - Fetches the next word (an Extended Word) from the module        *
+ * Passed: The cmditems pointer                                                 *
+ * Returns: the word retrieved                                                  *
+ *                                                                              *
+ * The PCPos is updated, the count of words in the instruction is updated and   *
+ *    the word is stored in the proper Info->code position                      *
+ * **************************************************************************** */
+
+int
+#ifdef __STDC__
+getnext_w(CMD_ITMS *ci)
+#else
+getnext_w(ci)
+    CMD_ITMS *ci;
+#endif
+{
+    short w;
+
+    w = fread_w(ModFP);
+    PCPos += 2;
+    ci->code[ci->wcount] = w;
+    ci->wcount += 1;
+    return w;
+}
+
+/* *************************************************************************** *
+ * ungetnext_w() - ungets (undoes) a previous word-get.
+ * Passed: Pointer to the cmditems struct
+ * *************************************************************************** */
+
+void
+#ifdef __STDC__
+    ungetnext_w(CMD_ITMS *ci)
+#else
+    ungetnext_w(ci)
+    CMD_ITMS *ci;
+#endif
+{
+    fseek (ModFP, -2, SEEK_CUR);
+    PCPos -= 2;
+    ci->wcount -= 1;
+}
+
+/* ******************************************************************** *
+ * Some substitutions to allow portability. Most deal with the byte     *
+ *  order of the CPU                                                    *
+ * ******************************************************************** */
+
+/* Read multi-byte numbers from the file.  
+ * We are going to make a serious assumption here.  If it's _OSK then
+ * assume it's LITTLE_ENDIAN, other wise it's BIG_ENDIAN.  Also we'll
+ * assume that if it's _OSK, _STDC_ is #undef; otherwise it's defined
+ */
+
+#ifdef _OSK
+short fread_w(fp)
+    FILE *fp;
+{
+    short w;
+    
+    if (fread(&w, 2, 1, fp) < 1)
+    {
+        filereadexit();
+    }
+
+    return w;
+}
+
+int fread_l(fp)
+    FILE *fp;
+{
+    int l;
+    
+    if (fread(&l, 4, 1, fp) < 1)
+    {
+        filereadexit();
+    }
+
+    return l;
+}
+#else
+short fread_w(FILE *fp)
+{
+    int tmpi[2] = {0,0};
+    int *tt = tmpi;
+    int count;
+
+    for (count = 0; count < 2; count++)
+    {
+        if (fread(tt, 1, 1, fp) < 1)
+        {
+            filereadexit();
+        }
+
+        ++tt;
+    }
+
+    return tmpi[0]<<8 | (tmpi[1] & 0xff);
+}
+
+int fread_l(FILE *fp)
+{
+    int tt;
+    int tmpnum = 0;
+    int count;
+
+    for (count = 0; count < 4; count++)
+    {
+        if (fread(&tt, 1, 1, fp) < 1)
+        {
+            filereadexit();
+        }
+
+        tmpnum = (tmpnum<<8) | (tt & 0xff); 
+    }
+
+    return tmpnum;
+
+    return 1;
+}
+#endif
+
