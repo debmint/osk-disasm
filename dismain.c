@@ -173,7 +173,18 @@ get_modhead()
         case MT_FILEMAN:
         case MT_DEVDRVR:
             M_Exec = fread_l(ModFP);
-            M_Except = fread_l(ModFP);
+            
+            /* Add label for Exception Handler, if applicable */
+            /* Only for specific Module Types??? */
+            if (M_Except = fread_l(ModFP))
+            {
+                addlbl('L', M_Except, "");
+            }
+
+            /* Add btext */
+            /* applicable for only specific Moule Types??? */
+            addlbl ('L', 0, "btext");
+
             HdrEnd = ftell(ModFP); /* We'll keep changing it if necessary */
 
             if ((M_Type != MT_SYSTEM) && (M_Type != MT_FILEMAN))
