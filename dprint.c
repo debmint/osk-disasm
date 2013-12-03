@@ -189,6 +189,7 @@ PrintPsect()
     strcat (EaString, "_a");
 
     /* Type/Language */
+    InProg = 0;    /* Inhibit Label Lookup */
     ProgType = modnam_find (ModTyps, (unsigned char)M_Type)->name;
     Ci.lblname = ProgType;
     sprintf (Ci.opcode, "$%x", M_Type);
@@ -251,6 +252,13 @@ PrintPsect()
     sprintf (&EaString[strlen(EaString)], ",%d", M_Edit);
     strcat (EaString, ",0");    /* For the time being, don't add any stack */
     sprintf (&EaString[strlen(EaString)], ",%s", findlbl ('L', M_Exec)->sname);
+
+    if (M_Except)
+    {
+        strcat(EaString, ",");
+        strcat(EaString, findlbl('L', M_Except)->sname);
+    }
+
     strcpy (Ci.opcode, EaString);
     strcpy (Ci.mnem, "psect");
     Ci.lblname = "";
@@ -261,6 +269,7 @@ PrintPsect()
     PrintLine (pseudcmd, &Ci, CNULL, 0, 0);
     BlankLine();
     PgWidth = pgWdthSave;
+    InProg = 1;
 }
 
 /* ************************************** *
@@ -950,14 +959,15 @@ ParseIRefs(rClass)
 
             il->dAddr = MSB | (fread_w(ModFP) & 0xffff);
             lblLoc = 0;
-            lblPos = &IBuf[il->dAddr - IDataBegin];
+            lblPos = (unsigned char *)&IBuf[il->dAddr - IDataBegin];
 
             for (pCount = 0; pCount < 4; pCount++)
             {
                 lblLoc = (lblLoc << 8) | (*(lblPos++));
             }
 
-            if ((rClass == 'D') || ((lblLoc >= HdrEnd) && (lblLoc <= M_Size)))
+            /*if ((rClass == 'D') || ((lblLoc >= HdrEnd) && (lblLoc <= M_Size)))*/
+            if ((rClass == 'D') || (lblLoc <= M_Size))
             {
                 il->lbl = addlbl (rClass, lblLoc, NULL);
             }
@@ -1220,6 +1230,7 @@ ListInitData (ldf, nBytes, lclass)
     Ci.cmd_wrd = 0;
     Ci.comment = "";
     Ci.mnem[0] = '\0';
+    Ci.opcode[0] = '\0';
     Ci.lblname = "";
     Ci.wcount = 0;
     NowClass = 'D';
