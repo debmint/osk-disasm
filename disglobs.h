@@ -52,6 +52,13 @@
 #   define SEEK_END 2
 #endif
 
+#define MC68000 0
+#define MC68008 8
+#define MC68010 10
+#define MC68020 20
+#define MC68030 30
+#define MC68040 40
+
 enum {
     SIZ_BYTE,
     SIZ_WORD,

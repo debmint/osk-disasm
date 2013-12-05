@@ -594,8 +594,8 @@ OPSTRUCTURE *opmains[] =
 {
     instr00,
     instr01,
-    instr01,    /* Repeat 3 times for 3 move sizes */
-    instr01,
+    instr02,    /* Repeat 3 times for 3 move sizes */
+    instr03,
     instr04,
     instr05,
     instr06,
@@ -652,6 +652,15 @@ get_asmcmd()
             break;
 
         curop = tablematch (opword, curop);
+
+        /* The table must be organized such that the "cpulvl" field
+         * is sorted in ascending order.  Therefore, if a "cpulvl"
+         * higher than "cpu" is encountered we can abort the search.
+         */
+        if (curop->cpulvl > cpu)
+        {
+            return 0;
+        }
 
         if (!error)
         {

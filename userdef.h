@@ -73,6 +73,7 @@ typedef struct opst
 	char *opwordstr;
 	short sizestartbit;
 	short sizeendbit;
+    int cpulvl;
     int id;
     int (*opfunc)();    
 }OPSTRUCTURE;

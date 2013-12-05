@@ -847,7 +847,7 @@ reg_ea(ci, j, op)
     char *regname = "d";
 
     /* Eliminate illegal Addressing modes */
-    switch (j)
+    switch (op->id)
     {
         case 30:        /* chk */
         case 70:        /* divu */
@@ -875,7 +875,7 @@ reg_ea(ci, j, op)
                 return 0;
     }
 
-    switch (j)
+    switch (op->id)
     {
         default:
             break;  /* Already checked above */
@@ -1118,7 +1118,7 @@ link_unlk(ci, j, op)
 
     strcpy (ci->mnem, op->name);
 
-    switch (j)
+    switch (op->id)
     {
         case 47:        /* "unlink: only needs regno for the opcode */
             sprintf (ci->opcode, "A%d", regno);
