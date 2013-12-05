@@ -476,7 +476,7 @@ bit_dynamic(ci, j, op)
     if (mode == 1)
         return 0;
 
-/*    switch (j)
+/*    switch (op->id)
     {
         case 4:
             if (mode == 4)
@@ -775,7 +775,7 @@ one_ea(ci, j, op)
     else
     {
         /* eliminate modes */
-        switch (j)
+        switch (op->id)
         {
             case 38:    /* swap */
             case 43:    /* tst  */
@@ -794,7 +794,7 @@ one_ea(ci, j, op)
 
         if (mode == 7)
         {
-            switch (j)
+            switch (op->id)
             {
                 case 32:        /* Allow all modes */
                 case 38:
@@ -815,7 +815,7 @@ one_ea(ci, j, op)
 
         if (get_eff_addr(ci, ea, mode, reg, size))
         {
-            switch (j)
+            switch (op->id)
             {
                  char *statreg = "ccr";
 
