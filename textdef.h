@@ -334,7 +334,7 @@ OPSTRUCTURE instr00[]=
     {"moves.",   0,25,12,   "00001110xxxxxxxx",7,6, MC68010,  125,  notimplemented},
 /* MOVES 68010 */ 
     {"moves.",   0,12,25,   "00001110xxxxxxxx",7,6, MC68010,  126,  notimplemented},
-    {NULL,0,0,0,NULL,0,0,0,NULL}
+    {NULL,0,0,0,NULL,0,0,0,0,NULL}
 };
 
 OPSTRUCTURE instr01[]=
