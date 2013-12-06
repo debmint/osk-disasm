@@ -117,26 +117,29 @@ tablematch (opword, entry)
 {
     /*extern OPSTRUCTURE syntax1[];*/
     extern int error;
-    int i,
-      j,
-      Bmatch,
-      a,
-      b,
-      c,
+    int Bmatch,
       maxinstr;
+    int j,
+        b,
+        c;
 
 
     Bmatch = 1;
-    for (j = 15; j > -1; j--)
+
+    for (j = 15; j > 3; j--)
     {
-        a = entry->opwordstr[j] != 'x';
-        b = (entry->opwordstr[j] == '1' && !(opword & 0x0001));
-        c = (entry->opwordstr[j] == '0' && (opword & 0x0001));
-        if (a && (b || c))
+        if (entry->opwordstr[j] != 'x')
         {
-            Bmatch = 0;         /* MATCH FLAG IS SET TO FALSE */
-            break;
+            b = (entry->opwordstr[j] == '1' && !(opword & 0x0001));
+            c = (entry->opwordstr[j] == '0' && (opword & 0x0001));
+
+            if (b || c)
+            {
+                Bmatch = 0;         /* MATCH FLAG IS SET TO FALSE */
+                break;
+            }
         }
+
         opword = opword >> 1;
     }
 
