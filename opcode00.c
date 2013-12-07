@@ -19,7 +19,8 @@ enum {
 char *SizSufx[] = {"b", "w", "l"};
 
 extern CONDITIONALS typecondition[];
-int
+
+/*int
 #ifdef __STDC__
 bitModeRegLegal(int mode, int reg)
 #else
@@ -40,7 +41,7 @@ bitModeRegLegal(mode, reg)
             return 0;
         }
     }
-}
+}*/
 
 /*int 
 //#ifdef __STDC__

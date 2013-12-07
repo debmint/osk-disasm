@@ -189,4 +189,15 @@ xt char DorA[]
 #endif
 ;
 
+xt char dispRegNam[2]
+#ifdef _MAIN_
+= {'d','a'}
+#endif
+;
+xt char *stdSiz[]
+#ifdef _MAIN_
+= {"b", "w", "l"}
+#endif
+;
+
 #endif                     /* #ifdef HAVE_GLOBALS */

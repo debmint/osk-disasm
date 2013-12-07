@@ -331,9 +331,15 @@ OPSTRUCTURE instr00[]=
     {"eori.",    0,8,0,     "00001010xxxxxxxx",7,6, MC68000,   21,  biti_size},
     {"cmpi.",    0,8,1,     "00001100xxxxxxxx",7,6, MC68000,   22,  biti_size},
 /* MOVES 68010 */ 
-    {"moves.",   0,25,12,   "00001110xxxxxxxx",7,6, MC68010,  125,  notimplemented},
+    {"moves.",   0,25,12,   "00001110xxxxxxxx",7,6, MC68010,  125,  cmd_moves},
 /* MOVES 68010 */ 
-    {"moves.",   0,12,25,   "00001110xxxxxxxx",7,6, MC68010,  126,  notimplemented},
+    /*{"moves.",   0,12,25,   "00001110xxxxxxxx",7,6, MC68010,  126,  notimplemented},*/
+    {"cmp2.",    0,5,25,    "00000xx011xxxxxx",10,9, MC68020, 131,  cmp2_chk2},
+    {"chk2.",    0,5,25,    "00000xx011xxxxxx",10,9, MC68020, 132,  cmp2_chk2},
+    {"rtm",      6,25,21,   "000001101100xxxx",4,4,  MC68020, 133,  rtm_020},
+    {"callm",    6,8,5,     "0000011011xxxxxx",8,8,  MC68020, 134,  cmd_callm},
+    {"cas.",     14,37,34,  "00001xx011xxxxxx",10,9, MC68020, 135,  cmd_cas},
+    {"cas2.",    10,29,21,  "000011x011111100",10,9, MC68020, 136,  cmd_cas2},
     {NULL,0,0,0,NULL,0,0,0,0,NULL}
 };
 
@@ -408,11 +414,33 @@ OPSTRUCTURE instr04[]=
 /* MOVE from CCR */ 
     {"move.",    2,17,0,    "0100001011xxxxxx",8,8, MC68010,  127,  move_ccr_sr},
 /* RTD */ 
-    {"rtd",      6,8,21,    "0100111001110100",7,6, MC68010,  128,  notimplemented},
+    {"rtd",      6,8,21,    "0100111001110100",7,6, MC68010,  128,  cmd_rtd},
 /* MOVEC */ 
-    {"movec.",   5,27,21,   "010011100111101x",2,2, MC68010,  129,  notimplemented},
+    //{"movec.",   5,27,21,   "010011100111101x",2,2, MC68010,  129,  notimplemented},
 /* BKPT */ 
-    {"bkpt",     6,8,21,    "0100100001001xxx",4,4, MC68010,  130,  notimplemented},
+    {"bkpt",     6,8,21,    "0100100001001xxx",4,4, MC68010,  130,  trap},
+/* CHK 68020 */ 
+   {"chk.",     5,2,4,     "0100xxx100xxxxxx",6,6,  MC68020, 137,  reg_ea},
+/* LINK LONG */ 
+   {"link.",    5,3,8,     "0100100000001xxx",4,4,  MC68020, 138,  link_unlk},
+/* EXTB */ 
+   {"extb.",    5,4,21,    "0100100111000xxx",9,9,  MC68020, 139,  ext_extb},
+/* MULS LONG */ 
+   {"mul",      5,2,4,     "0100110000xxxxxx",6,6,  MC68020, 140,  muldiv_020},
+   ////{"muls.",    5,2,28,    "0100110000xxxxxx",6,6,  MC68020, 141,  notimplemented},
+/* MULU LONG */ 
+   /*{"mulu.",    5,2,4,     "0100110000xxxxxx",6,6, MC68020,  142,  notimplemented},*/
+   ////{"mulu.",    5,2,28,    "0100110000xxxxxx",6,6, MC68020,  143,  notimplemented},
+/* DIVU LONG */ 
+   {"div",       12,2,4,    "0100110001xxxxxx",6,6, MC68020,  144,  muldiv_020},
+   ////{"divu.",    12,2,28,   "0100110001xxxxxx",6,6, MC68020,  145,  notimplemented},
+/* DIVUL LONG */ 
+   /*{"divul.",   12,2,28,   "0100110001xxxxxx",6,6, MC68020,  146,  notimplemented},*/
+/* DIVS LONG */ 
+   /*{"divs.",    12,2,4,    "0100110001xxxxxx",6,6, MC68020,  147,  notimplemented},*/
+   ////{"divs.",    12,2,28,   "0100110001xxxxxx",6,6, MC68020,  148,  notimplemented},
+/* DIVSL LONG */ 
+   /*{"divsl.",   12,2,28,   "0100110001xxxxxx",6,6, MC68020,  149,  notimplemented},*/
     {NULL,0,0,0,NULL,0,0,0,0,NULL}
 };
 
@@ -427,6 +455,10 @@ OPSTRUCTURE instr05[]=
     {"subq.",    0,8,0,     "0101xxx1xxxxxxxx",7,6, MC68000,   62,  addq_subq},
     {"subq.",    7,8,3,     "0101xxx1xxxxxxxx",7,6, MC68000,   63,  addq_subq},
     {"addq.",    7,8,3,     "0101xxx0xxxxxxxx",7,6, MC68000,  107,  addq_subq},
+/* TRAPcc */ 
+   {"trap~~",   6,21,21,   "0101xxxx111111xx",0,0, MC68020,  150,  cmd_trapcc},
+/* TRAPcc */ 
+   /*{"trap~~.",  10,8,21,   "0101xxxx1111101x",1,0, MC68020,  151,  notimplemented},*/
     {NULL,0,0,0,NULL,0,0,0,0,NULL}
 };
 
@@ -457,6 +489,12 @@ OPSTRUCTURE instr08[]=
 /* OR  */
     {"or.",      0,4,12,    "1000xxx1xxxxxxxx",7,6,   MC68000,  120,  add_sub},
     {"or.",      0,2,4,     "1000xxx0xxxxxxxx",7,6,   MC68000,  121,  add_sub},
+/* PACK */ 
+    {"pack",     6,36,35,   "1000xxx101001xxx",0,0, MC68020,  152,  notimplemented},
+    /*{"pack",     6,37,35,   "1000xxx101000xxx",0,0, MC68020,  153,  notimplemented},*/
+/* UNPK */ 
+    {"unpk",     6,36,35,   "1000xxx110001xxx",0,0, MC68020,  154,  notimplemented},
+    /*{"unpk",     6,37,35,   "1000xxx110000xxx",0,0, MC68020,  155,  notimplemented},*/
     {NULL,0,0,0,NULL,0,0,0,0,NULL}
 };
 
@@ -531,101 +569,46 @@ OPSTRUCTURE instr14[]=
     {"rol.",     0,8,4,     "1110xxx1xx011xxx",7,6,  MC68000,  98,  bit_rotate_reg},
     {"rol.",     0,4,4,     "1110xxx1xx111xxx",7,6,  MC68000,  99,  bit_rotate_reg},
 /* SHIFT ROTATE */ 
-   {"ror.",     0,8,4,     "1110xxx0xx011xxx",7,6, MC68000,  100,  bit_rotate_reg},
-   {"ror.",     0,4,4,     "1110xxx0xx111xxx",7,6, MC68000,  101,  bit_rotate_reg},
+    {"ror.",     0,8,4,     "1110xxx0xx011xxx",7,6, MC68000,  100,  bit_rotate_reg},
+    {"ror.",     0,4,4,     "1110xxx0xx111xxx",7,6, MC68000,  101,  bit_rotate_reg},
 /* SHIFT ROTATE */ 
-   {"roxl.",    0,8,4,     "1110xxx1xx010xxx",7,6, MC68000,  102,  bit_rotate_reg},
-   {"roxl.",    0,4,4,     "1110xxx1xx110xxx",7,6, MC68000,  103,  bit_rotate_reg},
+    {"roxl.",    0,8,4,     "1110xxx1xx010xxx",7,6, MC68000,  102,  bit_rotate_reg},
+    {"roxl.",    0,4,4,     "1110xxx1xx110xxx",7,6, MC68000,  103,  bit_rotate_reg},
 /* SHIFT ROTATE */ 
-   {"roxr.",    0,8,4,     "1110xxx0xx010xxx",7,6, MC68000,  104,  bit_rotate_reg},
-   {"roxr.",    0,4,4,     "1110xxx0xx110xxx",7,6, MC68000,  105,  bit_rotate_reg},
+    {"roxr.",    0,8,4,     "1110xxx0xx010xxx",7,6, MC68000,  104,  bit_rotate_reg},
+    {"roxr.",    0,4,4,     "1110xxx0xx110xxx",7,6, MC68000,  105,  bit_rotate_reg},
 /* SHIFT ROTATE */ 
-   {"asl.",     11,12,21,  "1110000111xxxxxx",7,6, MC68000,  108,  bit_rotate_mem},
-   {"asl.",     0,8,4,     "1110xxx1xx000xxx",7,6, MC68000,  109,  bit_rotate_reg},
-   {"asl.",     0,4,4,     "1110xxx1xx100xxx",7,6, MC68000,  110,  bit_rotate_reg},
-   {"asr.",     11,12,21,  "1110000011xxxxxx",7,6, MC68000,  111,  bit_rotate_mem},
-   {"asr.",     0,8,4,     "1110xxx0xx000xxx",7,6, MC68000,  112,  bit_rotate_reg},
-   {"asr.",     0,4,4,     "1110xxx0xx100xxx",7,6, MC68000,  113,  bit_rotate_reg},
+    {"asl.",     11,12,21,  "1110000111xxxxxx",7,6, MC68000,  108,  bit_rotate_mem},
+    {"asl.",     0,8,4,     "1110xxx1xx000xxx",7,6, MC68000,  109,  bit_rotate_reg},
+    {"asl.",     0,4,4,     "1110xxx1xx100xxx",7,6, MC68000,  110,  bit_rotate_reg},
+    {"asr.",     11,12,21,  "1110000011xxxxxx",7,6, MC68000,  111,  bit_rotate_mem},
+    {"asr.",     0,8,4,     "1110xxx0xx000xxx",7,6, MC68000,  112,  bit_rotate_reg},
+    {"asr.",     0,4,4,     "1110xxx0xx100xxx",7,6, MC68000,  113,  bit_rotate_reg},
 /* LOGICAL SHIFT ROTATE */ 
-   {"lsl.",     11,12,21,  "1110001111xxxxxx",7,6, MC68000,  114,  bit_rotate_mem},
-   {"lsl.",     0,8,4,     "1110xxx1xx001xxx",7,6, MC68000,  115,  bit_rotate_reg},
-   {"lsl.",     0,4,4,     "1110xxx1xx101xxx",7,6, MC68000,  116,  bit_rotate_reg},
-   {"lsr.",     11,12,21,  "1110001011xxxxxx",7,6, MC68000,  117,  bit_rotate_mem},
-   {"lsr.",     0,8,4,     "1110xxx0xx001xxx",7,6, MC68000,  118,  bit_rotate_reg},
-   {"lsr.",     0,4,4,     "1110xxx0xx101xxx",7,6, MC68000,  119,  bit_rotate_reg},
+    {"lsl.",     11,12,21,  "1110001111xxxxxx",7,6, MC68000,  114,  bit_rotate_mem},
+    {"lsl.",     0,8,4,     "1110xxx1xx001xxx",7,6, MC68000,  115,  bit_rotate_reg},
+    {"lsl.",     0,4,4,     "1110xxx1xx101xxx",7,6, MC68000,  116,  bit_rotate_reg},
+    {"lsr.",     11,12,21,  "1110001011xxxxxx",7,6, MC68000,  117,  bit_rotate_mem},
+    {"lsr.",     0,8,4,     "1110xxx0xx001xxx",7,6, MC68000,  118,  bit_rotate_reg},
+    {"lsr.",     0,4,4,     "1110xxx0xx101xxx",7,6, MC68000,  119,  bit_rotate_reg},
+/* BITFIELD */ 
+/* BFCHG and BFCLR and BFSET*/
+    {"bf~~~",    6,32,21,   "11101xx011xxxxxx",8,8, MC68020,  156,  bitfields_020},
+/* BFTST */
+    /*{"bf~~~",    6,33,21,   "1110100011xxxxxx",8,8, MC68020,  157,  notimplemented},*/
+/* BFEXTS and BFEXTU and BFFFO */
+    {"bf~~~",    6,33,4,    "11101xx111xxxxxx",8,8, MC68020,  158,  bitfields_020},
+    /* BFINS */
+    {"bf~~~",    6,4,32,    "1110111111xxxxxx",8,8, MC68020,  159,  bitfields_020},
     {NULL,0,0,0,NULL,0,0,0,0,NULL}
 };
 /*#endif*/ /* end for OPSTRUCTURE */
 
-#if DEVICE>=68020
-
-/* ******************************************************************** */
-/* **************************68020 INSTRUCTIONS************************ */
-/* ******************************************************************** */
-
-/* CMP2 */ 
-   {"cmp2.",    0,5,25,    "00000xx011xxxxxx",10,9, MC68020, 131,  notimplemented},
-/* CHK2 */ 
-   {"chk2.",    0,5,25,    "00000xx011xxxxxx",10,9, MC68020, 132,  notimplemented},
-/* RTM */ 
-   {"rtm",      6,25,21,   "000001101100xxxx",4,4,  MC68020, 133,  notimplemented},
-/* CALLM */ 
-   {"callm",    6,8,5,     "0000011011xxxxxx",8,8,  MC68020, 134,  notimplemented},
-/* CAS */ 
-   {"cas.",     14,37,34,  "00001xx011xxxxxx",10,9, MC68020, 135,  notimplemented},
-/* CAS2 */ 
-   {"cas2.",    10,29,21,  "000011x011111100",10,9, MC68020, 136,  notimplemented},
-/* CHK 68020 */ 
-   {"chk.",     5,2,4,     "0100xxx100xxxxxx",6,6,  MC68020, 137,  notimplemented},
-/* LINK LONG */ 
-   {"link.",    5,3,8,     "0100100000001xxx",4,4,  MC68020, 138,  link_unlk},
-/* EXTB */ 
-   {"extb.",    5,4,21,    "0100100111000xxx",9,9,  MC68020, 139,  ext_extb},
-/* MULS LONG */ 
-   {"muls.",    5,2,4,     "0100110000xxxxxx",6,6,  MC68020, 140,  notimplemented},
-   {"muls.",    5,2,28,    "0100110000xxxxxx",6,6,  MC68020, 141,  notimplemented},
-/* MULU LONG */ 
-   {"mulu.",    5,2,4,     "0100110000xxxxxx",6,6, MC68020,  142,  notimplemented},
-   {"mulu.",    5,2,28,    "0100110000xxxxxx",6,6, MC68020,  143,  notimplemented},
-/* DIVU LONG */ 
-   {"divu.",    12,2,4,    "0100110001xxxxxx",6,6, MC68020,  144,  notimplemented},
-   {"divu.",    12,2,28,   "0100110001xxxxxx",6,6, MC68020,  145,  notimplemented},
-/* DIVUL LONG */ 
-   {"divul.",   12,2,28,   "0100110001xxxxxx",6,6, MC68020,  146,  notimplemented},
-/* DIVS LONG */ 
-   {"divs.",    12,2,4,    "0100110001xxxxxx",6,6, MC68020,  147,  notimplemented},
-   {"divs.",    12,2,28,   "0100110001xxxxxx",6,6, MC68020,  148,  notimplemented},
-/* DIVSL LONG */ 
-   {"divsl.",   12,2,28,   "0100110001xxxxxx",6,6, MC68020,  149,  notimplemented},
-/* TRAPcc */ 
-   {"trap~~",   6,21,21,   "0101xxxx11111100",0,0, MC68020,  150,  notimplemented},
-/* TRAPcc */ 
-   {"trap~~.",  10,8,21,   "0101xxxx1111101x",1,0, MC68020,  151,  notimplemented},
-/* PACK */ 
-   {"pack",     6,36,35,   "1000xxx101001xxx",0,0, MC68020,  152,  notimplemented},
-   {"pack",     6,37,35,   "1000xxx101000xxx",0,0, MC68020,  153,  notimplemented},
-/* UNPK */ 
-   {"unpk",     6,36,35,   "1000xxx110001xxx",0,0, MC68020,  154,  notimplemented},
-   {"unpk",     6,37,35,   "1000xxx110000xxx",0,0, MC68020,  155,  notimplemented},
-/* BITFIELD */ 
-/* BFCHG and BFCLR and BFSET*/
-   {"bf~~~",    6,32,21,   "11101xx011xxxxxx",8,8, MC68020,  156,  notimplemented},
-/* BFTST */
-   {"bf~~~",    6,33,21,   "1110100011xxxxxx",8,8, MC68020,  157,  notimplemented},
-/* BFEXTS and BFEXTU and BFFFO */
-   {"bf~~~",    6,33,4,    "11101xx111xxxxxx",8,8, MC68020,  158,  notimplemented},
-#endif /* endif for 68020 OPSTRUCTURE */
-#if DEVICE==68020
-/* BFINS */
-   {"bf~~~",    6,4,32,    "1110111111xxxxxx",8,8, MC68020,  159,  notimplemented}
-
-};
-#endif /* end for OPSTRUCTURE */
 
 #if DEVICE>=68030
 /* BITFIELD */ 
 /* BFINS */
-   {"bf~~~",    6,4,32,    "1110111111xxxxxx",8,8, MC68020,  159,  notimplemented},
+    {"bf~~~",    6,4,32,    "1110111111xxxxxx",8,8, MC68020,  159,  notimplemented},
 
 /* ******************************************************************** */
 /* **************************68030 INSTRUCTIONS************************ */

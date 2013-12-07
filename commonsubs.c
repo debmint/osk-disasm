@@ -52,8 +52,6 @@ MODE_STR Mode020Strings[] = {
     {"([%d,%s,%s],%d)"},    /* ([bd,An,Xn],disp) | ([bd,PC,Xn],disp) */
 };
 
-char dispRegNam[2] = {'d','a'};
-
 extern char *SizSufx[];
 
 /* *************
@@ -853,7 +851,8 @@ reg_ea(ci, j, op)
         case 70:        /* divu */
         case 71:        /* divs */
         case 79:        /* mulu */
-        case 80:        /* muls */
+        case 80:        /* muls */      
+        case 137:       /* chk 68020 */
             if ((mode == 1))
                 return 0;
 
@@ -901,6 +900,7 @@ reg_ea(ci, j, op)
                 break;
             case SIZ_LONG:
                 strcat(ci->mnem, "l");
+                break;
             default:
                 ci->mnem[strlen(ci->mnem) - 1] = '\0';
         }
