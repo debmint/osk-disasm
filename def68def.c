@@ -290,7 +290,7 @@ illegalEA (EAentry, opword, extensionword)
 /* ROUTINE: printEA							     */
 /* ************************************************************************* */
 
-int
+/*int
 #ifdef __STDC__
 printEA (int EAentry, int EAstartpoint, char sizechar, int opword)
 #else
@@ -322,206 +322,206 @@ printEA (EAentry, EAstartpoint, sizechar, opword)
 
 #endif
 
-/*    extensionword = get16 (EAstartpoint);
-//    bdsize = 0;
-//    odsize = 0;
-//    switch (EAentry)
-//    {
-//        case 0:
-//            printf ("D%d", bitnum (2, 0, opword));
-//            return;
-//        case 1:
-//            printf ("A%d", bitnum (2, 0, opword));
-//            return;
-//        case 2:
-//            printf ("(A%d)", bitnum (2, 0, opword));
-//            return;
-//        case 3:
-//            printf ("(A%d)+", bitnum (2, 0, opword));
-//            return;
-//        case 4:
-//            printf ("-(A%d)", bitnum (2, 0, opword));
-//            return;
-//        case 5:
-//            printf ("(%c%x,A%d)", HEXDEL, extensionword,
-//                    bitnum (2, 0, opword));
-//            return;
-//        case 6:
-//        case 10:
-//            switch (bitnum (8, 8, extensionword))
-//            {
-//                case 0:        /*BIT 8=0       */
+    extensionword = get16 (EAstartpoint);
+    bdsize = 0;
+    odsize = 0;
+    switch (EAentry)
+    {
+        case 0:
+            printf ("D%d", bitnum (2, 0, opword));
+            return;
+        case 1:
+            printf ("A%d", bitnum (2, 0, opword));
+            return;
+        case 2:
+            printf ("(A%d)", bitnum (2, 0, opword));
+            return;
+        case 3:
+            printf ("(A%d)+", bitnum (2, 0, opword));
+            return;
+        case 4:
+            printf ("-(A%d)", bitnum (2, 0, opword));
+            return;
+        case 5:
+            printf ("(%c%x,A%d)", HEXDEL, extensionword,
+                    bitnum (2, 0, opword));
+            return;
+        case 6:
+        case 10:
+            switch (bitnum (8, 8, extensionword))
+            {
+                case 0:        /*BIT 8=0       */
 /*                    if (EAentry == 6)
-//                        printf ("(%c%x,A%d,", HEXDEL,
-//                                bitnum (7, 0, extensionword),
-//                                bitnum (2, 0, opword));
-//                    else
-//                        printf ("(%c%x,PC,", HEXDEL,
-//                                bitnum (7, 0, extensionword));
-//                    printf ("%c%d.%c*%d)",
-//                            RegType[bitnum (15, 15, extensionword)],
-//                            bitnum (14, 12, extensionword),
-//                            WLsize[bitnum (11, 11, extensionword)],
-//                            scale[bitnum (10, 9, extensionword)]);
-//                    return;
-//                case 1:        /*BIT 8=1       */
+                        printf ("(%c%x,A%d,", HEXDEL,
+                                bitnum (7, 0, extensionword),
+                                bitnum (2, 0, opword));
+                    else
+                        printf ("(%c%x,PC,", HEXDEL,
+                                bitnum (7, 0, extensionword));
+                    printf ("%c%d.%c*%d)",
+                            RegType[bitnum (15, 15, extensionword)],
+                            bitnum (14, 12, extensionword),
+                            WLsize[bitnum (11, 11, extensionword)],
+                            scale[bitnum (10, 9, extensionword)]);
+                    return;
+                case 1:        /*BIT 8=1       */
 /*                    switch (bitnum (5, 4, extensionword))
-//                    {
-//                        case 1:
-//                            bdsize = 0;
-//                            bd = 0;
-//                            break;
-//                        case 2:
-//                            bdsize = 2;
-//                            bd = get16 (EAstartpoint + 2);
-//                            break;
-//                        case 3:
-//                            bdsize = 4;
-//                            bd = get32 (EAstartpoint + 2);
-//                            break;
-//                    }
-//                    if (bitnum (2, 0, extensionword) == 0)
-//                    {
-//                        if (EAentry == 6)
-//                        {
-//                            printf ("($%x,", bd);
-//                            if (bitnum (7, 7, extensionword))
-//                                printf ("Z");
-//                            printf ("A%d,", bitnum (2, 0, opword));
-//                        }
-//                        else
-//                        {
-//                            printf ("($%x,", bitnum (7, 0, extensionword));
-//                            if (bitnum (7, 7, extensionword))
-//                                printf ("Z");
-//                            printf ("PC,");
-//                        }
-//                        if (bitnum (6, 6, extensionword))
-//                            printf ("Z");
-//                        printf ("%c%d.%c*%d)",
-//                                RegType[bitnum (15, 15, extensionword)],
-//                                bitnum (14, 12, extensionword),
-//                                WLsize[bitnum (11, 11, extensionword)],
-//                                scale[bitnum (10, 9, extensionword)]);
-//                        return;
-//                    }
-//                    printf ("([%c%x,", HEXDEL, bd);
-//                    if (bitnum (7, 7, extensionword))
-//                        printf ("Z");
-//                    if (bitnum (5, 3, opword) == 6)
-//                        printf ("A%d", bitnum (2, 0, opword));
-//                    else
-//                        printf ("PC");
-//                    if (bitnum (2, 2, extensionword))
-//                        printf ("],");
-//                    else
-//                        printf (",");
-//                    if (bitnum (6, 6, extensionword))
-//                        printf ("Z");
-//                    if (bitnum (15, 15, extensionword))
-//                        printf ("A");
-//                    else
-//                        printf ("D");
-//                    printf ("%d.%c*%d", bitnum (14, 12, extensionword),
-//                            WLsize[bitnum (11, 11, extensionword)],
-//                            scale[bitnum (10, 9, extensionword)]);
-//                    switch (bitnum (1, 0, extensionword))
-//                    {
-//                        case 1:
-//                            od = 0;
-//                            break;
-//                        case 2:
-//                            od = get16 (EAstartpoint + 2 + bdsize);
-//                            break;
-//                        case 3:
-//                            od = get32 (EAstartpoint + 2 + bdsize);
-//                            break;
-//                    }
-//                    if (bitnum (2, 2, extensionword))
-//                        printf (",%c%x)", HEXDEL, od);
-//                    else
-//                        printf ("],%c%x)", HEXDEL, od);
-//                    return;
-//            }
-//        case 7:
-//            printf ("(%c%x).W", HEXDEL, extensionword);
-//            return;
-//        case 8:
-//            extensionword = extensionword << 16;
-//            extension2 = get16 (EAstartpoint + 2);
-//            extensionword = (extensionword | extension2);
-//            printf ("(%c%x).L", HEXDEL, extensionword);
-//            return;
-//        case 9:
-//            printf ("(%c%x,PC)", HEXDEL, extensionword);
-//            return;
-//        case 11:
-//            switch (sizechar)
-//            {
-//                case 'b':
-//                case 'B':
-//                    immediatedata = (get16 (EAstartpoint) & 0xff);
-//                    break;
-//                case 'w':
-//                case 'W':
-//                    immediatedata = get16 (EAstartpoint);
-//                    break;
-//                case 'l':
-//                case 'L':
-//                    immediatedata = get32 (EAstartpoint);
-//                    break;
-//#if (DEVICE==68040 || COPROCESSOR==TRUE)
-//                default:
-//                    f0_fp = get32 (EAstartpoint);
-//                    f1_fp = get32 (EAstartpoint + 4);
-//                    f2_fp = get32 (EAstartpoint + 8);
-//                    switch (sizechar)
-//                    {
-//                        case 's':
-//                        case 'S':
-//                            if (bitnum (31, 31, f0_fp))
-//                                printf ("-");
-//                            printf ("1_%x_E_%x", (bitnum (22, 0, f0_fp) << 1),
-//                                    bitnum (30, 23, f0_fp) - 127);
-//                            break;
-//                        case 'd':
-//                        case 'D':
-//                            if (bitnum (31, 31, f0_fp))
-//                                printf ("-");
-//                            printf ("1_%x%x_E_%d", bitnum (19, 0, f0_fp),
-//                                    bitnum (31, 0, f1_fp), bitnum (30, 20,
-//                                                                   f0_fp) -
-//                                    1023);
-//                            break;
-//                        case 'x':
-//                        case 'X':
-//                            if (bitnum (31, 31, f0_fp))
-//                                printf ("-");
-//                            printf ("%d_%8x%8x_E%d", bitnum (31, 31, f1_fp),
-//                                    (bitnum (30, 0, f1_fp) << 1), bitnum (31,
-//                                                                          0,
-//                                                                          f2_fp),
-//                                    bitnum (30, 16, f0_fp) - 16383);
-//                            break;
-//                        case 'p':
-//                        case 'P':
-//                            printf ("#$");
-//                            if (bitnum (31, 31, f0_fp))
-//                                printf ("-");
-//                            printf ("%x.%x%x_E", bitnum (3, 0, f0_fp), f1_fp,
-//                                    f2_fp);
-//                            if (bitnum (30, 30, f0_fp))
-//                                printf ("-");
-//                            printf ("%x", bitnum (27, 16, f0_fp));
-//                            break;
-//                    }
-//                    return;
-//#endif
-//            }
-//            printf ("#%c%x", HEXDEL, immediatedata);
-//            return;
-//    }*/
-}
+                    {
+                        case 1:
+                            bdsize = 0;
+                            bd = 0;
+                            break;
+                        case 2:
+                            bdsize = 2;
+                            bd = get16 (EAstartpoint + 2);
+                            break;
+                        case 3:
+                            bdsize = 4;
+                            bd = get32 (EAstartpoint + 2);
+                            break;
+                    }
+                    if (bitnum (2, 0, extensionword) == 0)
+                    {
+                        if (EAentry == 6)
+                        {
+                            printf ("($%x,", bd);
+                            if (bitnum (7, 7, extensionword))
+                                printf ("Z");
+                            printf ("A%d,", bitnum (2, 0, opword));
+                        }
+                        else
+                        {
+                            printf ("($%x,", bitnum (7, 0, extensionword));
+                            if (bitnum (7, 7, extensionword))
+                                printf ("Z");
+                            printf ("PC,");
+                        }
+                        if (bitnum (6, 6, extensionword))
+                            printf ("Z");
+                        printf ("%c%d.%c*%d)",
+                                RegType[bitnum (15, 15, extensionword)],
+                                bitnum (14, 12, extensionword),
+                                WLsize[bitnum (11, 11, extensionword)],
+                                scale[bitnum (10, 9, extensionword)]);
+                        return;
+                    }
+                    printf ("([%c%x,", HEXDEL, bd);
+                    if (bitnum (7, 7, extensionword))
+                        printf ("Z");
+                    if (bitnum (5, 3, opword) == 6)
+                        printf ("A%d", bitnum (2, 0, opword));
+                    else
+                        printf ("PC");
+                    if (bitnum (2, 2, extensionword))
+                        printf ("],");
+                    else
+                        printf (",");
+                    if (bitnum (6, 6, extensionword))
+                        printf ("Z");
+                    if (bitnum (15, 15, extensionword))
+                        printf ("A");
+                    else
+                        printf ("D");
+                    printf ("%d.%c*%d", bitnum (14, 12, extensionword),
+                            WLsize[bitnum (11, 11, extensionword)],
+                            scale[bitnum (10, 9, extensionword)]);
+                    switch (bitnum (1, 0, extensionword))
+                    {
+                        case 1:
+                            od = 0;
+                            break;
+                        case 2:
+                            od = get16 (EAstartpoint + 2 + bdsize);
+                            break;
+                        case 3:
+                            od = get32 (EAstartpoint + 2 + bdsize);
+                            break;
+                    }
+                    if (bitnum (2, 2, extensionword))
+                        printf (",%c%x)", HEXDEL, od);
+                    else
+                        printf ("],%c%x)", HEXDEL, od);
+                    return;
+            }
+        case 7:
+            printf ("(%c%x).W", HEXDEL, extensionword);
+            return;
+        case 8:
+            extensionword = extensionword << 16;
+            extension2 = get16 (EAstartpoint + 2);
+            extensionword = (extensionword | extension2);
+            printf ("(%c%x).L", HEXDEL, extensionword);
+            return;
+        case 9:
+            printf ("(%c%x,PC)", HEXDEL, extensionword);
+            return;
+        case 11:
+            switch (sizechar)
+            {
+                case 'b':
+                case 'B':
+                    immediatedata = (get16 (EAstartpoint) & 0xff);
+                    break;
+                case 'w':
+                case 'W':
+                    immediatedata = get16 (EAstartpoint);
+                    break;
+                case 'l':
+                case 'L':
+                    immediatedata = get32 (EAstartpoint);
+                    break;
+#if (DEVICE==68040 || COPROCESSOR==TRUE)
+                default:
+                    f0_fp = get32 (EAstartpoint);
+                    f1_fp = get32 (EAstartpoint + 4);
+                    f2_fp = get32 (EAstartpoint + 8);
+                    switch (sizechar)
+                    {
+                        case 's':
+                        case 'S':
+                            if (bitnum (31, 31, f0_fp))
+                                printf ("-");
+                            printf ("1_%x_E_%x", (bitnum (22, 0, f0_fp) << 1),
+                                    bitnum (30, 23, f0_fp) - 127);
+                            break;
+                        case 'd':
+                        case 'D':
+                            if (bitnum (31, 31, f0_fp))
+                                printf ("-");
+                            printf ("1_%x%x_E_%d", bitnum (19, 0, f0_fp),
+                                    bitnum (31, 0, f1_fp), bitnum (30, 20,
+                                                                   f0_fp) -
+                                    1023);
+                            break;
+                        case 'x':
+                        case 'X':
+                            if (bitnum (31, 31, f0_fp))
+                                printf ("-");
+                            printf ("%d_%8x%8x_E%d", bitnum (31, 31, f1_fp),
+                                    (bitnum (30, 0, f1_fp) << 1), bitnum (31,
+                                                                          0,
+                                                                          f2_fp),
+                                    bitnum (30, 16, f0_fp) - 16383);
+                            break;
+                        case 'p':
+                        case 'P':
+                            printf ("#$");
+                            if (bitnum (31, 31, f0_fp))
+                                printf ("-");
+                            printf ("%x.%x%x_E", bitnum (3, 0, f0_fp), f1_fp,
+                                    f2_fp);
+                            if (bitnum (30, 30, f0_fp))
+                                printf ("-");
+                            printf ("%x", bitnum (27, 16, f0_fp));
+                            break;
+                    }
+                    return;
+#endif
+            }
+            printf ("#%c%x", HEXDEL, immediatedata);
+            return;
+    }
+}*/
 
 /* ************************************************************************* */
 /* ROUTINE: sizeEA							     */
@@ -529,7 +529,7 @@ printEA (EAentry, EAstartpoint, sizechar, opword)
 
 
 
-int
+/*int
 #ifdef __STDC__
 sizeEA (int EAentry, int EAstartpoint, char sizechar)
 #else
@@ -543,86 +543,86 @@ sizeEA (EAentry, EAstartpoint, sizechar)
       odsize,
       extensionword;
 
-/*    extensionword = get16 (EAstartpoint);
-//    switch (EAentry)
-//    {
-//        case 0:
-//            return (0);
-//        case 1:
-//            return (0);
-//        case 2:
-//            return (0);
-//        case 3:
-//            return (0);
-//        case 4:
-//            return (0);
-//        case 5:
-//            return (2);
-//        case 6:
-//        case 10:
-//            switch (bitnum (8, 8, extensionword))
-//            {
-//                case 0:
-//                    return (2);
-//                case 1:
-//                    switch (bitnum (5, 4, extensionword))
-//                    {
-//                        case 1:
-//                            bdsize = 0;
-//                            break;
-//                        case 2:
-//                            bdsize = 2;
-//                            break;
-//                        case 3:
-//                            bdsize = 4;
-//                            break;
-//                    }
-//                    if (bitnum (2, 0, extensionword) == 0)
-//                        return (bdsize + 2);
-//                    switch (bitnum (1, 0, extensionword))
-//                    {
-//                        case 1:
-//                            odsize = 0;
-//                            break;
-//                        case 2:
-//                            odsize = 2;
-//                            break;
-//                        case 3:
-//                            odsize = 4;
-//                            break;
-//                    }
-//                    return (2 + bdsize + odsize);
-//            }
-//        case 7:
-//            return (2);
-//        case 8:
-//            return (4);
-//        case 9:
-//            return (2);
-//        case 11:
-//            switch (sizechar)
-//            {
-//                case 'b':
-//                case 'B':
-//                    return (2);
-//                case 'w':
-//                case 'W':
-//                    return (2);
-//                case 'l':
-//                case 'L':
-//                case 's':
-//                case 'S':
-//                    return (4);
-//#if (DEVICE==68040 || COPROCESSOR==TRUE)
-//                case 'd':
-//                case 'D':
-//                    return (8);
-//                case 'x':
-//                case 'X':
-//                case 'p':
-//                case 'P':
-//                    return (12);
-//#endif
-//            }
-//    }*/
-}
+    extensionword = get16 (EAstartpoint);
+    switch (EAentry)
+    {
+        case 0:
+            return (0);
+        case 1:
+            return (0);
+        case 2:
+            return (0);
+        case 3:
+            return (0);
+        case 4:
+            return (0);
+        case 5:
+            return (2);
+        case 6:
+        case 10:
+            switch (bitnum (8, 8, extensionword))
+            {
+                case 0:
+                    return (2);
+                case 1:
+                    switch (bitnum (5, 4, extensionword))
+                    {
+                        case 1:
+                            bdsize = 0;
+                            break;
+                        case 2:
+                            bdsize = 2;
+                            break;
+                        case 3:
+                            bdsize = 4;
+                            break;
+                    }
+                    if (bitnum (2, 0, extensionword) == 0)
+                        return (bdsize + 2);
+                    switch (bitnum (1, 0, extensionword))
+                    {
+                        case 1:
+                            odsize = 0;
+                            break;
+                        case 2:
+                            odsize = 2;
+                            break;
+                        case 3:
+                            odsize = 4;
+                            break;
+                    }
+                    return (2 + bdsize + odsize);
+            }
+        case 7:
+            return (2);
+        case 8:
+            return (4);
+        case 9:
+            return (2);
+        case 11:
+            switch (sizechar)
+            {
+                case 'b':
+                case 'B':
+                    return (2);
+                case 'w':
+                case 'W':
+                    return (2);
+                case 'l':
+                case 'L':
+                case 's':
+                case 'S':
+                    return (4);
+#if (DEVICE==68040 || COPROCESSOR==TRUE)
+                case 'd':
+                case 'D':
+                    return (8);
+                case 'x':
+                case 'X':
+                case 'p':
+                case 'P':
+                    return (12);
+#endif
+            }
+    }
+}*/
