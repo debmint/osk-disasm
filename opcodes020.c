@@ -385,21 +385,22 @@ muldiv_020(ci, dc, du, rn)
     {
         if (Pass == 2)
         {
-            /*char *su[5];*/
-
             /* Set mnem */
             strcpy (ci->mnem, op->name);
-            /*su = strchr(ci->mnem, '~');*/
             strcat (ci->mnem, (ci->cmd_wrd & 0x80) ? "s" : "u");
 
             if (d_hr != d_lq)
             {
-                strcat (ci->mnem, "l");
-                sprintf (ci->opcode, "d%d:d%d", d_hr, d_lq);
+                if (!(ew & 0x0400))
+                {
+                    strcat (ci->mnem, "l");
+                }
+
+                sprintf (ci->opcode, "%s,d%d:d%d", EaString, d_hr, d_lq);
             }
             else
             {
-                sprintf (ci->opcode, "d%d", d_hr);
+                sprintf (ci->opcode, "%s,d%d", EaString, d_hr);
             }
 
             strcat (ci->mnem, ".l");
@@ -485,8 +486,8 @@ cmd_trapcc(ci, dc, du, rn)
     return 1;
 }
 
-char *bfty0[] = {"extu", "exts", "ffo","ins"};
-char *bfty1[] = {"tst", "chg", "clr", "set"};
+static char *bfty0[] = {"tst", "chg", "clr", "set"};
+static char *bfty1[] = {"extu", "exts", "ffo","ins"};
 
 static char *
 #ifdef __STDC__
@@ -502,7 +503,7 @@ getbf_fld(dst, flg, val)
     }
     else
     {
-        sprintf(dst, "#%d", val);
+        sprintf(dst, "%d", val);
     }
 
     return dst;
@@ -605,15 +606,17 @@ bitfields_020(ci, dc, du, rn)
             strcpy (ci->mnem, op->name);
             strcpy (strchr (ci->mnem, '~'), bitfunc);
 
-            if (v)
+            if (fld8)
             {
                 if ((ci->cmd_wrd & 0xffc0) == 0xefc0)
                 {
-                    sprintf (ci->opcode, "d%d,%s{%s:%s}", (ew >> 12) & 7, EaString, ofstStr, wdthStr);
+                    sprintf (ci->opcode, "d%d,%s{%s:%s}", (ew >> 12) & 7,
+                                EaString, ofstStr, wdthStr);
                 }
                 else
                 {
-                    sprintf (ci->opcode, "%s{%s:%s},d%d", EaString, ofstStr, wdthStr, (ew >> 12) & 7);
+                    sprintf (ci->opcode, "%s{%s:%s},d%d", EaString,
+                                ofstStr, wdthStr, (ew >> 12) & 7);
                 }
             }
             else
