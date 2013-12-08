@@ -848,14 +848,7 @@ reg_ea(ci, j, op)
     switch (op->id)
     {
         case 30:        /* chk */
-        case 70:        /* divu */
-        case 71:        /* divs */
-        case 79:        /* mulu */
-        case 80:        /* muls */      
         case 137:       /* chk 68020 */
-            if ((mode == 1))
-                return 0;
-
             switch (size)
             {
                 case 2:
@@ -867,11 +860,22 @@ reg_ea(ci, j, op)
                 default:
                     return 0;
             }
+
+            break;
+        case 70:        /* divu */
+        case 71:        /* divs */
+        case 79:        /* mulu */
+        case 80:        /* muls */      
+            if ((mode == 1))
+                return 0;
+            break;
+
         case 31:       /* lea */
             if ((mode < 2) || (mode == 3) || (mode == 4))
                 return 0;
             if ((mode == 7) && (reg == 4))
                 return 0;
+            size = SIZ_LONG;
     }
 
     switch (op->id)
