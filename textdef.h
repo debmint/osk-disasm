@@ -578,10 +578,10 @@ OPSTRUCTURE instr14[]=
     {"roxr.",    0,8,4,     "1110xxx0xx010xxx",7,6, MC68000,  104,  bit_rotate_reg},
     {"roxr.",    0,4,4,     "1110xxx0xx110xxx",7,6, MC68000,  105,  bit_rotate_reg},
 /* SHIFT ROTATE */ 
-    {"asl.",     11,12,21,  "1110000111xxxxxx",7,6, MC68000,  108,  bit_rotate_mem},
+    {"asl.",     11,12,21,  "1110000111x11xxx",7,6, MC68000,  108,  bit_rotate_mem},
     {"asl.",     0,8,4,     "1110xxx1xx000xxx",7,6, MC68000,  109,  bit_rotate_reg},
     {"asl.",     0,4,4,     "1110xxx1xx100xxx",7,6, MC68000,  110,  bit_rotate_reg},
-    {"asr.",     11,12,21,  "1110000011xxxxxx",7,6, MC68000,  111,  bit_rotate_mem},
+    {"asr.",     11,12,21,  "1110000011x11xxx",7,6, MC68000,  111,  bit_rotate_mem},
     {"asr.",     0,8,4,     "1110xxx0xx000xxx",7,6, MC68000,  112,  bit_rotate_reg},
     {"asr.",     0,4,4,     "1110xxx0xx100xxx",7,6, MC68000,  113,  bit_rotate_reg},
 /* LOGICAL SHIFT ROTATE */ 

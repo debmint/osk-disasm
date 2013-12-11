@@ -138,13 +138,14 @@ movchr (dst, ch)
 
 void
 #ifdef __STDC__
-PrintLbl (char *dest, char clas, int adr, LBLDEF *dl)
+PrintLbl (char *dest, char clas, int adr, LBLDEF *dl, int amod)
 #else
-PrintLbl (dest, clas, adr, dl)
+PrintLbl (dest, clas, adr, dl, amod)
     char *dest;
     char clas;
     int adr;
     LBLDEF *dl;
+    int amod;
 #endif
 {
     char tmp[10];
@@ -172,19 +173,31 @@ PrintLbl (dest, clas, adr, dl)
         char *hexfmt;
 
         case '$':       /* Hexadecimal notation */
-            switch (PBytSiz)
+            switch (amod)
             {
-            case 1:
-                hexfmt = "%02x";
-                adr &= 0xff;
-                break;
-            case 4:
-                hexfmt = "%0x";
-                break;
-            default:
-                hexfmt = "%04x";
-                adr &= 0xffff;
-                break;
+                default:
+                    switch (PBytSiz)
+                    {
+                    case 1:
+                        hexfmt = "%02x";
+                        adr &= 0xff;
+                        break;
+                    case 4:
+                        hexfmt = "%08x";
+                        break;
+                    default:
+                        hexfmt = "%04x";
+                        adr &= 0xffff;
+                        break;
+                    }
+
+                    break;
+                case AM_LONG:
+                    hexfmt = "%08x";
+                    break;
+                case AM_SHORT:
+                    hexfmt = "%04x";
+                    break;
             }
 
             sprintf (tmp, hexfmt, adr);
@@ -362,7 +375,8 @@ create_lbldef (lblclass, val, name)
         else
         {
             /* Assume that a program label does not exceed 20 bits */
-            sprintf (newlbl->sname, "%c%05x", toupper(lblclass), val & 0x3ffff);
+            /*sprintf (newlbl->sname, "%c%05x", toupper(lblclass), val & 0x3ffff);*/
+            sprintf (newlbl->sname, "%c%05x", toupper(lblclass), val);
         }
 
         newlbl->myaddr = val;
@@ -660,10 +674,10 @@ LblCalc (dst, adr, amod)
     }
 
     /* Attempt to restrict class 'L' */
-    if (mainclass == 'L')
+    /*if (mainclass == 'L')
     {
         raw &= 0x3ffff;
-    }
+    }*/
 
     if (Pass == 1)
     {
@@ -675,14 +689,14 @@ LblCalc (dst, adr, amod)
 
         if ((mylabel = findlbl (mainclass, raw)))
         {
-            PrintLbl (tmpname, mainclass, raw, mylabel);
+            PrintLbl (tmpname, mainclass, raw, mylabel, amod);
             strcat (dst, tmpname);
         }
         else
         {                       /* Special case for these */
             if (strchr ("^$@&%", mainclass))
             {
-                PrintLbl (tmpname, mainclass, raw, mylabel);
+                PrintLbl (tmpname, mainclass, raw, mylabel, amod);
                 strcat (dst, tmpname);
             }
             else
@@ -729,14 +743,14 @@ LblCalc (dst, adr, amod)
             /*if ((mylabel = FindLbl (LblList[strpos (lblorder, c)],
                                     kls->dofst->of_maj)))*/
             {
-                PrintLbl (tmpname, c, kls->dofst->of_maj, mylabel);
+                PrintLbl (tmpname, c, kls->dofst->of_maj, mylabel, amod);
                 strcat (dst, tmpname);
             }
             else
             {                   /* Special case for these */
                 if (strchr ("^$@&", c))
                 {
-                    PrintLbl (tmpname, c, kls->dofst->of_maj, mylabel);
+                    PrintLbl (tmpname, c, kls->dofst->of_maj, mylabel, amod);
                     strcat (dst, tmpname);
                 }
                 else

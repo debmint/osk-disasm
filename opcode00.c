@@ -372,7 +372,13 @@ biti_size(ci, j, op)
             }
     }
 
-    data = getnext_w(ci);
+    /* The source here is always immediate, but go through
+     * get_eff_addr to get the label, if needed
+     */
+    if (!get_eff_addr (ci, ea, 7, 4, size))
+    {
+        return 0;
+    }
 
     switch (size)
     {
@@ -396,11 +402,10 @@ biti_size(ci, j, op)
         data = (data << 16) | (getnext_w(ci) & 0xffff);
         break;
     }
-    if (get_eff_addr(ci, ea, mode, reg, SIZ_LONG))
-    {
 
-        /* We need to add feature to include Labels here... */
-        sprintf (ci->opcode, "#%ld,%s", data, ea);
+    if (get_eff_addr(ci, EaString, mode, reg, SIZ_LONG))
+    {
+        sprintf (ci->opcode, "%s,%s", ea, EaString);
         strcpy (ci->mnem, op->name);
         strcat (ci->mnem, SizSufx[size]);
         return 1;
@@ -981,8 +986,13 @@ bit_rotate_mem(ci, j, op)
     }
 
     get_eff_addr(ci, ea, mode, reg, 8);
-    strcpy (ci->opcode, ea);
-    strcpy (ci->mnem, op->name);
+
+    if (Pass == 2)
+    {
+        strcpy (ci->opcode, ea);
+        strcpy (ci->mnem, op->name);
+    }
+
     return 1;
 }
 
@@ -1384,8 +1394,20 @@ cmd_dbcc(ci, j, op)
     if (condpos = strchr(ci->mnem, '~'))
     {
         register int offset;
+        int ent = (ci->cmd_wrd >> 8) & 0x0f;
 
-        strcpy(condpos, typecondition[(ci->cmd_wrd >> 8) & 0x0f].condition);
+        switch (ent)
+        {
+            case 0:
+                strcpy (condpos, "rn");
+                break;
+            case 1:
+                strcpy (condpos, "ra");
+                break;
+            default:
+                strcpy(condpos, typecondition[ent].condition);
+        }
+
         offset = getnext_w(ci);
         dest  = br_from + offset;
 

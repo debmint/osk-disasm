@@ -188,7 +188,7 @@ do_opt (c)
     switch (tolower (*(pt++)))
     {
     case 'a':
-        /*Show8bit = 1;   Probably will use this to show all bytes in the command*/    
+        PrintAllCode = 1;   /* Print all code words */
         break;
     case 'c':                  /* Specify Command file */
         if (CmdFileName)

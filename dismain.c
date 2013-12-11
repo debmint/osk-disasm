@@ -287,7 +287,7 @@ RdLblFile (inpath)
     char labelname[30],
          clas,
          eq[10],
-         strval[8],
+         strval[15],
         *lbegin;
     int address;
     LBLDEF *nl;
@@ -436,7 +436,7 @@ dopass(argc,argv,mypass)
         switch (M_Type)
         {
         case MT_PROGRAM:
-            strcpy(DfltLbls, "&&&&&&D&&LL");
+            strcpy(DfltLbls, "&&&&&&D&&&&L");
             break;
         case MT_DEVDRVR:
             /*  Init/Term:
@@ -449,7 +449,7 @@ dopass(argc,argv,mypass)
 
                (a1) & (a5) default to Read/Write, etc.  For Init/Term, specify
                AModes for these with Boundary Defs*/
-            strcpy (DfltLbls, "&ZD&PG&&&LL");
+            strcpy (DfltLbls, "&ZD&PG&&&&&L");
             break;
         }
 
@@ -513,7 +513,7 @@ dopass(argc,argv,mypass)
                 /*list_print (&Instruction, CmdEnt, NULL);*/
                 PrintLine (pseudcmd, &Instruction, 'L', CmdEnt, PCPos);
 
-                if (Instruction.wcount)
+                if (PrintAllCode && Instruction.wcount)
                 {
                     int count = Instruction.wcount;
                     int wpos = 0;

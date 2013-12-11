@@ -580,19 +580,17 @@ int reg;
     case 7:
         switch (reg) {
         case 0:                 /* (xxx).W */
-            AMode = AM_REL;
+            AMode = AM_SHORT;
             ext1 = getnext_w(ci);
-            displac_w = ext1 & 0xffff;
-            /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT
-             * IS A LABEL ??? */
             sprintf (dispstr, "%d", displac_w);
+            LblCalc(dispstr, ext1, AMode);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 1:                /* (xxx).L */
-            AMode = AM_REL;
+            AMode = AM_LONG;
             ext1 = getnext_w(ci);
-            ext2 = getnext_w(ci);
-            sprintf (dispstr, "%d", (ext1 << 16) | (ext2 & 0xffff));
+            ext1 = (ext1 << 16) | (getnext_w(ci) & 0xffff);
+            LblCalc(dispstr, ext1, AMode);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 4:                 /* #<data> */
