@@ -77,7 +77,8 @@ enum {
     AM_A6,
     AM_A7,
     AM_IMM,
-    AM_ABS,
+    AM_SHORT,   /* Absolute Short */
+    AM_LONG,    /* Absolute Long */
     AM_REL,
     AM_MAXMODES   /* Count of Modes */
 };
@@ -116,6 +117,7 @@ struct extWbrief {
          */ 
 
 xt int cpu;
+xt int PrintAllCode;
 xt  CMD_ITMS Instruction;
 xt int Pass;    /* The disassembler is a two-pass assembler */
 xt char *ModFile;   /* The module file to read */

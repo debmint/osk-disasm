@@ -816,6 +816,12 @@ do_mode (lpos)
     case 'R':
         AMode = AM_REL;
         break;
+    case 'S':
+        AMode = AM_SHORT;
+        break;
+    case 'L':
+        AMode = AM_LONG;
+        break;
     default:
         errexit ("Illegal addressing mode");
         exit (1);               /* not needed but just to be safe */
