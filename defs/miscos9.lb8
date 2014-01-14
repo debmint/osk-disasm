@@ -402,3 +402,23 @@ P$Last equ $03ac P
 P$Stack equ $0800 P
 P$ProcSz equ $0800 P
 
+
+* Module Headers common to all types
+
+M$ID equ $00 M
+M$Rev equ $01 M
+M$SysRev equ $02 M
+M$Size equ $04 M
+M$Owner equ $08 M
+M$Name equ $0c M
+M$Accs equ $10 M
+M$Type equ $12 M
+M$Lang equ $13 M
+M$Attr equ $14 M
+M$Revs equ $15 M
+M$Edit equ $16 M
+M$Usage equ $18 M
+M$Symbol equ $1c M
+
+M$Parity equ $2e M
+
