@@ -1,0 +1,14 @@
+
+* Device Descriptor Module Offsets
+
+M$Port equ $30 M
+M$Vector equ $34 M
+M$IRQLvl equ $35 M
+M$Prior equ $36 M
+M$Mode equ $37 M
+M$FMgr equ $38 M
+M$PDev equ $3a M
+M$DevCon equ $3c M
+M$Opt equ $46 M
+M$DTyp equ $48 M
+
