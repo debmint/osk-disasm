@@ -985,15 +985,18 @@ bit_rotate_mem(ci, j, op)
         return 0;
     }
 
-    get_eff_addr(ci, ea, mode, reg, 8);
-
-    if (Pass == 2)
+    if (get_eff_addr(ci, ea, mode, reg, 8))
     {
-        strcpy (ci->opcode, ea);
-        strcpy (ci->mnem, op->name);
+        if (Pass == 2)
+        {
+            strcpy (ci->opcode, ea);
+            strcpy (ci->mnem, op->name);
+        }
+
+        return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 int
