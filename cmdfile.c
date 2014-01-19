@@ -60,6 +60,25 @@ struct databndaries *LAdds[33];     /* Temporary */
 struct databndaries *dbounds;
 char BoundsNames[] = "ABCDLSW";
 
+static void
+#ifdef __STDC__
+badexit (char *msg)
+#else
+badexit (msg)
+    char *msg;
+#endif
+{
+    if (DoingCmds)
+    {
+        char errtxt[100];
+        sprintf (errtxt, "Line %d: %s", LinNum, msg);
+        errexit (errtxt);
+    }
+    else
+    {
+        errexit(msg);
+    }
+}
 
 /* ************************************************************************ *
  * AsmComment() Add comments to be placed into the assembler source/listing *
@@ -551,11 +570,11 @@ optincmd (lpos)
     char *lpos;
 #endif
 {
-    char st[80], *spt = st;
+    char st[500], *spt = st;
 
     while (*(lpos = skipblank (lpos)))
     {
-        if (sscanf (lpos, "%80s", spt) != 1)
+        if (sscanf (lpos, "%500s", spt) != 1)
         {
             return (-1);
         }
@@ -660,20 +679,21 @@ getrange (pt, lo, hi, usize, allowopen)
         {
             if (GettingAmode)
             {
-                errexit ("Open-ended ranges not permitted with Amodes");
+                badexit ("Open-ended ranges not permitted with Amodes");
             }
 
             if (NoEnd)
             {
-                errexit ("No start address/no end address in prev line %d");
+                badexit ("No start address/no end address in prev line");
             }
+
             *lo = NxtBnd;
         }
         else
         {                       /* no range specified */
             if (*pt && (*pt != '\n'))   /* non-digit gargabe */
             {
-                errexit ("Illegal Address specified");
+                badexit ("Illegal Address specified");
             }
             else
             {
@@ -698,7 +718,7 @@ getrange (pt, lo, hi, usize, allowopen)
     case '/':
         if (GettingAmode == 1)
         {
-            errexit ("Cannot specify \"/\" in this mode!");
+            badexit ("Cannot specify \"/\" in this mode!");
         }
 
         pt = skipblank (++pt);
@@ -754,10 +774,11 @@ getrange (pt, lo, hi, usize, allowopen)
         }
     }
 
+    pt = skipblank(pt);
+
     if (*pt)
     {
-        fprintf (stderr,"|%s|  ",pt);
-        errexit ("Extra data..");
+        badexit ("Extra data...");
     }
 }
 
@@ -823,7 +844,7 @@ do_mode (lpos)
         AMode = AM_LONG;
         break;
     default:
-        errexit ("Illegal addressing mode");
+        badexit ("Illegal addressing mode");
         exit (1);               /* not needed but just to be safe */
     }
 
@@ -833,7 +854,7 @@ do_mode (lpos)
 
     if ( ! strchr (lblorder, mclass)) /* Legal class ? */
     {
-        errexit ("Illegal class definition");
+        badexit ("Illegal class definition");
     }
 
     /* Offset spec (if any) */
@@ -852,7 +873,7 @@ do_mode (lpos)
 
         if ( ! otreept)
         {
-            errexit ("Cannot allocate memory for offset!");
+            badexit ("Cannot allocate memory for offset!");
         }
 
         lpos = setoffset (++lpos, otreept);
@@ -869,7 +890,7 @@ do_mode (lpos)
 
     if ( ! (mptr = (struct databndaries *)calloc (1, sizeof (struct databndaries))))
     {
-        errexit ("Cannot allocate memory for data definition");
+        badexit ("Cannot allocate memory for data definition");
     }
 
     mptr->b_lo = lo;
@@ -921,7 +942,7 @@ do_mode (lpos)
                 }
                 else
                 {
-                    errexit ("Addressing mode segments overlap");
+                    badexit ("Addressing mode segments overlap");
                 }
             }
         }
@@ -1001,7 +1022,7 @@ setoffset (p, oft)
 
     if ( ! strchr (p, ')'))
     {
-        errexit ("\"(\" in command with no \")\"");
+        badexit ("\"(\" in command with no \")\"");
     }
 
     /* If it's "*", handle it */
@@ -1022,13 +1043,13 @@ setoffset (p, oft)
             break;
         case ')':
             if (!oft->incl_pc)
-                errexit ("Blank offset spec!!!");
+                badexit ("Blank offset spec!!!");
 
             oft->oclas_maj = 'L';
 
             return p;
         default:
-            errexit ("No '+', '-', or '*' in offset specification");
+            badexit ("No '+', '-', or '*' in offset specification");
     }
 
     /* At this point, we have a "+" or "-" and are sitting on it */
@@ -1037,13 +1058,13 @@ setoffset (p, oft)
     c = toupper (*(p++));
 
     if ( ! strchr (lblorder, oft->oclas_maj = c) )
-        errexit ("No offset specified !!");
+        badexit ("No offset specified !!");
 
     p = skipblank (p);
 
     if ( ! isxdigit (*p))
     {
-        errexit ("Non-Hex number in offset value spec");
+        badexit ("Non-Hex number in offset value spec");
     }
 
     /* NOTE: need to be sure string is lowercase and following
@@ -1062,7 +1083,7 @@ setoffset (p, oft)
         /*addlbl (oft->of_maj, c, NULL);*/
     }
     else {
-        errexit ("Illegal character.. offset must end with \")\"");
+        badexit ("Illegal character.. offset must end with \")\"");
     }
 
     return ++p;
@@ -1190,7 +1211,7 @@ setupbounds (lpos)
 
             if ( ! strchr (lblorder, lclass))
             {
-                errexit ("Illegal Label Class");
+                badexit ("Illegal Label Class");
             }
 
             break;
@@ -1222,7 +1243,7 @@ setupbounds (lpos)
             break;
         default:
             fprintf(stderr, "%s\n", lpos);
-            errexit ("Illegal boundary name");
+            badexit ("Illegal boundary name");
     }
 
     bdtyp = (int) strpos (BoundsNames, c);
@@ -1236,7 +1257,7 @@ setupbounds (lpos)
         otreept = (struct ofsetree *)calloc (1, sizeof (struct ofsetree));
         if ( ! otreept)
         {
-            errexit ("Cannot allocate memory for offset!");
+            badexit ("Cannot allocate memory for offset!");
         }
 
         lpos = setoffset (++lpos, otreept);
