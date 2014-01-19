@@ -351,25 +351,42 @@ biti_size(ci, j, op)
     char ea[30];
     int data;
 
-    if (size > SIZ_LONG)
-    {
-        return 0;
-    }
-
-    if (mode == 1)
-    {
-        return 0;
-    }
-   
+    EaString[0] = '\0';
     reg = (ci->cmd_wrd) & 7;
 
-    if (mode == 7)
+    if ((ci->cmd_wrd & 0x023c) == 0x023c)
     {
-            /* Note: for "cmpi"(0x0cxx), 68020-up allow all codes < 4 */
-            if (reg > 1)
-            {
-                return 0;
-            }
+        switch (ci->cmd_wrd)
+        {
+        case 0x023c:
+            strcpy (EaString, "ccr");
+            size = SIZ_BYTE;
+            break;
+        case 0x027c:
+            strcpy (EaString, "sr");
+            size = SIZ_WORD;
+        }
+    }
+    else
+    {
+        if (size > SIZ_LONG)
+        {
+            return 0;
+        }
+
+        if (mode == 1)
+        {
+            return 0;
+        }
+   
+        if (mode == 7)
+        {
+                /* Note: for "cmpi"(0x0cxx), 68020-up allow all codes < 4 */
+                if (reg > 1)
+                {
+                    return 0;
+                }
+        }
     }
 
     /* The source here is always immediate, but go through
@@ -383,6 +400,8 @@ biti_size(ci, j, op)
     switch (size)
     {
     case SIZ_BYTE:
+        data = ci->code[0];
+
         if ((data < -128) || (data > 0xff))
         {
             ungetnext_w(ci);
@@ -391,6 +410,8 @@ biti_size(ci, j, op)
 
         break;
     case SIZ_WORD:
+        data = ci->code[0];
+
         if ((data < -32768) || (data > 0xffff))
         {
             ungetnext_w(ci);
@@ -399,21 +420,21 @@ biti_size(ci, j, op)
 
         break;
     case SIZ_LONG:
-        data = (data << 16) | (getnext_w(ci) & 0xffff);
         break;
     }
 
-    if (get_eff_addr(ci, EaString, mode, reg, SIZ_LONG))
+    if (strlen(EaString) == 0)
     {
-        sprintf (ci->opcode, "%s,%s", ea, EaString);
-        strcpy (ci->mnem, op->name);
-        strcat (ci->mnem, SizSufx[size]);
-        return 1;
+        if (!get_eff_addr(ci, EaString, mode, reg, SIZ_LONG))
+        {
+            return 0;
+        }
     }
-    else
-    {
-        return 0;
-    }
+
+    sprintf (ci->opcode, "%s,%s", ea, EaString);
+    strcpy (ci->mnem, op->name);
+    strcat (ci->mnem, SizSufx[size]);
+    return 1;
 }
 
 int
@@ -1486,7 +1507,7 @@ cmd_exg(ci, j, op)
 
     switch ((ci->cmd_wrd >> 3) & 0x1f)
     {
-    case 0x80:
+    case 0x08:
         break;
     case 0x81:
         regnameSrc = 'a';

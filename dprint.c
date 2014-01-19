@@ -1609,7 +1609,7 @@ ListData (me, upadr, cClass)
             break;
         }
 
-        if (me->Next)
+        if ((me->Next) && (me->Next->myaddr < upadr))
         {
             datasize = me->Next->myaddr - me->myaddr;
         }

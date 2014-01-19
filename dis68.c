@@ -145,7 +145,11 @@ build_path (p, faccs)
              * We will assume the path is in the form "~/..."*/
             sprintf (tmpnam, "%s%s", c, &p[1]);
             
-            if ( !(fp = fopen (tmpnam, faccs)))
+            if ((fp = fopen (tmpnam, faccs)))
+            {
+                return fp;
+            }
+            else
             {
                 return NULL;
             }
@@ -156,13 +160,42 @@ build_path (p, faccs)
     {
         sprintf (tmpnam, "%s/%s", DefDir, p);
 
-        if ( !(fp = fopen (tmpnam, faccs)))
+        if ((fp = fopen (tmpnam, faccs)))
         {
-            return NULL;
+            return fp;
         }
     }
 
-    return fp;
+    if (CmdFileName && strlen(CmdFileName))
+    {
+        char dirpath[256];
+        char fname[256];
+        int relpath;
+#ifdef _WIN32
+        char drv[3];
+        char ext[256];
+
+        _splitpath(p, drv, dirpath, fname, ext);
+        relpath = (strlen(drv) + strlen(dirpath));
+
+        if (relpath == 0)
+        {
+            _splitpath(CmdFileName, drv, dirpath, fname, ext);
+            _makepath(tmpnam, drv, dirpath, p, NULL);
+        }
+        else
+        {
+            return NULL;
+        }
+#else
+#endif
+        if ((fp = fopen(tmpnam, faccs)))
+        {
+            return fp;
+        }
+    }
+
+    return NULL;         /* Everything failed */
 }
  
 
