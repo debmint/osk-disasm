@@ -465,6 +465,20 @@ int reg;
 
     dispstr[0] = '\0';
 
+    /* Set up PBytSiz */
+    switch (size)
+    {
+    case SIZ_BYTE:
+        PBytSiz = 1;
+        break;
+    case SIZ_WORD:
+        PBytSiz = 2;
+        break;
+    case SIZ_LONG:
+        PBytSiz = 4;
+        break;
+    }
+
     switch (mode)
     {
         MODE_STR *a_pt;

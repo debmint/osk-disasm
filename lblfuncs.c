@@ -156,9 +156,10 @@ PrintLbl (dest, clas, adr, dl, amod)
 
     if (clas == '@')
     {
-        if ( (adr <= 9) ||
-             ((PBytSiz == 1) && adr > 244) ||
-             ((PBytSiz == 2) && adr > 65526) )
+        if (abs(adr) < 9)
+        //if ( (adr <= 9) ||
+        //     ((PBytSiz == 1) && adr > 244) ||
+        //     ((PBytSiz == 2) && adr > 65526) )
         {
             clas = '&';
         }
@@ -179,16 +180,26 @@ PrintLbl (dest, clas, adr, dl, amod)
                     switch (PBytSiz)
                     {
                     case 1:
-                        hexfmt = "%02x";
                         adr &= 0xff;
                         break;
-                    case 4:
-                        hexfmt = "%08x";
-                        break;
-                    default:
-                        hexfmt = "%04x";
+                    case 2:
                         adr &= 0xffff;
                         break;
+                    default:
+                        break;
+                    }
+
+                    if (abs(adr) <= 0xff)
+                    {
+                        hexfmt = "%02x";
+                    }
+                    else if (abs(adr) <= 0xffff)
+                    {
+                        hexfmt = "%04x";
+                    }
+                    else
+                    {
+                        hexfmt = "%x";
                     }
 
                     break;
