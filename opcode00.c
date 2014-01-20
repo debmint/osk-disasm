@@ -1499,8 +1499,8 @@ cmd_exg(ci, j, op)
     OPSTRUCTURE *op;
 #endif
 {
-    register int regnumSrc = ci->cmd_wrd & 7;
-    register int regnumDst = (ci->cmd_wrd >> 9) & 7;
+    register int regnumSrc = (ci->cmd_wrd >> 9) & 7;
+    register int regnumDst = ci->cmd_wrd & 7;
     char regnameSrc = 'd';
     char regnameDst = 'd';
     char *dot;
@@ -1513,6 +1513,7 @@ cmd_exg(ci, j, op)
         regnameSrc = 'a';
     case 0x101:
         regnameDst = 'a';
+        break;
     default:
         return 0;
     }

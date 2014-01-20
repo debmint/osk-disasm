@@ -38,8 +38,8 @@ MODE_STR SPStrings[] = {
 
 /* Need to add for 68020-up modes.  Don't know if they can be included in these two arrays or not..*/
 MODE_STR Mode07Strings[] = {
-    {"%s.w", 0},
-    {"%s.l", 0},
+    {"(%s).w", 0},
+    {"(%s).l", 0},
     {"%s(pc)",0},
     {"%s(pc,%s)", 0},
     {"#%s", 0}
@@ -513,7 +513,10 @@ int reg;
          */
 
         if (reg == 6) {
-            ext1 += 0x8000;
+            if (AMode == 'D')
+            {
+                ext1 += 0x8000;
+            }
         }
 
         /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
