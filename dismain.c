@@ -196,15 +196,15 @@ get_modhead()
                     M_Stack = fread_l(ModFP);
                     M_IData = fread_l(ModFP);
                     M_IRefs = fread_l( ModFP);
-                    HdrEnd = ftell(ModFP);  /* Update it again */
 
                     if (M_Type == MT_TRAPLIB)
                     {
                         M_Init = fread_l(ModFP);
                         M_Term = fread_l(ModFP);
-                        HdrEnd = ftell(ModFP);  /* The final change.. */
                     }
                 }
+
+                HdrEnd = ftell(ModFP);  /* The final change.. */
             }
 
             if ((M_Type == MT_DEVDRVR) || (M_Type == MT_FILEMAN))

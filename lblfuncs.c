@@ -105,7 +105,7 @@ movchr (dst, ch)
 
     if (isprint (ch & 0x7f) && ((ch & 0x7f) != ' '))
     {
-        sprintf (mytmp, "'%c", ch & 0x7f);
+        sprintf (mytmp, "'%c'", ch & 0x7f);
         strcat (dst, mytmp);
     }
     else
