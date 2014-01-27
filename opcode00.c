@@ -1511,7 +1511,7 @@ cmd_exg(ci, j, op)
         break;
     case 0x81:
         regnameSrc = 'a';
-    case 0x101:
+    case 0x11:
         regnameDst = 'a';
         break;
     default:
