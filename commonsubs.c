@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include "userdef.h"
+#include "modtypes.h"
 #include "disglobs.h"
 #include "proto.h"
 
@@ -513,9 +514,13 @@ int reg;
          */
 
         if (reg == 6) {
-            if (AMode == 'D')
+            switch (M_Type)
             {
+            case MT_PROGRAM:
                 ext1 += 0x8000;
+                break;
+            default:
+                break;
             }
         }
 
@@ -599,7 +604,7 @@ int reg;
         case 0:                 /* (xxx).W */
             AMode = AM_SHORT;
             ext1 = getnext_w(ci);
-            sprintf (dispstr, "%d", displac_w);
+            /*sprintf (dispstr, "%d", displac_w);*/
             LblCalc(dispstr, ext1, AMode);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
@@ -1051,8 +1056,8 @@ reglist (s, regmask, mode)
         regmask = revbits(regmask, 16);
     }
 
-    s = regbyte (s, (unsigned char)(regmask >> 8), "A", 0);
-    s = regbyte (s, (unsigned char)(regmask & 0xff), "D", s != t);
+    s = regbyte (s, (unsigned char)(regmask >> 8), "a", 0);
+    s = regbyte (s, (unsigned char)(regmask & 0xff), "d", s != t);
 
     if (s == t)
     {
