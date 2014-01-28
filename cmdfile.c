@@ -257,7 +257,7 @@ AsmComment (char *lpos, FILE *cmdfile)
             }
 
             ++LinNum;
-            lpos = skipblank(lpos);
+            /*lpos = skipblank(lpos);*/
         }
     }
 }

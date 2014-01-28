@@ -756,7 +756,9 @@ moveq(ci, j, op)
 {
     register char *dot;
 
-    sprintf(ci->opcode, "#%d,D%d", ci->cmd_wrd & 0xff, (ci->cmd_wrd >> 9) & 7);
+    EaString[0] = '\0';
+    LblCalc(EaString, ci->cmd_wrd & 0xff, AM_IMM);
+    sprintf(ci->opcode, "#%s,d%d", EaString, (ci->cmd_wrd >> 9) & 7);
     strcpy (ci->mnem, op->name);
 
     if (dot = strchr(ci->mnem, '.'))
