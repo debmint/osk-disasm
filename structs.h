@@ -109,20 +109,23 @@ struct commenttree {
 /* ROF header structure */
 
 struct rof_hdr {
-            int   sync[2],
-                  ty_lan;
-            char  valid,
-                  rdate[5],
-                  edition,
-                  version;
-            int   udatsz,
-                  udpsz,
-                  idatsz,
-                  idpsz,
-                  codsz,
-                  stksz,
-                  modent;
-            char  rname[20];
+            int   sync;
+            short ty_lan,        /* Type/Language */
+                  att_rev,       /* Attribute/Revision word */
+                  valid,         /* Nonzero if valid */
+                  series;        /* Assembler version used to compile */
+            char  rdate[6];
+            short edition;
+            int   statstorage,   /* Size of static variable storage */
+                  idatsz,        /* Size of initialized data */
+                  codsz,         /* Size of the object code  */
+                  stksz,         /* Size of stack required   */
+                  code_begin,    /* Offset to entry point of object code   */
+                  utrap,         /* Offset to unitialized trap entry point */
+                  remotestatsiz, /* Size of remote static storage   */
+                  remoteidatsiz, /* Size of remote initialized data */
+                  debugsiz;      /* Size of the debug */
+
 };
 
 /* Global definitions */
