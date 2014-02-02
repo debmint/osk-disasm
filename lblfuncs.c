@@ -10,6 +10,13 @@
 #include "userdef.h"
 #include "proto.h"
 
+#ifdef _OSK
+/* This is to resolve a bug in stdlib.h */
+#ifdef abs
+#   undef abs
+#endif
+#define abs(a) ((a) < 0 ? -(a) : (a))
+#endif
 
 LBLCLAS LblList[] = {
     {'!', NULL}, {'=', NULL}, {'A', NULL}, {'B', NULL},
@@ -156,10 +163,10 @@ PrintLbl (dest, clas, adr, dl, amod)
 
     if (clas == '@')
     {
-        if (abs(adr) < 9)
-        //if ( (adr <= 9) ||
-        //     ((PBytSiz == 1) && adr > 244) ||
-        //     ((PBytSiz == 2) && adr > 65526) )
+         if (abs(adr) < 9)
+        /*if ( (adr <= 9) ||
+             ((PBytSiz == 1) && adr > 244) ||
+             ((PBytSiz == 2) && adr > 65526) )*/
         {
             clas = '&';
         }

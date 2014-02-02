@@ -416,7 +416,7 @@ OPSTRUCTURE instr04[]=
 /* RTD */ 
     {"rtd",      6,8,21,    "0100111001110100",7,6, MC68010,  128,  cmd_rtd},
 /* MOVEC */ 
-    //{"movec.",   5,27,21,   "010011100111101x",2,2, MC68010,  129,  notimplemented},
+    /*{"movec.",   5,27,21,   "010011100111101x",2,2, MC68010,  129,  notimplemented},*/
 /* BKPT */ 
     {"bkpt",     6,8,21,    "0100100001001xxx",4,4, MC68010,  130,  trap},
 /* CHK 68020 */ 
@@ -427,18 +427,18 @@ OPSTRUCTURE instr04[]=
    {"extb.",    5,4,21,    "0100100111000xxx",9,9,  MC68020, 139,  ext_extb},
 /* MULS LONG */ 
    {"mul",      5,2,4,     "0100110000xxxxxx",6,6,  MC68020, 140,  muldiv_020},
-   ////{"muls.",    5,2,28,    "0100110000xxxxxx",6,6,  MC68020, 141,  notimplemented},
+   /*{"muls.",    5,2,28,    "0100110000xxxxxx",6,6,  MC68020, 141,  notimplemented},
 /* MULU LONG */ 
    /*{"mulu.",    5,2,4,     "0100110000xxxxxx",6,6, MC68020,  142,  notimplemented},*/
-   ////{"mulu.",    5,2,28,    "0100110000xxxxxx",6,6, MC68020,  143,  notimplemented},
+   /*{"mulu.",    5,2,28,    "0100110000xxxxxx",6,6, MC68020,  143,  notimplemented},
 /* DIVU LONG */ 
    {"div",       12,2,4,    "0100110001xxxxxx",6,6, MC68020,  144,  muldiv_020},
-   ////{"divu.",    12,2,28,   "0100110001xxxxxx",6,6, MC68020,  145,  notimplemented},
+   /*{"divu.",    12,2,28,   "0100110001xxxxxx",6,6, MC68020,  145,  notimplemented},
 /* DIVUL LONG */ 
    /*{"divul.",   12,2,28,   "0100110001xxxxxx",6,6, MC68020,  146,  notimplemented},*/
 /* DIVS LONG */ 
    /*{"divs.",    12,2,4,    "0100110001xxxxxx",6,6, MC68020,  147,  notimplemented},*/
-   ////{"divs.",    12,2,28,   "0100110001xxxxxx",6,6, MC68020,  148,  notimplemented},
+   /*{"divs.",    12,2,28,   "0100110001xxxxxx",6,6, MC68020,  148,  notimplemented},
 /* DIVSL LONG */ 
    /*{"divsl.",   12,2,28,   "0100110001xxxxxx",6,6, MC68020,  149,  notimplemented},*/
     {NULL,0,0,0,NULL,0,0,0,0,NULL}

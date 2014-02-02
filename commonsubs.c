@@ -189,7 +189,7 @@ static void
 #ifdef __STDC__
 get_displ(CMD_ITMS *ci, char *dst, int siz_flag)
 #else
-get_displ(dst, siz_flag)
+get_displ(ci, dst, siz_flag)
     CMD_ITMS *ci; char *dst; int siz_flag;
 #endif
 {
@@ -217,8 +217,9 @@ static int
 process_extended_word_full(CMD_ITMS *ci, char *dststr, struct extWbrief *ew, int mode,
         int reg, int size)
 #else
-process_extended_word_full(ci, mode, reg, size)
-    CMD_ITMS *ci; struct extWfull *ew, int mode; int reg; int size;
+process_extended_word_full(ci, dststr, ew, mode, reg, siz)
+    CMD_ITMS *ci; char *dststr; struct extWbrief *ew; int mode;
+        int reg; int siz;
 #endif
 {
     char base_str[50];
@@ -380,8 +381,8 @@ static int
 process_extended_word_brief(CMD_ITMS *ci, char *dststr, struct extWbrief *ew_b,
         int mode, int reg, int size)
 #else
-process_extended_word_brief(ci, dststr, mode, reg, size)
-    CMD_ITMS *ci; char *dststr, struct extWbrief *ew_b, int mode; int reg; int size;
+process_extended_word_brief(ci, dststr, ew_b, mode, reg, size)
+    CMD_ITMS *ci; char *dststr; struct extWbrief *ew_b; int mode; int reg; int size;
 #endif
 {
     char a_disp[50];
@@ -550,41 +551,41 @@ int reg;
             {
                 return process_extended_word_brief(ci, ea, &ew_b, mode, reg, size);
             }
-            ///* the displacement should be a string for it may sometimes
-            // * be a label */
-            //char a_disp[50];
-            //char idxstr[30];
+            /* the displacement should be a string for it may sometimes
+             * be a label */
+            /*char a_disp[50];
+            char idxstr[30];
 
-            //a_disp[0] = '\0';
+            a_disp[0] = '\0';*/
 
-            ///* This is for cpu's < 68020
-            // * for 68020-up, the bd can be up to 32 bits
-            // */
-            ///*if (abs(ew_b.displ) > 0x80)
-            //{
-            //    ungetnext_w(ci);
-            //    return 0;
-            //}*/
+            /* This is for cpu's < 68020
+             * for 68020-up, the bd can be up to 32 bits
+             */
+            /*if (abs(ew_b.displ) > 0x80)
+            {
+                ungetnext_w(ci);
+                return 0;
+            }
 
-            //if (ew_b.displ)
-            //{
-            //    LblCalc (a_disp, ew_b.displ, AMode);
-            //}
+            if (ew_b.displ)
+            {
+                LblCalc (a_disp, ew_b.displ, AMode);
+            }
 
-            //if (!set_indirect_idx (idxstr, &ew_b))
-            //{
-            //    ungetnext_w(ci);
-            //    return 0;
-            //}
+            if (!set_indirect_idx (idxstr, &ew_b))
+            {
+                ungetnext_w(ci);
+                return 0;
+            }
 
-            //if (reg == 7)
-            //{
-            //    sprintf (ea, SPStrings[mode].str, a_disp, idxstr);
-            //}
-            //else
-            //{
-            //    sprintf (ea, ModeStrings[mode].str, a_disp, reg, idxstr);
-            //}
+            if (reg == 7)
+            {
+                sprintf (ea, SPStrings[mode].str, a_disp, idxstr);
+            }
+            else
+            {
+                sprintf (ea, ModeStrings[mode].str, a_disp, reg, idxstr);
+            }*/
 
             return 1;
         }

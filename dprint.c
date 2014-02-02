@@ -14,8 +14,8 @@
  * Purpose: handle printing and output function                             *
  * ************************************************************************ */
 
-#include "disglobs.h"
 #include <time.h>
+#include "disglobs.h"
 #include <string.h>
 #include <ctype.h>
 #include "modtypes.h"
@@ -25,6 +25,7 @@
 #ifdef _WIN32
 #   define snprintf _snprintf
 #endif
+
 
 #define CNULL '\0'
 static int PgLin;
@@ -194,12 +195,12 @@ PrintPsect()
     Ci.lblname = ProgType;
     sprintf (Ci.opcode, "$%x", M_Type);
     PrintLine(pseudcmd, &Ci, CNULL, 0, 0);
-    //hdrvals[0] = M_Type;
+    /*hdrvals[0] = M_Type;*/
     ProgLang = modnam_find (ModLangs, (unsigned char)M_Lang)->name;
     Ci.lblname = ProgLang;
     sprintf (Ci.opcode, "$%02x", M_Lang);
     PrintLine(pseudcmd, &Ci, CNULL, 0, 0);
-    //hdrvals[1] = M_Lang;
+    /*hdrvals[1] = M_Lang;*/
     sprintf (&EaString[strlen(EaString)], ",(%s<<8)|%s", ProgType, ProgLang);
 
     /* Att/Rev */
@@ -227,7 +228,7 @@ PrintPsect()
 
     /*prgsets[0] = ProgType; prgsets[1] = ProgLang;
     prgsets[2] = ProgAtts; prgsets[3] = NULL;*/
-    //ProgAtts = modnam_find (ModAtts, (unsigned char)M_Attr)->name;
+    /*ProgAtts = modnam_find (ModAtts, (unsigned char)M_Attr)->name;*/
     /*hdrvals[2] = M_Attr;
 
     for (c = 0; prgsets[c]; c++)
@@ -358,7 +359,7 @@ static void
 PrintNonCmd (char *str, int preblank, int postblank)
 #else
 PrintNonCmd (str, preblank, postblank)
-    char *str; int preblank, postblank)
+    char *str; int preblank; int postblank;
 #endif
 {
     if (IsROF)
@@ -544,15 +545,41 @@ PrintFormatted (pfmt, ci)
 
     if (pfmt == pseudcmd)
     {
+#ifdef _OSK
+        _linlen = sprintf (FmtBuf, pfmt,
+                                    LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
+                                    ci->mnem, ci->opcode, "");
+
+        if (strlen(ci->comment) > PgWidth - 2 - strlen (FmtBuf))
+        {
+            ci->comment[PgWidth - 2 - strlen(FmtBuf)] = '\0';
+         }
+         
+         strcat (FmtBuf, ci->comment);
+#else
         _linlen = snprintf (FmtBuf, PgWidth - 2, pfmt,
                                     LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
                                     ci->mnem, ci->opcode, ci->comment);
+#endif
     }
     else
     {
+#ifdef _OSK
+        _linlen = sprintf (FmtBuf, pfmt,
+                                LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
+                                ci->mnem, ci->opcode, "");
+
+        if (strlen(ci->comment) > PgWidth - 2 - strlen (FmtBuf))
+        {
+            ci->comment[PgWidth - 2 - strlen(FmtBuf)] = '\0';
+         }
+         
+         strcat (FmtBuf, ci->comment);
+#else
         _linlen = snprintf (FmtBuf, PgWidth - 2, pfmt,
                                 LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
                                 ci->mnem, ci->opcode, ci->comment);
+#endif
     }
 
     if ((_linlen >= PgWidth - 2) || (_linlen < 0))
@@ -617,7 +644,7 @@ void
 PrintComment(char lblcClass, int cmdlow, int cmdhi)
 #else
 PrintComment(lblcClass, cmdlow, cmdhi)
-    char lblcClass; int cmdlow, cmdhi)
+    char lblcClass; int cmdlow, cmdhi;
 #endif
 {
     register struct commenttree *me;
@@ -1669,8 +1696,8 @@ WrtEquates (stdflg)
     char *claspt = "!^ABCDEFGHIJKMNOPQRSTUVWXYZ;",
         *curnt = claspt,
         *syshd = "* OS-9 system function equates\n",
-        *aschd = "* ASCII control character equates\n",
-        *genhd[2] = { "* Class %c external label equates\n",
+        *aschd = "* ASCII control character equates\n";
+    static char *genhd[2] = { "* Class %c external label equates\n",
                       "* Class %c standard named label equates\n"
                     };
     register int flg;           /* local working flg - clone of stdflg */

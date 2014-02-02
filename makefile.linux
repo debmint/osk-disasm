@@ -4,7 +4,7 @@
 # $Id::                                                         $
 # ************************************************************* *
 
-CFLAGS = -c -g
+CFLAGS = -c -g -Wall
 LFLAGS = -g
 DISRELS = dis68.o dismain.o def68def.o opcode00.o commonsubs.o lblfuncs.o\
 		  opcodes020.o cmdfile.o dprint.o

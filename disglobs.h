@@ -29,11 +29,11 @@
 #   define xtst
 #endif
 
-#ifdef _OSK
+/*#ifdef _OSK
 #   define strchr index
 #   define strrchr rindex
 #endif
-
+*/
 #ifdef _WIN32
 #   define BINREAD "rb"
 #   define BINWRITE "wb"
@@ -201,5 +201,7 @@ xt char *stdSiz[]
 = {"b", "w", "l"}
 #endif
 ;
+
+xt struct rof_hdr ROFHD;
 
 #endif                     /* #ifdef HAVE_GLOBALS */
