@@ -96,7 +96,7 @@ int
 #ifdef __STDC__
 rtm_020(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
-rtm_020(ci)
+rtm_020(ci, j, op)
     CMD_ITMS *ci; int j; OPSTRUCTURE *op;
 #endif
 {
@@ -110,7 +110,7 @@ int
 cmd_moves(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
 cmd_moves(ci, j, op)
-    CMD_ITMS *ci; int j, OPSTRUCTURE *op;
+    CMD_ITMS *ci; int j; OPSTRUCTURE *op;
 #endif
 {
     int mode, reg;
@@ -234,7 +234,7 @@ static char
 getcas2Ew(CMD_ITMS *ci, int *dc, int *du, int *rn)
 #else
 getcas2Ew(ci, dc, du, rn)
-    CMD_ITMS *ci; int *dc; int *du, int *rn;
+    CMD_ITMS *ci; int *dc; int *du; int *rn;
 #endif
 {
     int ew = getnext_w(ci);
@@ -295,7 +295,7 @@ int
 cmd_callm(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
 cmd_callm(ci, j, op)
-    CMD_ITMS *ci; int j, OPSTRUCTURE *op;
+    CMD_ITMS *ci; int j; OPSTRUCTURE *op;
 #endif
 {
     int mode, reg;
@@ -343,7 +343,7 @@ int
 #ifdef __STDC__
 muldiv_020(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
-muldiv_020(ci, dc, du, rn)
+muldiv_020(ci, j, op)
     CMD_ITMS *ci; int j; OPSTRUCTURE *op;
 #endif
 {
@@ -417,7 +417,7 @@ int
 #ifdef __STDC__
 cmd_rtd(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
-cmd_rtd(ci, dc, du, rn)
+cmd_rtd(ci, j, op)
     CMD_ITMS *ci; int j; OPSTRUCTURE *op;
 #endif
 {
@@ -436,7 +436,7 @@ int
 #ifdef __STDC__
 cmd_trapcc(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
-cmd_trapcc(ci, dc, du, rn)
+cmd_trapcc(ci, j, op)
     CMD_ITMS *ci; int j; OPSTRUCTURE *op;
 #endif
 {
@@ -517,7 +517,7 @@ int
 #ifdef __STDC__
 bitfields_020(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
 #else
-bitfields_020(ci, dc, du, rn)
+bitfields_020(ci, j, op)
     CMD_ITMS *ci; int j; OPSTRUCTURE *op;
 #endif
 {

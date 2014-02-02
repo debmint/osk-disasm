@@ -94,7 +94,12 @@ badexit (msg)
  * ************************************************************************ */
 
 static int
+#ifdef __STDC__
 AsmComment (char *lpos, FILE *cmdfile)
+#else
+AsmComment (lpos, cmdfile)
+    char *lpos; FILE *cmdfile;
+#endif
 {
     int adr = 0;
     register char *txt;
@@ -369,7 +374,12 @@ do_cmd_file ()
  * ************************************************************************ */
 
 int
+#ifdef __STDC__
 ApndCmnt (char *lpos)
+#else
+ApndCmnt (lpos)
+    char *lpos;
+#endif
 {
     char lblclass;
     int myadr,
@@ -489,7 +499,12 @@ ApndCmnt (char *lpos)
  * ***************************************************** */
 
 char *
+#ifdef __STDC__
 cmntsetup (char *cpos, char *clas, int *adrs)
+#else
+cmntsetup (cpos, clas, adrs)
+char *cpos; char *clas; int *adrs;
+#endif
 {
     register char *p;
 
@@ -543,7 +558,12 @@ cmntsetup (char *cpos, char *clas, int *adrs)
  * *********************************************** */
 
 static struct commenttree *
+#ifdef __STDC__
 newcomment (int addrs, struct commenttree *parent)
+#else
+newcomment (addrs, parent)
+    int addrs; struct commenttree *parent;
+#endif
 {
     struct commenttree *newtree;
 

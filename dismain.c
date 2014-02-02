@@ -21,6 +21,10 @@
 #   define strcasecmp _stricmp
 #endif
 
+#ifdef _OSK
+#   define strcasecmp strcmp
+#endif
+
 /* Some variables that are only used in one or two modules */
 int LblFilz;              /* Count of Label files specified     */
 char *LblFNam[MAX_LBFIL]; /* Pointers to the path names for the files */
@@ -305,8 +309,17 @@ RdLblFile (inpath)
 
         if (sscanf (rdbuf, "%s %s %s %c", labelname, eq, strval, &clas) == 4)
         {
+#ifdef _OSK
+              register int c;
+#endif
             clas = toupper (clas);
 
+#ifdef _OSK
+            for (c = 0; c < 3; c++)
+            {
+                eq[c] = _tolower(eq[c]);
+            }
+#endif
             if ( ! strcasecmp (eq, "equ"))
             {
                 /* Store address in proper place */
@@ -560,8 +573,13 @@ dopass(argc,argv,mypass)
     return 0;
 }
 
-static struct cmditems *
+static CMD_ITMS *
+#ifdef __STDC__
 initcmditems (CMD_ITMS *ci)
+#else
+initcmditems (ci)
+    CMD_ITMS *ci;
+#endif
 {
     ci->mnem[0] = 0;
     ci->wcount = 0;

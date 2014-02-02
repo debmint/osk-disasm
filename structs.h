@@ -123,7 +123,7 @@ struct rof_hdr {
                   stksz,
                   modent;
             char  rname[20];
-} ROFHD;
+};
 
 /* Global definitions */
 
