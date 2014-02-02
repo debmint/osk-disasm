@@ -548,18 +548,16 @@ PrintFormatted (pfmt, ci)
 #ifdef _OSK
         _linlen = sprintf (FmtBuf, pfmt,
                                     LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
-                                    ci->mnem, ci->opcode, "");
+                                    ci->mnem, ci->opcode, ci->comment);
 
-        if (strlen(ci->comment) > PgWidth - 2 - strlen (FmtBuf))
+        if (_linlen > PgWidth - 2)
         {
-            ci->comment[PgWidth - 2 - strlen(FmtBuf)] = '\0';
+            FmtBuf[PgWidth - 2] = '\0';
          }
-         
-         strcat (FmtBuf, ci->comment);
 #else
         _linlen = snprintf (FmtBuf, PgWidth - 2, pfmt,
                                     LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
-                                    ci->mnem, ci->opcode, ci->comment);
+                                    ci->mnem, ci->opcode, ci->comment)
 #endif
     }
     else
@@ -569,12 +567,10 @@ PrintFormatted (pfmt, ci)
                                 LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
                                 ci->mnem, ci->opcode, "");
 
-        if (strlen(ci->comment) > PgWidth - 2 - strlen (FmtBuf))
+        if (_linlen > PgWidth - 2)
         {
-            ci->comment[PgWidth - 2 - strlen(FmtBuf)] = '\0';
+            FmtBuf[PgWidth - 2] = '\0';
          }
-         
-         strcat (FmtBuf, ci->comment);
 #else
         _linlen = snprintf (FmtBuf, PgWidth - 2, pfmt,
                                 LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
