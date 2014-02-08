@@ -128,7 +128,17 @@ PrintAllCodLine (w1, w2)
     int w1, w2;
 #endif
 {
-    printf (allcodcmd, LinNum++, w1 & 0xffff, w2 & 0xffff);
+    char *fmtstr;
+
+    if (IsUnformatted)
+    {
+        printf (&(allcodcmd[3]), w1 & 0xffff, w2 & 0xffff);
+        ++LinNum;
+    }
+    else
+    {
+        printf (allcodcmd, LinNum++, w1 & 0xffff, w2 & 0xffff);
+    }
 
     if (PgLin > PgDepth - 3)
     {
@@ -144,11 +154,19 @@ PrintAllCodL1 (w1)
     int w1;
 #endif
 {
-    printf (allcodcmd1, LinNum++, w1 & 0xffff);
-
-    if (PgLin > PgDepth - 3)
+    if (IsUnformatted)
     {
-        StartPage();
+        printf (&(allcodcmd1[3]), w1 & 0xffff);
+        ++LinNum;
+    }
+    else
+    {
+        printf (allcodcmd1, LinNum++, w1 & 0xffff);
+
+        if (PgLin > PgDepth - 3)
+        {
+            StartPage();
+        }
     }
 }
 
@@ -330,6 +348,11 @@ PrintCleanup ()
 static void
 BlankLine ()                    /* Prints a blank line */
 {
+    if (IsUnformatted)
+    {
+        return;
+    }
+
     if ( ! PgLin || PgLin > (PgDepth - 5))
     {
         StartPage ();
@@ -369,7 +392,15 @@ PrintNonCmd (str, preblank, postblank)
             BlankLine();
         }
 
-        printf ("%5d %s\n", LinNum, str);
+        if (IsUnformatted)
+        {
+            printf (" %s\n", str);
+            ++LinNum;
+        }
+        else
+        {
+            printf ("%5d %s\n", LinNum, str);
+        }
 
         if (WrtSrc)
         {
@@ -546,35 +577,70 @@ PrintFormatted (pfmt, ci)
     if (pfmt == pseudcmd)
     {
 #ifdef _OSK
-        _linlen = sprintf (FmtBuf, pfmt,
+        if (IsUnformatted)
+        {
+            _linlen = sprintf (FmtBuf, &(pfmt[3]),
+                                    CmdEnt, ci->cmd_wrd, ci->lblname,
+                                        ci->mnem, ci->opcode, ci->comment);
+        }
+        else
+        {
+            _linlen = sprintf (FmtBuf, pfmt,
                                     LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
-                                    ci->mnem, ci->opcode, ci->comment);
+                                        ci->mnem, ci->opcode, ci->comment);
+        }
 
         if (_linlen > PgWidth - 2)
         {
             FmtBuf[PgWidth - 2] = '\0';
          }
 #else
-        _linlen = snprintf (FmtBuf, PgWidth - 2, pfmt,
+        if (IsUnformatted)
+        {
+            _linlen = snprintf (FmtBuf, PgWidth - 2, &(pfmt[3]),
+                                    CmdEnt, ci->cmd_wrd, ci->lblname,
+                                    ci->mnem, ci->opcode, ci->comment);
+        }
+        else
+        {
+            _linlen = snprintf (FmtBuf, PgWidth - 2, pfmt,
                                     LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
-                                    ci->mnem, ci->opcode, ci->comment)
+                                    ci->mnem, ci->opcode, ci->comment);
+        }
 #endif
     }
     else
     {
 #ifdef _OSK
-        _linlen = sprintf (FmtBuf, pfmt,
+        if (IsUnformatted)
+        {
+            _linlen = sprintf (FmtBuf, &(pfmt[3]),
+                                CmdEnt, ci->cmd_wrd, ci->lblname,
+                                ci->mnem, ci->opcode, "");
+        }
+        else
+        {
+            _linlen = sprintf (FmtBuf, pfmt,
                                 LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
                                 ci->mnem, ci->opcode, "");
 
         if (_linlen > PgWidth - 2)
         {
             FmtBuf[PgWidth - 2] = '\0';
-         }
+        }
 #else
-        _linlen = snprintf (FmtBuf, PgWidth - 2, pfmt,
+        if (IsUnformatted)
+        {
+            _linlen = snprintf (FmtBuf, PgWidth - 2, &(pfmt[3]),
+                                CmdEnt, ci->cmd_wrd, ci->lblname,
+                                ci->mnem, ci->opcode, ci->comment);
+        }
+        else
+        {
+            _linlen = snprintf (FmtBuf, PgWidth - 2, pfmt,
                                 LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
                                 ci->mnem, ci->opcode, ci->comment);
+        }
 #endif
     }
 
@@ -594,6 +660,16 @@ StartPage ()
     char *bywhom = "* Disassembly by Os9disasm of";
     time_t now;
     struct tm *tm;
+
+    if (IsUnformatted)
+    {
+        if (++PgNum == 1)
+        {
+            LinNum = 1;
+        }
+
+        return;
+    }
 
     if (PgLin)
     {
@@ -669,7 +745,14 @@ PrintComment(lblcClass, cmdlow, cmdhi)
                     line = me->commts;
 
                     do {
-                        printf("%5d       * %s\n", LinNum++, line->ctxt);
+                        if (IsUnformatted)
+                        {
+                            printf(" * %s\n", line->ctxt);
+                        }
+                        else
+                        {
+                            printf("%5d * %s\n", LinNum++, line->ctxt);
+                        }
 
                         if (WrtSrc)
                         {
@@ -719,8 +802,16 @@ NonBoundsLbl (char cClass)
                 }
 
                 /*PrintLine (pseudcmd, &Ci, cClass, CmdEnt, PCPos);*/
-                printf (pseudcmd, LinNum++, nl->myaddr, Ci.cmd_wrd,
-                        Ci.lblname, Ci.mnem, Ci.opcode, "");
+                if (IsUnformatted)
+                {
+                    printf (&(pseudcmd[3]), nl->myaddr, Ci.cmd_wrd,
+                            Ci.lblname, Ci.mnem, Ci.opcode, "");
+                }
+                else
+                {
+                    printf (pseudcmd, LinNum++, nl->myaddr, Ci.cmd_wrd,
+                            Ci.lblname, Ci.mnem, Ci.opcode, "");
+                }
                 ++PgLin;
 
                 if (WrtSrc)
@@ -1265,7 +1356,17 @@ ListInitData (ldf, nBytes, lclass)
     curpos = IBuf;
 
     BlankLine ();
-    printf ("%5d %22s%s\n", LinNum++, "", what);
+
+    if (IsUnformatted)
+    {
+        printf (" %22s%s\n", "", what);
+        ++LinNum;
+    }
+    else
+    {
+        printf ("%5d %22s%s\n", LinNum++, "", what);
+    }
+
     ++PgLin;
 
     if (WrtSrc)
@@ -1496,7 +1597,17 @@ OS9DataPrint ()
     if (dta)
     {                           /* special tree for OS9 data defs */
         BlankLine ();
-        printf ("%5d %22s%s\n", LinNum++, "", what);
+        
+        if (IsUnformatted)
+        {
+            printf (" %22s%s\n", "", what);
+            ++LinNum;
+        }
+        else
+        {
+            printf ("%5d %22s%s\n", LinNum++, "", what);
+        }
+
         ++PgLin;
 
         if (WrtSrc)
@@ -1838,7 +1949,17 @@ TellLabels (me, flg, cClass, minval)
                 if ( ! HadWrote)
                 {
                     BlankLine ();
-                    printf (ClsHd, LinNum++, "", cClass);
+
+                    if (IsUnformatted)
+                    {
+                        printf (&(ClsHd[3]), "", cClass);
+                        ++LinNum;
+                    }
+                    else
+                    {
+                        printf (ClsHd, LinNum++, "", cClass);
+                    }
+
                     ++PgLin;
 
                     if (AsmPath)

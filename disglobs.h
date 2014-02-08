@@ -125,6 +125,7 @@ xt FILE *ModFP;
 xt FILE *AsmPath;
 xt int WrtSrc;
 xt int IsROF;
+xt int IsUnformatted;
 xt int PCPos;
 xt int CmdEnt;   /* The Entry Point for the Command */
 xt int ExtBegin; /* The position of the begin of the extended list (for PC-Relative addressing) */

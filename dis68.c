@@ -35,13 +35,14 @@ usage()
 {
     fprintf (stderr, "\nOSKDis: Disassemble an OS9-68K Module\n");
     fprintf (stderr, "  Options:\n");
-    fprintf (stderr, "    -c      Specify the command file\n");
-    fprintf (stderr, "    -m=<x>  Specify CPU");
-    fprintf (stderr, "        x = 0  - 68000 (default)");
-    fprintf (stderr, "            8  - 68008");
-    fprintf (stderr, "            20 - 68020");
-    fprintf (stderr, "    -s      Specify a label file (%d allowed)\n", MAX_LBFIL);
-    fprintf (stderr, "    -?, -h  Show this help\n");
+    fprintf (stderr, "\t-c\tSpecify the command file\n");
+    fprintf (stderr, "\t-m=<x>\tSpecify CPU\n");
+    fprintf (stderr, "\t\tx =\t 0  - 68000 (default)\n");
+    fprintf (stderr, "\t\t\t 8  - 68008\n");
+    fprintf (stderr, "\t\t\t20 - 68020\n");
+    fprintf (stderr, "\t\t-s      Specify a label file (%d allowed)\n", MAX_LBFIL);
+    fprintf (stderr, "\t\t-u      print unformatted listing (without line #, headers or blank lines\n");
+    fprintf (stderr, "\t\t-?, -h  Show this help\n");
 }
 
 /* **************************************************************** *
@@ -337,10 +338,13 @@ do_opt (c)
             usage ();
             exit (1);
             break;
+        }
+
+        break;
     case 'u':                  /* Translate to upper-case */
+        IsUnformatted = 1;
         /*UpCase = 1;*/
         break;
-        }
     case 'd':
         if ( ! DoingCmds)
         {
