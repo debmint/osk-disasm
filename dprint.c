@@ -623,6 +623,7 @@ PrintFormatted (pfmt, ci)
             _linlen = sprintf (FmtBuf, pfmt,
                                 LinNum, CmdEnt, ci->cmd_wrd, ci->lblname,
                                 ci->mnem, ci->opcode, "");
+        }
 
         if (_linlen > PgWidth - 2)
         {
