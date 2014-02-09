@@ -15,7 +15,7 @@ typedef struct cmditems {
     int wcount;         /* The count of words in the instrct/.(except sea) */
     char opcode[200];   /* Possibly ovesized, but just to be safe */
     char *comment;     /* Inline comment - NULL if none */
-    /*struct extWbrief extend;*.   /* The extended command (if present) */
+    /*struct extWbrief extend;*/   /* The extended command (if present) */
 } CMD_ITMS;
 
 
@@ -124,8 +124,8 @@ struct rof_hdr {
                   utrap,         /* Offset to unitialized trap entry point */
                   remotestatsiz, /* Size of remote static storage   */
                   remoteidatsiz, /* Size of remote initialized data */
-                  debugsiz;      /* Size of the debug */
-
+                  debugsiz;      /* Size of the debug   */
+            char *rname;         /* Ptr to module name  */
 };
 
 /* Global definitions */
