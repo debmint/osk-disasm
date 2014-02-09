@@ -863,14 +863,14 @@ ROFPsect (rptr)
 #define OPDCAT(nu) sprintf (ci->opcode, "%s,%d", pbuf->operand, nu)
 #define OPHCAT(nu) sprintf (pbuf->operand, "%s,%04x", pbuf->operand, nu)*/
 
-    if ((nl = findlbl('L', rptr->modent)))
+    if ((nl = findlbl('L', rptr->code_begin)))
     {
         sprintf (Ci.opcode, "%s,%s", Ci.opcode, nl->sname);
         /*OPSCAT(nl->sname);*/
     }
     else
     {
-        sprintf (Ci.opcode, "%s,%04x", Ci.opcode, (int)(rptr->modent));
+        sprintf (Ci.opcode, "%s,%04x", Ci.opcode, (int)(rptr->code_begin));
         /*OPHCAT ((int)(rptr->modent));*/
     }
 
