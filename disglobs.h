@@ -134,7 +134,7 @@ xt int ExtBegin; /* The position of the begin of the extended list (for PC-Relat
 xt char EaString[100];
 
 /* Module header variables */
-xt int M_ID, M_SysRev;
+xt unsigned int M_ID, M_SysRev;
 xt long M_Size, M_Owner, M_Name;
 xt int M_Accs;
 xt char M_Type, M_Lang, M_Attr, M_Revs;
@@ -176,13 +176,13 @@ xt struct apndcmnt *CmntApnd[33];
 
 xt char *lblorder
 #ifdef _MAIN_
-= "!^$&@%ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+= "_!^$&@%ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #endif
 ;
 
 xt char DfltLbls[16]
 #ifdef _MAIN_
-="&&&&&&DLLLLLLLL"
+="&&&&&&D&&LLLLLL"
 #endif
 ;
 
@@ -203,6 +203,7 @@ xt char *stdSiz[]
 #endif
 ;
 
-xt struct rof_hdr ROFHD;
+xt struct rof_hdr ROFHd;
+xt char strBuf[200];
 
 #endif                     /* #ifdef HAVE_GLOBALS */

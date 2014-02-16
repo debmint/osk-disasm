@@ -406,7 +406,7 @@ process_extended_word_brief(ci, dststr, ew_b, mode, reg, size)
             ew_b->displ -= 2;
         }
 
-        LblCalc (a_disp, ew_b->displ, AMode);
+        LblCalc (a_disp, ew_b->displ, AMode, PCPos - 2);
     }
 
     if (!set_indirect_idx (idxstr, ew_b))
@@ -464,8 +464,10 @@ int reg;
     char dispstr[50];
     char dispReg[4];
     struct extWbrief ew_b;
+    int ea_addr;
 
     dispstr[0] = '\0';
+    ea_addr = PCPos;
 
     /* Set up PBytSiz */
     switch (size)
@@ -526,7 +528,7 @@ int reg;
         }
 
         /* NOTE:: NEED TO TAKE INTO ACCOUNT WHEN DISPLACEMENT IS A LABEL !!! */
-        LblCalc(dispstr, ext1, AMode);
+        LblCalc(dispstr, ext1, AMode, ea_addr);
 
         if (reg == 7)
         {
@@ -606,14 +608,14 @@ int reg;
             AMode = AM_SHORT;
             ext1 = getnext_w(ci);
             /*sprintf (dispstr, "%d", displac_w);*/
-            LblCalc(dispstr, ext1, AMode);
+            LblCalc(dispstr, ext1, AMode, ea_addr);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 1:                /* (xxx).L */
             AMode = AM_LONG;
             ext1 = getnext_w(ci);
             ext1 = (ext1 << 16) | (getnext_w(ci) & 0xffff);
-            LblCalc(dispstr, ext1, AMode);
+            LblCalc(dispstr, ext1, AMode, ea_addr);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 4:                 /* #<data> */
@@ -645,14 +647,14 @@ int reg;
                 break;
             }
 
-            LblCalc (dispstr, ext1, AMode);
+            LblCalc (dispstr, ext1, AMode, ea_addr);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 2:              /* (d16,PC) */
             AMode = AM_REL;
             ext1 = getnext_w(ci);
                     /* (ext1 - 2) to reflect PCPos before getnext_w */
-            LblCalc(dispstr, ext1 - 2, AMode);
+            LblCalc(dispstr, ext1 - 2, AMode, ea_addr);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 3:              /* d8(PC,Xn) */
@@ -1322,20 +1324,12 @@ int fread_l(fp)
 short fread_w(FILE *fp)
 {
     int tmpi[2] = {0,0};
-    int *tt = tmpi;
+    /*int *tt = tmpi;*/
+    int tt;
     int count;
 
-    for (count = 0; count < 2; count++)
-    {
-        if (fread(tt, 1, 1, fp) < 1)
-        {
-            filereadexit();
-        }
-
-        ++tt;
-    }
-
-    return tmpi[0]<<8 | (tmpi[1] & 0xff);
+    tt = (fgetc(ModFP) << 8) | (fgetc (ModFP) & 0xff);
+    return tt;
 }
 
 int fread_l(FILE *fp)
@@ -1359,4 +1353,49 @@ int fread_l(FILE *fp)
     return 1;
 }
 #endif
+
+void *
+#ifdef __STDC__
+mem_alloc (int req)
+#else
+mem_alloc (req)
+    int req;
+#endif
+{
+    void *addr;
+
+    if (!(addr = malloc (req)))
+    {
+        errexit ("Failed to acquire requested memory");
+    }
+
+    return addr;
+}
+
+/* *************************************************************** *
+ * freadString() - Read a null-terminated string from the file,    *
+ *            allocate memory for that string, and store it there. *
+ * Returns: Pointer to the new string.                             *
+ * *************************************************************** */
+
+char *
+#ifdef __STDC__
+freadString()
+#else
+freadstring()
+#endif
+{
+    register char *strPt = strBuf;
+    register char *newStr;
+    register int ch;
+
+    while ((ch = getc(ModFP)) && (ch > 0))
+    {
+        *(strPt++) = ch;
+    }
+
+    *strPt = '\0';
+    strcpy ((newStr = (char *)mem_alloc(strlen(strBuf) + 1)), strBuf);
+    return newStr;
+}
 
