@@ -757,7 +757,7 @@ moveq(ci, j, op)
     register char *dot;
 
     EaString[0] = '\0';
-    LblCalc(EaString, ci->cmd_wrd & 0xff, AM_IMM);
+    LblCalc(EaString, ci->cmd_wrd & 0xff, AM_IMM, CmdEnt);
     sprintf(ci->opcode, "#%s,d%d", EaString, (ci->cmd_wrd >> 9) & 7);
     strcpy (ci->mnem, op->name);
 
@@ -952,17 +952,27 @@ bra_bsr(ci, j, op)
     register int jmp_base = PCPos;
     char siz[4];
 
-    if ((displ = branch_displ(ci, ci->cmd_wrd, siz)) == 0)
+    displ = branch_displ(ci, ci->cmd_wrd, siz);
+
+    if (!IsROF && (displ == 0))
     {
         return 0;
     }
 
-    dstAddr = jmp_base + displ;
-
-    process_label (ci, 'L', dstAddr);
-
     strcpy (ci->mnem, op->name);
     strcat (ci->mnem, siz);
+    dstAddr = jmp_base + displ;
+
+    //if (IsROF && (Pass == 2))
+    //{
+    //    if (IsRef(ci->opcode, jmp_base))
+    //    {
+    //        return 1;
+    //    }
+    //}
+
+    //process_label (ci, 'L', dstAddr);
+    LblCalc(ci->opcode, dstAddr, AM_REL, jmp_base);
 
     return 1;
 }
@@ -1441,7 +1451,7 @@ cmd_dbcc(ci, j, op)
         AMode = AM_REL;
         PCPos -= 2;
         EaString[0] = '\0';
-        LblCalc (EaString, offset, AM_REL);
+        LblCalc (EaString, offset, AM_REL, PCPos);
         PCPos += 2;
         sprintf (ci->opcode, "d%d,%s", ci->cmd_wrd & 7, EaString);
 

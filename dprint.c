@@ -20,6 +20,7 @@
 #include <ctype.h>
 #include "modtypes.h"
 #include "userdef.h"
+#include "rof.h"
 #include "proto.h"
 
 #ifdef _WIN32
@@ -46,8 +47,8 @@ static void TellLabels ();
 #endif
 
 extern char *CmdBuf;
-extern struct printbuf *pbuf;
-extern struct rof_hdr *rofptr;
+/*extern struct printbuf *pbuf;*/
+extern struct rof_hdr ROFHd;
 
 char pseudcmd[80] = "%5d  %05x %04x %-10s %-6s %-10s %s\n";
 char realcmd[80] =  "%5d  %05x %04x %-9s %-10s %-6s %-10s %s\n";
@@ -851,7 +852,7 @@ ROFPsect (rptr)
 
     /*strcpy (Ci.instr, "");*/
     strcpy (Ci.opcode, "");
-    strcpy (Ci.lblname, "");
+    Ci.lblname = "";
     strcpy (Ci.mnem, "psect");
     sprintf (Ci.opcode, "%s,$%x,$%x,%d,%d", rptr->rname,
                                                 rptr->ty_lan >> 8,
@@ -1067,10 +1068,8 @@ ParseIRefs(rClass)
             unsigned char *lblPos;
             int pCount;
 
-            if ( !(il = (struct ireflist *)calloc (1, sizeof(struct ireflist))))
-            {
-                errexit ("Fatal: Cannot allocate memory for IrefList member");
-            }
+            il = (struct ireflist *)mem_alloc (sizeof(struct ireflist));
+            memset (il, 0, sizeof(struct ireflist));
 
             il->dAddr = MSB | (fread_w(ModFP) & 0xffff);
             lblLoc = 0;
@@ -1137,198 +1136,86 @@ ParseIRefs(rClass)
 void
 GetIRefs()
 {
-
-    if (M_IRefs == 0)
-        return;
-
-    if (fseek (ModFP, M_IRefs, SEEK_SET))
+    if (IsROF)
     {
-        errexit ("Fatal: Failed to seek to Initialized Refs location");
-    }
-
-    ParseIRefs('L');
-    ParseIRefs('D');
-}
-
-/* *************************************************** *
- * ROFDataPrint() - Mainline routine to list data defs *
- *          for ROF's                                  *
- * *************************************************** */
-
-/*void
-ROFDataPrint ()
-{
-    struct nlist *dta, *srch;
-    char *dptell[2] = {"* Uninitialized data (cClass %c)",
-                       "* Initialized Data (cClass %c)"};
-    int sizes[4] = { rofptr->udpsz, rofptr->idpsz,
-                     rofptr->udatsz, rofptr->idatsz
-                   },
-        *thissz = sizes;
-
-    int vs,
-        isinit;
-    int reftyp[] = {2, 3, 0, 1};     /* Label ref Type */
-    /*char dattmp[5];
-    char *dattyp = dattmp;
-    char mytmp[50];
-
-    InProg = 0;
-    memset (pbuf, 0, sizeof (struct printbuf));*/
-
-    /* We compute dattyp for flexibility.  If we change the label type
-     * specification all we have to do is change it in rof_cClass() and it
-     * should work here automatically rather than hard-coding the cClasses
-     */
-
-    /*dattyp[4] = '\0';
-
-    for (vs = 0; vs < 5; vs++)
-    {
-        dattyp[vs] = rof_cClass (reftyp[vs]);
-    }
-
-    for ( vs = 0; vs <= 1; vs++)    /* Cycle through DP, non-dp */
-    /*{
-        if ((thissz[0]) || thissz[1])
+        if ((fseek (ModFP, IDataBegin, SEEK_SET) == -1))
         {
-            strcpy (pbuf->mnem, "vsect");
-
-            if (!vs)
-            {
-                strcpy (pbuf->operand, "dp");
-            }
-            else
-            {
-                strcpy (pbuf->operand, "");
-            }
-
-            BlankLine();
-            PrintLine (realcmd, pbuf, dattyp[vs], 0, 0);
-            BlankLine();*/
-
-            /* Process each of un-init, init */
-
-            /*for (isinit = 0; isinit <= 1; isinit++)
-            {
-                dta = labelclass (dattyp[isinit]);
-
-                sprintf (mytmp, dptell[isinit], dattyp[isinit]);
-
-                if (isinit)
-                {
-                    if (thissz[isinit])
-                    {
-                        PrintNonCmd (mytmp, 0, 1);
-                    }
-
-                    ListInitROF (dta, thissz[isinit], vs, dattyp[isinit]);
-                }
-                else
-                {
-                    if (dta)
-                    {*/
-                        /* for PrintNonCmd(), send isinit so that a pre-blank
-                         * line is not printed, since it is provided by
-                         * PrinLine above */
-
-                       /* if (thissz[isinit])
-                        {
-                            PrintNonCmd (mytmp, isinit, 1);
-                        }
-
-                        srch = dta;
-
-                        while (srch->LNext)
-                        {
-                            srch = srch->LNext;
-                        }
-
-                        if (srch->myaddr)
-                        {*/                       /* i.e., if not D000 */
-                            /*strcpy (pbuf->mnem, "rmb");
-                            sprintf (pbuf->operand, "%d", srch->myaddr);
-                            CmdEnt = PrevEnt = 0;
-                            PrintLine (realcmd, pbuf, dattyp[isinit], 0,
-                                                      srch->myaddr);
-                        }/*
-
-                        /* For max value, send a large value so ListData
-                         * will print all for cClass
-                         */
-
-                       /* M_Mem = thissz[isinit];
-                        ListData (dta, thissz[isinit], dattyp[isinit]);
-                   /* }*/           /* end "if (dta)" */
-                   /* else*/        /* else no labels.. check to see */
-                    /*{*/           /* if any "hidden" variables */
-                        /*if (thissz[isinit])
-                        {
-                            PrintNonCmd (mytmp, isinit, 1);
-                            strcpy (pbuf->mnem, "rmb");
-                            sprintf (pbuf->operand, "%d", thissz[isinit]);
-                            PrintLine (realcmd, pbuf, dattyp[isinit], 0,
-                                                        0);
-                        }
-                    }
-                }
-            }*/
-
-            /* Do "ends" for this vsect */
-
-           /* WrtEnds();
+            errexit ("Failed to seek to begin of Initialized Data Section");
+        }
+           /* Get Init Data*/
+        /* Positioned at begin of Initialized Remote Section */
+        /* ..... Get Init Remote ......... */
+        /* .... Until above is implemented */
+        if (fseek (ModFP, ROFHd.idatsz + ROFHd.remotestatsiz + ROFHd.debugsiz - 2, SEEK_CUR) == -1)
+        {
+            fprintf (stderr, "rofhdr(): Seek error on module\n");
+            exit (errno);
         }
 
-        dattyp += 2;*/   /* Done with this cClass, point to next */
-        /*thissz += 2;*/   /* And to the next data size */
-    /*}
+    }
+    else
+    {
+        if (M_IRefs == 0)
+            return;
+
+        if (fseek (ModFP, M_IRefs, SEEK_SET))
+        {
+            errexit ("Fatal: Failed to seek to Initialized Refs location");
+        }
+
+        ParseIRefs('L');
+        ParseIRefs('D');
+    }
+}
+
+static void
+#ifdef __STDC__
+dataprintHeader(char *hdr, char klas)
+#else
+dataprintHeader(hdr, klas)
+    char *hdr; char klas;
+#endif
+{
+    CMD_ITMS Ci;
+
+    BlankLine();
+    memset (&Ci, 0, sizeof (Ci));
+
+    if (IsUnformatted)
+    {
+        printf (hdr, klas);
+        ++LinNum;
+    }
+    else
+    {
+        char f_fmt[100];
+
+        sprintf (f_fmt, "%%5d %s", hdr);
+        printf (f_fmt, LinNum++, klas);
+        ++PgLin;
+    }
+
+    if (WrtSrc)
+    {
+        fprintf (AsmPath, "%s", klas);
+    }
 
     BlankLine ();
-    InProg = 1;
-}*/
 
-
-/* *************
- * LoadIData() - Allocate a buffer for the Init Data list
- *       and load the data
- */
-
-char *
-LoadIData()
-{
-    if (!IBuf)
-    {
-        /* Allocate space for buffer */ 
-        if ( !(IBuf = (char *)malloc(IDataCount + 2)))
-        {
-            errexit("Error! Cannot allocate memory for Init Data Buffer");
-        }
-
-        if (fseek (ModFP, M_IData + 8, SEEK_SET))
-        {
-            char en[100];
-
-            sprintf (en, "Error.. Cannot fseek() to Init Data list (%x)", M_IData + 8);
-            errexit (en);
-        }
-
-        /* Read data into buffer*/
-        if (fread (IBuf, 1, IDataCount, ModFP) < IDataCount)
-        {
-            errexit( "Cannot read Initialized Data bytes");
-        }
-    }
-
-    return IBuf;
+    strcpy (Ci.mnem, "vsect");
+    strcpy (Ci.opcode, "");
+    Ci.cmd_wrd = 0;
+    Ci.comment = "";
+    CmdEnt = PrevEnt = 0;
+    PrintLine (pseudcmd, &Ci, 'D', 0, 0);
 }
-
 
 /* *************
  * ListInitData ()
  *
  */
 
- static void
+static void
 #ifdef __STDC__
 ListInitData (LBLDEF *ldf, int nBytes, char lclass)
 #else
@@ -1342,12 +1229,9 @@ ListInitData (ldf, nBytes, lclass)
     char *hexFmt;
     char *what = "* Initialized Data Definitions";
 
-    Ci.cmd_wrd = 0;
-    Ci.comment = "";
-    Ci.mnem[0] = '\0';
-    Ci.opcode[0] = '\0';
-    Ci.lblname = "";
-    Ci.wcount = 0;
+    Ci.cmd_wrd = Ci.wcount = 0;
+    Ci.comment = Ci.lblname = "";
+    Ci.mnem[0] =  Ci.opcode[0] = '\0';
     NowClass = 'D';
     PCPos = IDataBegin;        /* MovBytes/MovASC use PCPos */
     CmdEnt = PCPos;
@@ -1360,12 +1244,12 @@ ListInitData (ldf, nBytes, lclass)
 
     if (IsUnformatted)
     {
-        printf (" %22s%s\n", "", what);
+        printf (" %s\n", "", what);
         ++LinNum;
     }
     else
     {
-        printf ("%5d %22s%s\n", LinNum++, "", what);
+        printf ("%5d %s\n", LinNum++, "", what);
     }
 
     ++PgLin;
@@ -1571,6 +1455,238 @@ ListInitData (ldf, nBytes, lclass)
         ldf = ldf->Next;
     }
 }
+
+/* *************************************************** *
+ * ROFDataPrint() - Mainline routine to list data defs *
+ *          for ROF's                                  *
+ * *************************************************** */
+
+void
+ROFDataPrint ()
+{
+    CMD_ITMS Ci;
+    LBLCLAS *dta;
+    LBLDEF *srch;
+    char *dptell[2] = {"* Uninitialized data (Class %c)",
+                       "* Initialized Data (Class %c)"};
+    int sizes[2] = {ROFHd.statstorage, ROFHd.idatsz},
+        *thissz = sizes;
+
+    int vs,
+        isinit;
+    int reftyp[] = {2, 3, 0, 1};     /* Label ref Type */
+    char dattmp[5];
+    char *dattyp = dattmp;
+    char mytmp[50];
+    register char *udat = "* Uninitialized data (Class %c)";
+    char *idat = "* Initialized data (Class %c)";
+    struct rof_extrn *re;
+
+    InProg = 0;
+
+    if ((srch = labelclass ('D') ? labelclass('D')->cEnt : NULL))
+    {
+        dataprintHeader ("* Uninitialized Data (Class \"%c\")", 'D');
+
+        /*first, if first entry is not D000, rmb bytes up to first */
+
+        ListData (srch, ROFHd.statstorage, 'D');
+        BlankLine();
+        WrtEnds();
+    }
+
+    if (refs_idata)
+    {
+        dataprintHeader("* Initialized Data (Class\"%c\")", '_');
+
+        IBuf = (char *)mem_alloc(ROFHd.idatsz + 1);
+
+        if (fseek (ModFP, IDataBegin, SEEK_SET))
+        {
+            errexit ("Cannot Seek to begin of Initialized data");
+        }
+
+        if (fread(IBuf, ROFHd.idatsz, 1, ModFP) < 1)
+        {
+            errexit ("Cannot read Initialized data from file!");
+        }
+
+        PCPos = 0;
+        srch = labelclass ('_') ? labelclass('_')->cEnt : NULL;
+        ListInitROF ("", labelclass('_'), ROFHd.idatsz, '_');
+        BlankLine();
+        WrtEnds();
+        /*ListInitData (srch, ROFHd.idatsz, '_');*/
+        free(IBuf);
+        /*ListInitROF (dta, ROFHd.idatsz, '_');*/
+    }
+
+    if ((srch = labelclass ('G') ? labelclass('G')->cEnt : NULL))
+    {
+        dataprintHeader (udat, 'C');
+
+        /*first, if first entry is not D000, rmb bytes up to first */
+
+        PCPos = 0;
+        ListData (srch, ROFHd.statstorage, 'D');
+        BlankLine();
+    }
+
+    if ((refs_iremote))
+    {
+        dataprintHeader(idat, 'H');
+
+        IBuf = (char *)mem_alloc(ROFHd.remoteidatsiz + 1);
+
+        if (fread(IBuf, ROFHd.idatsz, 1, ModFP) < 1)
+        {
+            errexit ("Cannot read Initialized data from file!");
+        }
+
+        PCPos = 0;
+        srch = labelclass ('H') ? labelclass('H')->cEnt : NULL;
+        ListInitROF ("", labelclass('H'), ROFHd.idatsz, 'H');
+        BlankLine();
+        /*ListInitData (srch, ROFHd.idatsz, 'H');*/
+        free(IBuf);
+        BlankLine();
+        WrtEnds();
+        /*ListInitROF (dta, ROFHd.idatsz, 'H');*/
+    }
+
+    InProg = 1;
+    return;
+
+    /* We compute dattyp for flexibility.  If we change the label type
+     * specification all we have to do is change it in rof_class() and it
+     * should work here automatically rather than hard-coding the classes
+     */
+
+    dattyp[2] = '\0';
+
+    for (vs = 0; vs < 2; vs++)
+    {
+        dattyp[vs] = rof_class (reftyp[vs], 1);
+    }
+
+    if ((sizes[0]) || sizes[1])
+    {
+        strcpy (Ci.mnem, "vsect");
+        BlankLine();
+        PrintLine (realcmd, &Ci, dattyp[vs], 0, 0);
+        BlankLine();
+
+        /* Process each of un-init, init */
+
+        for (isinit = 0; isinit <= 1; isinit++)
+        {
+            dta = labelclass (dattyp[isinit]);
+
+            sprintf (mytmp, dptell[isinit], dattyp[isinit]);
+
+            if (isinit)
+            {
+                if (thissz[isinit])
+                {
+                    PrintNonCmd (mytmp, 0, 1);
+                }
+
+                ListInitROF (" * Initialized data (Class %c)", dta, ROFHd.idatsz, '_');
+            }
+            else
+            {
+                if (dta)
+                {
+                    /* for PrintNonCmd(), send isinit so that a pre-blank
+                        * line is not printed, since it is provided by
+                        * PrinLine above */
+
+                    if (thissz[isinit])
+                    {
+                        PrintNonCmd (mytmp, isinit, 1);
+                    }
+
+                    srch = dta->cEnt;
+
+                    /*while (srch->Next)
+                    {
+                        srch = srch->Next;
+                    }*/
+
+                    if (srch->myaddr)
+                    {                       /* i.e., if not D000 */
+                        strcpy (Ci.mnem, isinit ? "dc" : "ds");
+                        sprintf (Ci.opcode, "%d", srch->myaddr);
+                        CmdEnt = PrevEnt = 0;
+                        PrintLine (realcmd, &Ci, dattyp[isinit], 0,
+                                                    srch->myaddr);
+                    }
+
+                    /* For max value, send a large value so ListData
+                        * will print all for cClass
+                        */
+
+                    M_Mem = sizes[isinit];
+                    ListData (dta->cEnt, sizes[isinit], dattyp[isinit]);
+                }          /* end "if (dta)" */
+                else        /* else no labels.. check to see */
+                {           /* if any "hidden" variables */
+                    if (sizes[isinit])
+                    {
+                        PrintNonCmd (mytmp, isinit, 1);
+                        strcpy (Ci.mnem, "rmb");
+                        sprintf (Ci.opcode, "%d", thissz[isinit]);
+                        PrintLine (realcmd, &Ci, dattyp[isinit], 0,
+                                                    0);
+                    }
+                }
+            }
+        }
+
+        /* Do "ends" for this vsect */
+
+        WrtEnds();
+    }
+
+    dattyp += 2;  /* Done with this cClass, point to next */
+    /*thissz += 2;*/   /* And to the next data size */
+
+    BlankLine ();
+    InProg = 1;
+}
+
+
+/* *************
+ * LoadIData() - Allocate a buffer for the Init Data list
+ *       and load the data
+ */
+
+char *
+LoadIData()
+{
+    if (!IBuf)
+    {
+        /* Allocate space for buffer */ 
+        IBuf = (char *)mem_alloc(IDataCount + 2);
+
+        if (fseek (ModFP, M_IData + 8, SEEK_SET))
+        {
+            char en[100];
+
+            sprintf (en, "Error.. Cannot fseek() to Init Data list (%x)", M_IData + 8);
+            errexit (en);
+        }
+
+        /* Read data into buffer*/
+        if (fread (IBuf, 1, IDataCount, ModFP) < IDataCount)
+        {
+            errexit( "Cannot read Initialized Data bytes");
+        }
+    }
+
+    return IBuf;
+}
+
 
 /* ************
  * OS9DataPrint()	Mainline routine to list data defs
@@ -1801,7 +1917,7 @@ WrtEquates (stdflg)
     int stdflg;
 #endif
 {
-    char *claspt = "!^ABCDEFGHIJKMNOPQRSTUVWXYZ;",
+    char *claspt = "_!^ABCDEFGHIJKMNOPQRSTUVWXYZ;",
         *curnt = claspt,
         *syshd = "* OS-9 system function equates\n",
         *aschd = "* ASCII control character equates\n";
@@ -1851,10 +1967,10 @@ WrtEquates (stdflg)
 
             /* Don't write vsect data for ROF's */
 
-/*            if ((IsROF) && stdflg && strchr ("BDGH", NowClass))
+            if ((IsROF) && stdflg && strchr ("BDGH", NowClass))
             {
                 continue;
-            }*/
+            }
 
             switch (NowClass)
             {

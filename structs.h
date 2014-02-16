@@ -136,16 +136,26 @@ struct rof_glbl {
             int   Ofst;
 };
 
-/* External references */
+/* ************************* *
+ *  External references      *
+ *  -------------------      *
+ *  We will attempt to place *
+ *  all in one set           *
+ * ************************* */
 
 struct rof_extrn {
-            char  name[100];        /* External name                  */
-            char  Type;             /* Type Flag                      */
-            int   Ofst;             /* Offset into code               */
-            int   Extrn;            /* Flag that it's an external ref */
-            struct rof_extrn *up,
-                             *LNext,
-                             *RNext;
+    union {
+        char *nam;
+        LBLDEF *lbl;
+    } EName;
+/*            void *EName;*/                /* External name                    */
+            char  dstClass;             /* Class for referenced item NUll if extern */
+            int   Type;                 /* Type Flag                        */
+            int   Ofst;                 /* Offset into code                 */
+            int   Extrn;                /* Flag that it's an external ref   */
+            struct rof_extrn *EUp,      /* Previous Ref for entire list     */
+                             *ENext,    /* Next Reference for All externs   */
+                             *MyNext;   /* Next ref for this name.  If NULL, we can free EName */
 };
 
 

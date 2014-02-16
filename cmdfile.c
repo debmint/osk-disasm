@@ -225,19 +225,12 @@ AsmComment (lpos, cmdfile)
         }
 
         /* Now we can finally store the comment */
-        if ( ! (txt = (char *)calloc (1, strlen(lpos)+1)))
-        {
-            fprintf(stderr,"Error - cannot allocate memory for comment\n");
-            exit(1);
-        }
+        txt = (char *)mem_alloc (strlen(lpos) + 1);
+        txt[strlen(lpos)] = '\0';
         strncpy (txt,lpos,strlen(lpos));
+        cline = (struct cmntline *)mem_alloc (sizeof (struct cmntline));
+        memset (cline, 0, sizeof(struct cmntline));
 
-        if ( ! (cline = (struct cmntline *)calloc (1, sizeof (struct cmntline))))
-        {
-            fprintf (stderr,
-                    "Error - cannot allocate memory for comment line\n");
-            exit(1);
-        }
         if (prevline)
         {
             prevline->nextline = cline;
@@ -437,10 +430,8 @@ ApndCmnt (lpos)
         }
     }
 
-    if (make_cmnt)
-    {
-        mycmnt = (struct apndcmnt *)calloc (1,sizeof (struct apndcmnt));
-    }
+    mycmnt = (struct apndcmnt *)mem_alloc (sizeof (struct apndcmnt));
+    memset (mycmnt, 0, sizeof (struct apndcmnt));
 
     if ( ! mycmnt)
     {
@@ -471,7 +462,7 @@ ApndCmnt (lpos)
         *cline = '\0';
     }
 
-    mycmnt->CmPtr = (char *)malloc (strlen (lpos) + 1);
+    mycmnt->CmPtr = (char *)mem_alloc (strlen (lpos) + 1);
 
     if (mycmnt->CmPtr)
     {
@@ -567,11 +558,8 @@ newcomment (addrs, parent)
 {
     struct commenttree *newtree;
 
-    if ( ! (newtree = (struct commenttree *)calloc(1,sizeof (struct commenttree))))
-    {
-        fprintf (stderr, "Cannot allocate memory for commenttree\n");
-        exit (1);
-    }
+    newtree = (struct commenttree *)mem_alloc(sizeof (struct commenttree));
+    memset(newtree, 0, sizeof(struct commenttree));
 
     newtree->adrs = addrs;
     newtree->cmtUp = parent;
@@ -889,13 +877,8 @@ do_mode (lpos)
 
     if (*(lpos) == '(')
     {
-        otreept = (struct ofsetree *)calloc (1, sizeof (struct ofsetree));
-
-        if ( ! otreept)
-        {
-            badexit ("Cannot allocate memory for offset!");
-        }
-
+        otreept = (struct ofsetree *)mem_alloc (sizeof (struct ofsetree));
+        memset (otreept, 0, sizeof(struct ofsetree));
         lpos = setoffset (++lpos, otreept);
     }
 
@@ -908,10 +891,8 @@ do_mode (lpos)
 
     /* Now insert new range into tree */
 
-    if ( ! (mptr = (struct databndaries *)calloc (1, sizeof (struct databndaries))))
-    {
-        badexit ("Cannot allocate memory for data definition");
-    }
+    mptr = (struct databndaries *)mem_alloc (sizeof (struct databndaries));
+    memset (mptr, 0, sizeof(struct databndaries));
 
     mptr->b_lo = lo;
     mptr->b_hi = hi;
@@ -1274,12 +1255,8 @@ setupbounds (lpos)
 
     if (*(lpos) == '(')
     {
-        otreept = (struct ofsetree *)calloc (1, sizeof (struct ofsetree));
-        if ( ! otreept)
-        {
-            badexit ("Cannot allocate memory for offset!");
-        }
-
+        otreept = (struct ofsetree *)mem_alloc (sizeof (struct ofsetree));
+        memset (otreept, 0, sizeof(struct ofsetree));
         lpos = setoffset (++lpos, otreept);
     }
 
@@ -1287,12 +1264,8 @@ setupbounds (lpos)
 
     /* Now create the addition to the list */
 
-    if ( ! (bdry = (struct databndaries *)calloc (1, sizeof (struct databndaries))))
-    {
-        fprintf (stderr, "Cannot allocate memory for boundary\n");
-        exit (1);
-    }
-
+    bdry = (struct databndaries *)mem_alloc (sizeof (struct databndaries));
+    memset(bdry, 0, sizeof(struct databndaries));
     bdry->b_lo = rglo;
     bdry->b_hi = rghi;
     bdry->b_siz = PBytSiz;

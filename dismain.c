@@ -17,6 +17,7 @@
 #include <string.h>
 #include "proto.h"
 
+void reflst();
 #ifdef _WIN32
 #   define strcasecmp _stricmp
 #endif
@@ -30,7 +31,7 @@ int LblFilz;              /* Count of Label files specified     */
 char *LblFNam[MAX_LBFIL]; /* Pointers to the path names for the files */
 
 static int HdrLen;
-static int CodeEnd;
+int CodeEnd;
 
 extern struct databndaries *dbounds;
 extern char realcmd[], pseudcmd[];
@@ -140,33 +141,36 @@ get_drvr_jmps(mty)
 static int
 get_modhead()
 {
+    int oldpos;
+    int s;
     /* Get standard (common to all modules) header fields */
 
-    M_ID = fread_w(ModFP);
-    M_SysRev = fread_w(ModFP);
-    M_Size = fread_l( ModFP);
-    M_Owner = fread_l(ModFP);
-    M_Name = fread_l(ModFP);
-    M_Accs = fread_w(ModFP);
-    M_Type = fread_b(ModFP);
-    M_Lang = fread_b(ModFP);
-    M_Attr = fread_b(ModFP);
-    M_Revs = fread_b(ModFP);
-    M_Edit = fread_w(ModFP);
-    M_Usage = fread_l(ModFP);
-    M_Symbol = fread_l(ModFP);
-
-    /* We have 14 bytes that are not used */
-    if (fseek(ModFP, 14, SEEK_CUR) != 0)
-    {
-        errexit("Cannot Seek to file location");
-    }
-
-    M_Parity = fread_w(ModFP);
+    M_ID = fread_w(ModFP) & 0xffff;
 
     switch (M_ID)
     {
     case 0x4afc:
+        M_SysRev = fread_w(ModFP);
+        M_Size = fread_l( ModFP);
+        M_Owner = fread_l(ModFP);
+        M_Name = fread_l(ModFP);
+        M_Accs = fread_w(ModFP);
+        M_Type = fread_b(ModFP);
+        M_Lang = fread_b(ModFP);
+        M_Attr = fread_b(ModFP);
+        M_Revs = fread_b(ModFP);
+        M_Edit = fread_w(ModFP);
+        M_Usage = fread_l(ModFP);
+        M_Symbol = fread_l(ModFP);
+
+        /* We have 14 bytes that are not used */
+        if (fseek(ModFP, 14, SEEK_CUR) != 0)
+        {
+            errexit("Cannot Seek to file location");
+        }
+
+        M_Parity = fread_w(ModFP);
+
         /* Now get any further Mod-type specific headers */
 
         switch (M_Type)
@@ -242,7 +246,8 @@ get_modhead()
 
         break;
     case 0xdead:
-        errexit("Disassembly of ROF files is not yet implemented.");
+        getRofHdr(ModFP);
+        /*errexit("Disassembly of ROF files is not yet implemented.");*/
         break;
     default:
         errexit("Unknown module type");
@@ -469,21 +474,34 @@ dopass(argc,argv,mypass)
         GetIRefs();
         do_cmd_file();
 
+        setROFPass();
     }
     else   /* Do Pass 2 Setup */
     {
         /*parsetree ('A');*/
         GetLabels();
+
+        /* We do this here so that we can rename labels
+         * to proper names defined in the ROF file
+         */
+        if (IsROF)
+        {
+            setROFPass();
+            RofLoadInitData();
+        }
+
         WrtEquates (1);
         WrtEquates (0);
         CmdEnt = 0;
-        PrintPsect();
 
-        /*if (IsROF)
+        if (IsROF)
         {
+            ROFPsect(&ROFHd);
+            ROFDataPrint();
         }
-        else*/
+        else
         {
+            PrintPsect();
             OS9DataPrint();
         }
     }
@@ -496,14 +514,21 @@ dopass(argc,argv,mypass)
         errexit("FIle Seek Error");
     }
 
-    PCPos = HdrEnd;
+    if (IsROF)
+    {
+        PCPos = 0;
+    }
+    else
+    {
+        PCPos = HdrEnd;
+    }
+
 
     while (PCPos < CodeEnd)
     {
         struct databndaries *bp;
 
-        Instruction.comment = NULL;
-        Instruction.lblname = "";
+        memset(&Instruction, 0, sizeof(Instruction));
         CmdEnt = PCPos;
 
         /* NOTE: The 6809 version did an "if" and it apparently worked,
@@ -560,7 +585,6 @@ dopass(argc,argv,mypass)
                 PrintLine (pseudcmd, &Instruction, 'L', CmdEnt, PCPos);
                 CmdEnt = PCPos;
                 /*list_print (&Instruction, CmdEnt, NULL);*/
-                
             }
         }
     }
@@ -570,9 +594,29 @@ dopass(argc,argv,mypass)
         WrtEnds();
     }
 
+    /*reflst();*/
+    /*showem();*/
     return 0;
 }
 
+int showem()
+{
+    char c = '_';
+    LBLCLAS *l = labelclass(c);
+    LBLDEF *d;
+    if (l)
+    {
+        d = l->cEnt;
+        do {
+            printf ("%-20s\t%04x\n", d->sname, d->myaddr);
+            d = d->Next;
+        } while (d);
+        exit (0);
+    }
+
+    printf ("No Labels for class %c\n",c);
+    return 0;
+}
 static CMD_ITMS *
 #ifdef __STDC__
 initcmditems (CMD_ITMS *ci)
@@ -688,9 +732,9 @@ get_asmcmd()
             }
             else
             {
-                if (ftell(ModFP) != CmdEnt + 2)
+                if (ftell(ModFP) != RealEnt() + 2)
                 {
-                    fseek(ModFP, CmdEnt + 2, SEEK_SET);
+                    fseek(ModFP, RealEnt() + 2, SEEK_SET);
                     PCPos = CmdEnt + 2;
                     initcmditems(&Instruction);
                 }
@@ -800,7 +844,7 @@ MovBytes (db)
         /*process_label (&Ci, AMode, valu);*/
 
 
-        LblCalc (tmps, valu, AMode);
+        LblCalc (tmps, valu, AMode, PCPos - db->b_siz);
 
         if (Pass == 2)
         {

@@ -19,6 +19,7 @@
 #endif
 
 LBLCLAS LblList[] = {
+    {'_', NULL},
     {'!', NULL}, {'=', NULL}, {'A', NULL}, {'B', NULL},
     {'C', NULL}, {'D', NULL}, {'E', NULL}, {'F', NULL},
     {'G', NULL}, {'H', NULL}, {'I', NULL}, {'J', NULL},
@@ -380,11 +381,13 @@ create_lbldef (lblclass, val, name)
     char lblclass;
     int val;
     char *name;
+
 #endif
 {
     register LBLDEF *newlbl;
     
-    if (newlbl = (LBLDEF *)calloc(1, sizeof(LBLDEF)))
+    newlbl = (LBLDEF *)mem_alloc(sizeof(LBLDEF));
+    memset(newlbl, 0, sizeof(LBLDEF));
     {
         if (name && strlen(name))
         {
@@ -398,12 +401,6 @@ create_lbldef (lblclass, val, name)
         }
 
         newlbl->myaddr = val;
-    }
-    else
-    {
-        fprintf (stderr,
-                "*** failed to allocat memory for label definition\n");
-        return 0;
     }
 
     return newlbl;
@@ -603,12 +600,10 @@ parsetree(c)
 
 int
 #ifdef __STDC__
-LblCalc (char *dst, int adr, int amod)
+LblCalc (char *dst, int adr, int amod, int curloc)
 #else
-LblCalc (dst, adr, amod)
-    char *dst;
-    int adr;
-    int amod;
+LblCalc (dst, adr, amod, curloc)
+    char *dst; int adr; int amod; int curloc;
 #endif
 {
     int raw = adr /*& 0xffff */ ;   /* Raw offset (postbyte) - was unsigned */
@@ -617,6 +612,14 @@ LblCalc (dst, adr, amod)
 
     struct databndaries *kls = 0;
     LBLDEF *mylabel = 0;
+
+    if (IsROF)
+    {
+        if (IsRef(dst, curloc, adr))
+        {
+            return 1;
+        }
+    }
 
     if (amod == AM_REL)
     {
@@ -723,7 +726,7 @@ LblCalc (dst, adr, amod)
 
                 t = (mainclass ? mainclass : 'D');
                 fprintf (stderr, "Lookup error on Pass 2 (main)\n");
-                fprintf (stderr, "Cannot find %c%x\n", t, raw);
+                fprintf (stderr, "Cannot find %c - %05x\n", t, raw);
              /*   fprintf (stderr, "Cmd line thus far: %s\n", tmpname);*/
                 exit (1);
             }
