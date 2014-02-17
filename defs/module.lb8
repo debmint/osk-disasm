@@ -1,74 +1,84 @@
-edition equ $17
-M$Rev equ $01
-org equ $00
-M$ID equ $00
-M$SysRev equ $02
-M$Size equ $04
-M$Owner equ $08
-M$Name equ $0c
-M$Accs equ $10
-M$Type equ $12
-M$Lang equ $13
-M$Attr equ $14
-M$Revs equ $15
-M$Edit equ $16
-M$Usage equ $18
-M$Symbol equ $1c
-do.b equ $20
-M$Parity equ $2e
-M$IDSize equ $30
-M$Exec equ $30
-M$Excpt equ $34
-M$Mem equ $38
-M$Stack equ $3c
-M$IData equ $40
-M$IRefs equ $44
-M$Init equ $48
-M$Term equ $4c
-org equ $30
-M$Port equ $30
-M$Vector equ $34
-M$IRQLvl equ $35
-M$Prior equ $36
-M$Mode equ $37
-M$FMgr equ $38
-M$PDev equ $3a
-M$DevCon equ $3c
-do.w equ $3e
-M$Opt equ $46
-M$DTyp equ $48
-org equ $30
-do.l equ $30
-M$PollSz equ $34
-M$DevCnt equ $36
-M$Procs equ $38
-M$Paths equ $3a
-M$SParam equ $3c
-M$Sysgo equ $3e
-M$SysDev equ $40
-M$Consol equ $42
-M$Extens equ $44
-M$Clock equ $46
-M$Slice equ $48
-M$IPID equ $4a
-M$Site equ $4c
-M$Instal equ $50
-M$CPUTyp equ $52
-M$OS9Lvl equ $56
-M$OS9Rev equ $5a
-M$SysPri equ $5c
-M$MinPty equ $5e
-M$MaxAge equ $60
-M$MDirSz equ $62
-M$Events equ $66
-M$Compat equ $68
-M$Compat2 equ $69
-M$MemList equ $6a
-M$IRQStk equ $6c
-M$ColdTrys equ $6e
-do.w equ $70
-M$ID12 equ $4afc
-org equ $00
+
+* Module Headers common to all types
+
+M$ID equ $00 M
+M$Rev equ $01 M
+M$SysRev equ $02 M
+M$Size equ $04 M
+M$Owner equ $08 M
+M$Name equ $0c M
+M$Accs equ $10 M
+M$Type equ $12 M
+M$Lang equ $13 M
+M$Attr equ $14 M
+M$Revs equ $15 M
+M$Edit equ $16 M
+M$Usage equ $18 M
+M$Symbol equ $1c M
+
+M$Parity equ $2e M
+
+* M$IDSize equ $30
+* System, Program, Trap Handler, File Mgr, Device Driver
+M$Exec equ $30 M
+M$Excpt equ $34 M
+
+* Program, Trap Handler, Devicd Driver
+M$Mem equ $38 M
+
+* Program, Trap Handler
+M$Stack equ $3c M
+M$IData equ $40 M
+M$IRefs equ $44 M
+
+* User Trap Handler
+M$Init equ $48 M
+M$Term equ $4c M
+
+* Device Descriptor Module Offsets
+
+M$Port equ $30 M
+M$Vector equ $34 M
+M$IRQLvl equ $35 M
+M$Prior equ $36 M
+M$Mode equ $37 M
+M$FMgr equ $38 M
+M$PDev equ $3a M
+M$DevCon equ $3c M
+M$Opt equ $46 M
+M$DTyp equ $48 M
+
+* Config Module 
+M$PollSz equ $34 M
+M$DevCnt equ $36 M
+M$Procs equ $38 M
+M$Paths equ $3a M
+M$SParam equ $3c M
+M$Sysgo equ $3e M
+M$SysDev equ $40 M
+M$Consol equ $42 M
+M$Extens equ $44 M
+M$Clock equ $46 M
+M$Slice equ $48 M
+M$IPID equ $4a M
+M$Site equ $4c M
+M$Instal equ $50 M
+M$CPUTyp equ $52 M
+M$OS9Lvl equ $56 M
+M$OS9Rev equ $5a M
+M$SysPri equ $5c M
+M$MinPty equ $5e M
+M$MaxAge equ $60 M
+M$MDirSz equ $62 M
+M$Events equ $66 M
+M$Compat equ $68 M
+M$Compat2 equ $69 M
+M$MemList equ $6a M
+M$IRQStk equ $6c M
+M$ColdTrys equ $6e M
+
+M$ID12 equ $4afc M
+
 DT_SCF equ $00
 DT_RBF equ $01
 DT_Pipe equ $02
@@ -83,11 +93,11 @@ DT_NRF equ $0a
 DT_GFM equ $0b
 CRCCon equ 00800fe3
 ModDir equ $0100
-org equ $00
+
 MD$MPtr equ $00
 MD$Group equ $04
 MD$Static equ $08
 MD$Link equ $0c
 MD$MChk equ $0e
 MD$ESize equ $10
-ends equ $00
+

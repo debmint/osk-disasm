@@ -6,7 +6,8 @@
 
 CFLAGS = -c -g
 LFLAGS = -g
-DISRELS = dis68.o dismain.o opcode00.o commonsubs.o opcodes020.c
+DISRELS = dis68.o dismain.o def68def.o opcode00.o commonsubs.o lblfuncs.o\
+		  opcodes020.o cmdfile.o dprint.o rof.o
 XTRAS = disglobs.h
 PROG  = dis68
 
@@ -19,7 +20,8 @@ $(PROG): $(DISRELS)
 # I broke down the dependencies for the object files
 # because I couldn't get the above to work...
 
-dis68.o:
+#dis68.o:
+#	cc $(CFLAGS) $*.c -I /usr/include/sys
 
 dismain.o: dismain.c $(XTRAS)
 	cc $(CFLAGS) -o $@ $*.c
