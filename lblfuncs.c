@@ -613,17 +613,17 @@ LblCalc (dst, adr, amod, curloc)
     struct databndaries *kls = 0;
     LBLDEF *mylabel = 0;
 
+    if (amod == AM_REL)
+    {
+        raw += curloc;
+    }
+
     if (IsROF)
     {
-        if (IsRef(dst, curloc, adr))
+        if (IsRef(dst, curloc, raw))
         {
             return 1;
         }
-    }
-
-    if (amod == AM_REL)
-    {
-        raw += PCPos;
     }
 
     /* if amod is non-zero, we're doing a label class */

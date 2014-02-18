@@ -654,7 +654,8 @@ int reg;
             AMode = AM_REL;
             ext1 = getnext_w(ci);
                     /* (ext1 - 2) to reflect PCPos before getnext_w */
-            LblCalc(dispstr, ext1 - 2, AMode, ea_addr);
+            /*LblCalc(dispstr, ext1 - 2, AMode, ea_addr);*/
+            LblCalc(dispstr, ext1 - 2, AMode, PCPos);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 3:              /* d8(PC,Xn) */

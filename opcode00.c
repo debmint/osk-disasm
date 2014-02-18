@@ -961,7 +961,7 @@ bra_bsr(ci, j, op)
 
     strcpy (ci->mnem, op->name);
     strcat (ci->mnem, siz);
-    dstAddr = jmp_base + displ;
+    /*dstAddr = jmp_base + displ;*/
 
     //if (IsROF && (Pass == 2))
     //{
@@ -972,7 +972,7 @@ bra_bsr(ci, j, op)
     //}
 
     //process_label (ci, 'L', dstAddr);
-    LblCalc(ci->opcode, dstAddr, AM_REL, jmp_base);
+    LblCalc(ci->opcode, displ, AM_REL, jmp_base);
 
     return 1;
 }
@@ -1085,7 +1085,9 @@ br_cond(ci, j, op)
     register int displ;
     char *subst;
 
-    if ((displ = branch_displ(ci, ci->cmd_wrd, siz)) == 0)
+    displ = branch_displ(ci, ci->cmd_wrd, siz);
+
+    if (!IsROF && (displ == 0))
     {
         return 0;
     }
@@ -1108,7 +1110,8 @@ br_cond(ci, j, op)
     }
 
         /* We need to calculate the address here */
-    process_label (ci, 'L', jmp_base + displ);
+    /*process_label (ci, 'L', jmp_base + displ);*/
+    LblCalc(ci->opcode, displ, AM_REL, jmp_base);
     /*sprintf (ci->opcode, "L%05x", jmp_base + displ);*/
 
     return 1;
