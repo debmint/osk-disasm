@@ -1165,7 +1165,7 @@ add_sub(ci, j, op)
 
     if (asDef->direction == EA2REG)
     {
-        if ((ea_reg == 1) && (asDef->size < SIZ_WORD))
+        if ((ea_mode == 1) && (asDef->size < SIZ_WORD))
         {
             return 0;
         }

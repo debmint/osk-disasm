@@ -16,9 +16,9 @@
 #include "proto.h"
 
 #ifdef __STDC__
-struct rof_extrn *DataDoBlock (struct rof_extrn *mylist, int datasize, struct asc_data *, char cclass);
-void ROFDataLst (struct rof_extrn *mylist, int maxcount, struct asc_data *ascdat, char cclass);
-void get_refs(char *vname, int count, int ref_typ);
+static struct rof_extrn *DataDoBlock (struct rof_extrn *mylist, int datasize, struct asc_data *, char cclass);
+static void ROFDataLst (struct rof_extrn *mylist, int maxcount, struct asc_data *ascdat, char cclass);
+static void get_refs(char *vname, int count, int ref_typ);
 #else
 struct rof_extrn *DataDoBlock ();
 void ROFDataLst ();
