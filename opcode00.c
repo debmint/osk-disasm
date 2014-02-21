@@ -1342,6 +1342,34 @@ abcd_sbcd(ci, j, op)
     return 1;
 }
 
+/* *************************************************************** *
+ * addTrapOpt() - If Pass 1, set up a boundary for the Trap option *
+ *      so that it will disassemble correctly on Pass 2.           *
+ *      if Pass 2, unget the next option word so it will be        *
+ *      disassebled as a constant.                                 *
+ * *************************************************************** */
+
+void
+#ifdef __STDC__
+addTrapOpt(CMD_ITMS *ci, int ppos)
+#else
+addTrapOpt(ci, ppos)
+    CMD_ITMS *ci;int ppos;
+#endif
+{
+    char bndstr[100];
+
+    if (Pass == 1)
+    {
+        sprintf (bndstr, "L W $ %05x-%05x", ppos, ppos+1);
+        boundsline (bndstr);
+    }
+    else    /* If Pass 2, unget the opt so it will print as a "dc.w" */
+    {
+        ungetnext_w(ci);
+    }
+}
+
 int
 #ifdef __STDC__
 trap(CMD_ITMS *ci, int j, OPSTRUCTURE *op)
@@ -1353,13 +1381,13 @@ trap(ci, j, op)
 #endif
 {
     register int vector = ci->cmd_wrd & 0x0f;
-    register int syscall;
+    register int syscall = getnext_w(ci);
 
     switch (vector)
     {
     case 0:             /* System Call */
     case 0x0f:          /* Math trap   */
-        if (syscall = getnext_w (ci))
+        if (syscall)
         {
             switch (vector)
             {
@@ -1369,6 +1397,7 @@ trap(ci, j, op)
                     if (Pass == 1)
                     {
                         addlbl ('!', syscall, SysNames[syscall]);
+                        addTrapOpt (ci, PCPos - 2);
                     }
                     else
                     {
@@ -1383,19 +1412,21 @@ trap(ci, j, op)
                 {
                     sprintf (ci->opcode, "T$Math,%s", MathCalls[syscall]);
                     strcpy(ci->mnem, "tcall");
+                    addTrapOpt (ci, PCPos - 2);
                     return 1;
                 }
             }
         }
 
-        ungetnext_w(ci);
         break;
     default:
         sprintf (ci->opcode, "#%d", vector);
         strcpy (ci->mnem, op->name);
+        addTrapOpt (ci, PCPos - 2);
         return 1;
     }
 
+    ungetnext_w (ci);
     return 0;
 }
 

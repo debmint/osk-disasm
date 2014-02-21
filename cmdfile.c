@@ -41,7 +41,6 @@ static int do_mode (char *lpos);
 static char *setoffset (char *p, struct ofsetree *oft);
 static int optincmd (char *lpos);
 static void cmdamode (char *pt);
-static void boundsline (char *mypos);
 static struct commenttree *newcomment (int addrs,
                             struct commenttree *parent);
 #else
@@ -51,7 +50,6 @@ static int do_mode ();
 static char *setoffset ();
 static int optincmd ();
 static void cmdamode ();
-static void boundsline ();
 static struct commenttree *newcomment ();
 #endif
 
@@ -961,7 +959,7 @@ do_mode (lpos)
  *      (Called from mainline cmdfile processing routine.       *
  * ************************************************************ */     
 
-static void
+void
 #ifdef __STDC__
 boundsline (char *mypos)
 #else
