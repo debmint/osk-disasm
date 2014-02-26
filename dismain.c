@@ -492,6 +492,7 @@ dopass(argc,argv,mypass)
 
         WrtEquates (1);
         WrtEquates (0);
+    showem();
         CmdEnt = 0;
 
         if (IsROF)
@@ -595,26 +596,27 @@ dopass(argc,argv,mypass)
     }
 
     /*reflst();*/
-    /*showem();*/
     return 0;
 }
 
+extern struct rof_extrn *refs_code;
 int showem()
 {
     char c = '_';
+    struct rof_extrn *rf = refs_code;
     LBLCLAS *l = labelclass(c);
     LBLDEF *d;
-    if (l)
+
+    if (!rf)
+        fprintf(stderr, "No Code refs found!\n");
+    while (rf)
     {
-        d = l->cEnt;
-        do {
-            printf ("%-20s\t%04x\n", d->sname, d->myaddr);
-            d = d->Next;
-        } while (d);
-        exit (0);
+        fprintf (stderr, "%04x: -> (%03x '%c') \"%-14s\" (%s)\n", rf->Ofst, rf->Type,
+            rf->dstClass ? rf->dstClass : ' ', rf->Extrn ? rf->EName.nam : rf->EName.lbl->sname,
+            rf->Extrn ? "Extern" : "Local");
+        rf = rf->ENext;
     }
 
-    printf ("No Labels for class %c\n",c);
     return 0;
 }
 static CMD_ITMS *

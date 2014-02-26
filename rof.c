@@ -16,11 +16,9 @@
 #include "proto.h"
 
 #ifdef __STDC__
-static struct rof_extrn *DataDoBlock (struct rof_extrn *mylist, int datasize, struct asc_data *, char cclass);
 static void ROFDataLst (struct rof_extrn *mylist, int maxcount, struct asc_data *ascdat, char cclass);
-static void get_refs(char *vname, int count, int ref_typ);
+static void get_refs(char *vname, int count, int ref_typ, char *codebuffer);
 #else
-struct rof_extrn *DataDoBlock ();
 void ROFDataLst ();
 void get_refs();
 #endif
@@ -89,43 +87,51 @@ void
 #ifdef __STDC__
 AddInitLbls (struct rof_extrn *tbl, int dataSiz, char klas)
 #else
-AddInitLbls (tbl, dataSiz, klas);
+1141 (tbl, dataSiz, klas);
     struct rof_extrn *tbl, int dataSiz; char klas;
 #endif
 {
-    /*int count = fread_w(ModFP);*/
     char *dataBuf,
          *ptr;
     int c = 1;
+    register int refVal;
 
-    if (tbl)
+    dataBuf = (char *)mem_alloc(dataSiz + 1);
+
+    if (fread (dataBuf, dataSiz, 1, ModFP) == -1)
     {
-        register int refVal;
+        fprintf (stderr, "AddInitLbls(): Failed to read in data for Init Data Buffer");
+        exit (errno);
+    }
 
-        do {
-            if (!tbl->Extrn)
+    while (tbl)
+    {
+        if (!tbl->Extrn)
+        {
+            ptr = &(dataBuf[tbl->Ofst]);
+
+            switch (REFSIZ(tbl->Type))
             {
-                switch (REFSIZ(tbl->Type))
-                {
-                case 1: /*SIZ_BYTE:*/
-                    refVal = fgetc(ModFP);
-                    --dataSiz;
-                    break;
-                case 2: /*SIZ_WORD:*/
-                    refVal = 0;
-                    refVal = fread_w(ModFP);
-                    dataSiz -= 2;
-                    break;
-                default:
-                    refVal = fread_l(ModFP);
-                    dataSiz -= 4;
-                }
-
-                tbl->EName.lbl = addlbl(tbl->dstClass, refVal, "");
+            case 1: /*SIZ_BYTE:*/
+                refVal = *ptr & 0xff;
+                --dataSiz;
+                break;
+            case 2: /*SIZ_WORD:*/
+                /*refVal = 0;
+                refVal = fread_w(ModFP);*/
+                refVal = bufReadW(&ptr);
+                dataSiz -= 2;
+                break;
+            default:
+                refVal = bufReadL(&ptr);
+                /*refVal = fread_l(ModFP);*/
+                dataSiz -= 4;
             }
 
-            tbl = tbl->ENext;
-        } while (tbl);
+            tbl->EName.lbl = addlbl(tbl->dstClass, refVal, "");
+        }
+
+        tbl = tbl->ENext;
     }
 }
 
@@ -145,6 +151,7 @@ rofhdr()
         ext_count,
         count;          /* Generic counter */
     int local_count;
+    char *codeBuf;
 
     IsROF = TRUE;    /* Flag that module is an ROF module */
     fseek(progpath, 0, SEEK_SET);   /* Start all over */
@@ -210,27 +217,37 @@ rofhdr()
     /* Code section... read, or save file position   */
     HdrEnd = ftell (progpath);
     CodeEnd = ROFHd.codsz;
+
+    /* Read code into buffer for get_refs() while we're here */
+
+
+
+    if (fread ((codeBuf = (char *)mem_alloc(ROFHd.codsz + 1)), ROFHd.codsz, 1, ModFP) == -1)
+    {
+        fprintf (stderr, "Failed to read code buffer\n");
+    }
+
     /*idp_begin = code_begin + rofptr->codsz;
     indp_begin = idp_begin + rofptr->idpsz;*/
 
-    if (fseek (progpath, ROFHd.codsz, SEEK_CUR) == -1)
+    /*if (fseek (progpath, ROFHd.codsz, SEEK_CUR) == -1)
     {
         fprintf (stderr, "rofhdr(): Seek error on module\n");
         exit (errno);
-    }
+    }*/
 
     /* ********************************** *
      *    Initialized data Section        *
      * ********************************** */
 
-    IDataCount = fread_w(ModFP);
+    IDataCount = ROFHd.idatsz;
     IDataBegin = ftell(ModFP);
 
     /* ********************************** *
      *    External References Section     *
      * ********************************** */
 
-    if (fseek (ModFP, IDataBegin + ROFHd.idatsz + ROFHd.remotestatsiz + ROFHd.debugsiz - 2, SEEK_SET) == -1)
+    if (fseek (ModFP, IDataBegin + ROFHd.idatsz + ROFHd.remotestatsiz + ROFHd.debugsiz, SEEK_SET) == -1)
     {
         fprintf (stderr, "rofhdr(): Seek error on module\n");
         exit (errno);
@@ -248,7 +265,7 @@ rofhdr()
 
         /* Get the individual occurrences for this name */
 
-        get_refs (_name, refcount, REFXTRN);
+        get_refs (_name, refcount, REFXTRN, NULL);
     }
 
 
@@ -257,8 +274,8 @@ rofhdr()
      * *************************** */
 
     local_count = fread_w (ModFP);
-
-    get_refs("", local_count, REFLOCAL);
+    get_refs("", local_count, REFLOCAL, codeBuf);
+    free (codeBuf);
 
     /* Now we need to add labels for these refs */
 
@@ -266,7 +283,7 @@ rofhdr()
     /* Do this after everything else is done */
     /* NOTE: We may need to save current ftell() to restore it after this */
 
-    if (fseek(ModFP, IDataBegin - 2, SEEK_SET) == -1)
+    if (fseek(ModFP, IDataBegin, SEEK_SET) == -1)
     {
         errexit ("RofLoadInitData() : Failed to seek to begin of Init Data");
     }
@@ -384,25 +401,25 @@ rof_class (typ)
 
     case REFXTRN:
     case REFLOCAL:
-        switch (typ & 0x200)
+        switch (typ & 0x20)
         {
         case 0: /* NOT remote */
-            switch (typ & 0x20)
+            switch (typ & 0x200)
             {
             case 0:     /* data */
                 return '_';
-            default:    /* debug */
+            default:    /* remote */
                 return 'L';
             }
-        default:    /* remote */
-            switch (typ & 0x20)
+        default:
+            switch (typ & 0x200)
             {
-            case 0:
-                return '_';
+            case 0:     /* code */
+                return 'L';
             default:      /* debug */
                 break;
             }
-            return 'H';
+            return 'L';
         }
     }
 
@@ -461,7 +478,7 @@ rof_class (typ)
 
 static void
 #ifdef __STDC__
-get_refs(char *vname, int count, int ref_typ)
+get_refs(char *vname, int count, int ref_typ, char *code_buf)
 #else
 get_refs(vname, count, ref_typ)
     char *vname; int count; int refType, int ref_typ;
@@ -479,6 +496,15 @@ get_refs(vname, count, ref_typ)
     {
         _ty = fread_w (ModFP);
         _ofst = fread_l (ModFP);
+
+        /* Skip Debug refs */
+        if (ref_typ == REFLOCAL)
+        {
+            if ((_ty & 0x220) == 0x220)
+            {
+                continue;
+            }
+        }
 
         /* Add to externs table */
         switch (myClass = rof_class(_ty, ref_typ))
@@ -503,10 +529,10 @@ get_refs(vname, count, ref_typ)
             base = &refs_code;
         }
 
-        if ((ref_typ == REFLOCAL) && (myClass == 'L'))
+        /*if ((ref_typ == REFLOCAL) && (myClass == 'L'))
         {
         }
-        else
+        else*/
         {
             new_ref = (struct rof_extrn *)mem_alloc(sizeof(struct rof_extrn));
             memset (new_ref, 0, sizeof(struct rof_extrn));
@@ -514,11 +540,6 @@ get_refs(vname, count, ref_typ)
             new_ref->Type = _ty;
             new_ref->Ofst = _ofst;
             new_ref->Extrn = (ref_typ == REFXTRN);
-
-            if (ref_typ == REFLOCAL)
-            {
-                new_ref->dstClass = rof_class(_ty, REFGLBL);
-            }
 
             if (prevRef)
             {
@@ -583,8 +604,32 @@ get_refs(vname, count, ref_typ)
             {
                 new_ref->EName.nam = vname;
             }
-        }       /* end "if (ref_typ == REFXTRN)" */
-    }           /* end "while (count--) */
+            else
+            {
+                register int dstVal;
+                char *pt = &(code_buf[new_ref->Ofst]);
+
+                new_ref->dstClass = rof_class(_ty, REFGLBL);
+                
+                if ((ref_typ == REFLOCAL) && (myClass == 'L'))
+                {
+                    switch ((new_ref->Type >> 3) & 3)
+                    {
+                    case 1:
+                        dstVal = *pt & 0xff;
+                        break;
+                    case 2:
+                        dstVal = bufReadW(&pt);
+                        break;
+                    default:
+                        dstVal = bufReadL(&pt);
+                    }
+
+                    new_ref->EName.lbl = addlbl(new_ref->dstClass, dstVal, "");
+                }
+            }
+        }               /* end "if (ref_typ == REFXTRN)" */
+    }               /* end "while (count--) */
 }
 
 /* ************************************************** *
@@ -786,111 +831,204 @@ char cclass;
  *          (3) char class - the label class (D or C)                   *
  * ******************************************************************** */
 
-static struct rof_extrn *
+static char *
 #ifdef __STDC__
-DataDoBlock (struct rof_extrn *mylist, int datasize,
+DataDoBlock (struct rof_extrn **refsList, LBLDEF **lblList, char *iBuf, int blkEnd,
              struct asc_data *ascdat, char cclass)
 #else
-DataDoBlock (mylist, int datasize, ascdat, cclass)
-    struct rof_extrn *mylist; int datasize;
+DataDoBlock (refsList, iBuf, int blkEnd, ascdat, cclass)
+    struct rof_extrn **refsList; char *iBuf; int blkEnd;
              struct asc_data *ascdat, char cclass;
 #endif
 {
-    struct rof_extrn *srch;
-    LBLDEF *nl;
+    /*struct rof_extrn *srch;*/
     CMD_ITMS Ci;
+    char lblString[200];
 
-    memset (&Ci, 0, sizeof(Ci));
+    memset (&Ci, 0, sizeof(CMD_ITMS));
 
-    while (datasize > 0)
+    /* Insert Label if applicable */
+
+    if ((*lblList)->myaddr == CmdEnt)
+    {
+        strcpy (lblString, (*lblList)->sname);
+        Ci.lblname = lblString;
+
+        if ((*lblList)->global)
+        {
+            strcat (Ci.lblname, ":");
+        }
+
+        (*lblList) = (*lblList)->Next;
+    }
+
+    while (PCPos < blkEnd)
     {
         int bump = 2,
             my_val;
 
-        /* Insert Label if applicable */
-
-        if (nl = findlbl(cclass, CmdEnt))
-        {
-            strcpy (Ci.lblname, nl->sname);
-
-            if (nl->global)
-            {
-                strcat (Ci.lblname, ":");
-            }
-        }
-
-        /* First check that mylist is not null. If this vsect has no
-         * references, 'mylist' will be null
+        CmdEnt = PCPos;
+        /* First check that refsList is not null. If this vsect has no
+         * references, 'refsList' will be null
          */
 
-        if ( mylist && (srch = find_extrn (mylist, CmdEnt)) )
+        if ( *refsList && ((*refsList)->Ofst == CmdEnt) )
         {
             strcpy (Ci.mnem, "dc.");
 
-            switch ((srch->Type >> 3) & 3)
+            switch (((*refsList)->Type >> 3) & 3)
             {
-            case SIZ_BYTE:
+            case 1:         /* SIZ_BYTE */
                 strcat (Ci.mnem, "b");
-                my_val = fgetc(ModFP);
-                bump = 1;
+                my_val = *(iBuf++);
+                ++PCPos;
                 break;
-            case SIZ_WORD:
+            case 2:         /* SIZ_WORD */
                 strcat (Ci.mnem, "w");
-                my_val = fread_w(ModFP);
-                bump = 2;
+                my_val = bufReadW(&iBuf) & 0xffff;
+                /*iBuf += 2;*/
+                /*my_val = (*(iBuf++) << 8) | (*(iBuf++) & 0xff);*/
+                PCPos += 2;
                 break;
-            case SIZ_LONG:
+            default:         /* SIZ_LONG */
                 strcat (Ci.mnem, "l");
-                my_val = fread_l (ModFP);
-                bump = 4;
+                my_val = bufReadL(&iBuf);
+                /*iBuf += 4;*/
+                /*my_val = (*(iBuf++) << 24) | ((*(iBuf++) & 0xff) << 16) | ((*(iBuf++) & 0xff) << 8) |
+                    (*(iBuf++) & 0xff);*/
+                PCPos += 4;
             }
 
-            switch (mylist->Type)
+            if ((*refsList)->Extrn)
+            {
+                strcpy(Ci.opcode, (*refsList)->EName.nam);
+            }
+            else
+            {
+                strcpy (Ci.opcode, (*refsList)->EName.lbl->sname);
+            }
+
+            PrintLine(pseudcmd, &Ci, cclass, CmdEnt, CmdEnt);
+            CmdEnt = PCPos;
+            Ci.lblname = NULL;
+            Ci.opcode[0] = '\0';
+            Ci.mnem[0] = '\0';
+            /*switch ((*refsList)->Type)
             {
             case REFGLBL:
-                strcpy(Ci.opcode, mylist->EName.nam);
+                strcpy(Ci.opcode, (*refsList)->EName.nam);
                 break;
             case REFLOCAL:
-                strcpy (Ci.opcode, mylist->EName.lbl->sname);
+                strcpy (Ci.opcode, (*refsList)->EName.lbl->sname);
                 break;
-            default:        /* Catchall */
+            default:
                 strcpy (Ci.opcode, "???");
-            }
+            }*/
 
         }
         else      /* No reference entry for this area */
         {
             struct asc_data *mydat;
+            register int bytCount,
+                bytSize;
+
+            if (bytCount = DoAsciiBlock (&Ci, iBuf, blkEnd, cclass))
+            {
+                iBuf += bytCount;
+                continue;
+            }
+            else
+            {
+                register char *fmt;
+
+                switch ((blkEnd - PCPos) % 4)
+                {
+                case 0:
+                    bytSize = 4;
+                    bytCount = (blkEnd - PCPos) >> 2;
+                    strcpy (Ci.mnem, "dc.l");
+                    fmt = "$%08x";
+                    break;
+                case 2:
+                    bytSize = 2;
+                    strcpy (Ci.mnem, "dc.w");
+                    bytCount = (blkEnd - PCPos) >> 1;
+                    fmt = "$%04x";
+                    break;
+                default:
+                    bytSize = 1;
+                    strcpy (Ci.mnem, "dc.b");
+                    bytCount = blkEnd - PCPos;
+                    fmt = "$%02x";
+                }
+
+                while (bytCount--)
+                {
+                    int val = 0;
+                    register int byteNum;
+
+                    switch (bytSize)
+                    {
+                    case 1:
+                        val = *(iBuf++) & 0xff;
+                        break;
+                    case 4:
+                        /*for (byteNum = 0; byteNum < 4; byteNum++)
+                        {
+                            val = (val << 8) | (*(iBuf++) & 0xff);
+                        }*/
+                        val = bufReadL(&iBuf);
+                        /*iBuf += 4;*/
+                        break;
+                        /*val = ((*(iBuf++) & 0xff) << 8) | (*(iBuf++) & 0xff);
+                        val <<= 16;*/
+                        /* Fall through to the 'word' function to pick up next two bytes */
+                    default:
+                        val = bufReadW(&iBuf);
+                        /*iBuf +=2;*/
+                        /*val = val | ((*(iBuf++) & 0xff) << 8) | (*(iBuf++) & 0xff);*/
+                    }
+
+                    PCPos += bytSize;
+                    sprintf (Ci.opcode, fmt, val);
+                    PrintLine(pseudcmd, &Ci, cclass, CmdEnt, CmdEnt);
+                    CmdEnt = PCPos;
+                    Ci.lblname = NULL;
+                    Ci.opcode[0] = '\0';
+                }
+                
+                Ci.mnem[0] = '\0';
+            }
 
             /* Check for ASCII definition, and print it out if so */
 
-            mydat = rof_find_asc (ascdat, CmdEnt);
+        //    mydat = rof_find_asc (ascdat, CmdEnt);
 
-            if (mydat)
-            {
-                PCPos = CmdEnt;    /* MovASC sets CmdEnt = Pc */
-                MovASC (mydat->length, cclass);
-                CmdEnt += mydat->length;
-                PrevEnt = CmdEnt;
-                datasize -= mydat->length;
-                continue;
-            }
+        //    if (mydat)
+        //    {
+        //        PCPos = CmdEnt;    /* MovASC sets CmdEnt = Pc */
+        //        MovASC (mydat->length, cclass);
+        //        CmdEnt += mydat->length;
+        //        PrevEnt = CmdEnt;
+        //        blkEnd -= mydat->length;
+        //        continue;
+        //    }
 
-            my_val = fgetc (ModFP);
-            bump = 1;
-            strcpy (Ci.mnem, "dc.b");
-            sprintf (Ci.opcode, "$%02x", my_val);
+        //    my_val = fgetc (ModFP);
+        //    bump = 1;
+        //    strcpy (Ci.mnem, "dc.b");
+        //    sprintf (Ci.opcode, "$%02x", my_val);
         }
 
-        PrintLine (realcmd, &Ci, cclass, CmdEnt, CmdEnt + datasize);
-        CmdEnt += bump;
-        PrevEnt = CmdEnt;
-        datasize -= bump;
-        mylist = mylist->ENext;
-        nl = nl->Next;
+        //PrintLine (realcmd, &Ci, cclass, CmdEnt, CmdEnt + blkEnd);
+        //CmdEnt += bump;
+        //PrevEnt = CmdEnt;
+        //blkEnd -= bump;
+        //(*refsList) = (*refsList)->ENext;
+        //nl = nl->Next;
     }
 
-    return mylist;
+    return iBuf;
 }
 
 static void
@@ -924,7 +1062,7 @@ ROFDataLst (mylist, maxcount, ascdat, cclass)
                 }*/
 
                 CmdEnt = my_ref->Ofst;
-                DataDoBlock (my_ref, datasize, ascdat, cclass);
+                /*DataDoBlock (&my_ref, "", datasize, ascdat, cclass);*/
             } while ((mylist->ENext) && (mylist->Ofst < maxcount));
         }
     }
@@ -941,106 +1079,103 @@ ROFDataLst (mylist, maxcount, ascdat, cclass)
 
 void
 #ifdef __STDC__
-ListInitROF (char * hdr, LBLCLAS *nl, int mycount, char mclass)
+ListInitROF (char * hdr, struct rof_extrn *refsList, char *iBuf, int isize, char iClass)
 #else
-ListInitROF (hdr, datbegin, nl, mycount, notdp, mclass)
-    hdr, LBLCLAS *nl; int mycount; char mclass;
+ListInitROF (hdr, refsList, iBuf, isize, iClass)
+    hdr; struct rof_extrn *refsList; char *iBuf; int isize; char iClass;
 #endif
 {
-    struct rof_extrn *mylist,
-                     *srchlst;
+    struct rof_extrn *srchlst;
     struct asc_data *ascdat;
     CMD_ITMS Ci;
-    char *iClass = "_H";      /* Note: Need to add more refs */
     int r;
+    int rcount;
+    LBLDEF *lblList = labelclass(iClass) ? labelclass(iClass)->cEnt : NULL;
 
-    if (fseek (ModFP, IDataBegin - 2, SEEK_SET) == -1)
+    ascdat = data_ascii;
+    PCPos = 0;
     {
-        errexit ("ListInitROF(): Failed to seek to begin of Initialized data");
+        LBLDEF *lbls = labelclass(iClass) ? labelclass(iClass)->cEnt : NULL;
     }
 
-    for (r = 0; r < 2; r++,iClass++)
+    while (PCPos < (isize))
     {
-        int rcount;
-        int isize;
+        char *dstname;
+        register int blkEnd;
 
-        CmdEnt = 0;
+        blkEnd = isize;     /* Make this a default */
 
-        switch (*iClass)
+        if (lblList)
         {
-        case '_':
-            mylist = refs_idata;
-            isize = ROFHd.idatsz;
-            break;
-        case 'H':
-            mylist = refs_iremote;
-            isize = ROFHd.remoteidatsiz;
-            break;
-        }
-
-        ascdat = data_ascii;
-        /*fseek (ModFP, IDataBegin, SEEK_SET);*/
-
-        if (mylist)
-        {
-            int filPos = ftell(ModFP);
-
-            PCPos = 0;
-
-            do
+            if (lblList->Next)
             {
-                LBLDEF *mylbl;
-                register int myVal;
-                char *dstname;
-
-                memset (&Ci, 0, sizeof(CMD_ITMS));
-                Ci.cmd_wrd = mylist->Ofst;
-            
-                switch ((mylist->Type >> 3) & 3)
-                {
-                case 1: /*SIZ_BYTE:*/
-                    strcpy (Ci.mnem, "dc.b");
-                    myVal = fgetc(ModFP);
-                    Ci.cmd_wrd = myVal & 0xff;
-                    --isize;
-                    break;
-                case 2: /*SIZ_WORD:*/
-                    strcpy (Ci.mnem, "dc.w");
-                    myVal = fread_w(ModFP);
-                    Ci.cmd_wrd = myVal & 0xffff;
-                    isize -=2;
-                    break;
-                default:
-                    strcpy (Ci.mnem, "dc.l");
-                    myVal = fread_l(ModFP);
-                    Ci.cmd_wrd = (myVal >> 16) & 0xffff;
-                    Ci.code[0] = myVal & 0xffff;
-                    Ci.wcount = 1;
-                    isize -= 4;
-                }
-
-                if ((mylbl = findlbl(*iClass, mylist->Ofst)))
-                {
-                    Ci.lblname = mylbl->sname;
-                }
-
-                /*if (mylist->dstClass)
-                {
-                    mylbl = findlbl(*iClass, myVal);
-                    strcpy (Ci.opcode, mylbl ? mylbl->sname :
-                }*/
-
-                /*strcpy (Ci.opcode, mylist->dstClass ? findlbl(mylist->dstClass, myVal)->sname : mylist->EName.nam);*/
-                strcpy (Ci.opcode, mylist->dstClass ? mylist->EName.lbl->sname : mylist->EName.nam);
-                PrintLine(pseudcmd, &Ci, *iClass, 0, 0);
-
-                mylist = mylist->ENext;
-            } while (mylist);
+                blkEnd = lblList->Next->myaddr;
+            }
         }
-        /*else
-        {
-            mylist = DataDoBlock(mylist, mycount, ascdat, *iClass);
-        }*/
+
+        iBuf = DataDoBlock (&refsList, &lblList, iBuf, blkEnd, ascdat, iClass);
+
+        //memset (&Ci, 0, sizeof(CMD_ITMS));
+        //Ci.cmd_wrd = refsList->Ofst;
+        //CmdEnt = PCPos;
+        // 
+        //if (refsList && (refsList->Ofst == PCPos))
+        //{
+        //    register int myVal;
+
+        //    switch ((refsList->Type >> 3) & 3)
+        //    {
+        //    case 1: /*SIZ_BYTE:*/
+        //        strcpy (Ci.mnem, "dc.b");
+        //        myVal = *(iBuf++);
+        //        Ci.cmd_wrd = myVal & 0xff;
+        //        ++PCPos;
+        //        break;
+        //    case 2: /*SIZ_WORD:*/
+        //        strcpy (Ci.mnem, "dc.w");
+        //        myVal = (*(iBuf++) << 8) | (*(iBuf++) & 0xff);
+        //        Ci.cmd_wrd = myVal & 0xffff;
+        //        PCPos += 2;
+        //        break;
+        //    default:
+        //        strcpy (Ci.mnem, "dc.l");
+        //        myVal = (*(iBuf++) << 24) | (((*iBuf++) & 0xff) << 16) | ((*(iBuf++) & 0xff) << 8) |
+        //            (*(iBuf++) & 0xff);
+        //        myVal = fread_l(ModFP);
+        //        Ci.cmd_wrd = (myVal >> 16) & 0xffff;
+        //        Ci.code[0] = myVal & 0xffff;
+        //        Ci.wcount = 1;
+        //        PCPos += 4;
+        //    }
+
+        //    //if ((mylbl = findlbl(iClass, refsList->Ofst)))
+        //    if (lblList->myaddr == PCPos)
+        //    {
+        //        Ci.lblname = lblList->sname;
+        //        lblList  = lblList->Next;
+        //    }
+
+        //    /*if (refsList->dstClass)
+        //    {
+        //        mylbl = findlbl(*iClass, myVal);
+        //        strcpy (Ci.opcode, mylbl ? mylbl->sname :
+        //    }*/
+
+        //    strcpy (Ci.opcode, refsList->Extrn ? refsList->EName.nam : refsList->EName.lbl->sname);
+        //    PrintLine(pseudcmd, &Ci, iClass, 0, 0);
+
+        //    refsList = refsList->ENext;
+        //}
+        //else
+        //{
+        //    register int nxtVal;
+
+        //    if (refsList)
+        //    {
+        //        nxtVal = refsList->Ofst;        /* This Value should always be greater than PCPos */
+        //    }
+
+        //}
     }
 }
 
@@ -1195,27 +1330,29 @@ IsRef(dst, curloc, ival)
                     strcat (dst, offsetbuf);
                 }
             }   /* Else leave retVal=NULL - for local refs, let calling process handle it */
+            else
+            {
+                strcat(dst, refs_code->EName.lbl->sname);
+                retVal = dst;
+            }
 
             ep_tmp = refs_code->ENext;
 
-            if (Pass == 2)
+            if (!refs_code->MyNext)
             {
-                if (!refs_code->MyNext)
+                /*if (refs_code->Extrn)
                 {
-                    /*if (refs_code->Extrn)
-                    {
-                        free (refs_code->EName.nam);
-                    }*/
-                }
-
-                if (ep_tmp)
-                {
-                    ep_tmp->EUp = NULL;
-                }
-
-                free (refs_code);
-                refs_code = ep_tmp;
+                    free (refs_code->EName.nam);
+                }*/
             }
+
+            if (ep_tmp)
+            {
+                ep_tmp->EUp = NULL;
+            }
+
+            free (refs_code);
+            refs_code = ep_tmp;
         }
     }       /* End "if (refs_code && (refs_code->Ofst == val)) */
     

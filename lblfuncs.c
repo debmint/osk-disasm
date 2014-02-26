@@ -620,7 +620,7 @@ LblCalc (dst, adr, amod, curloc)
 
     if (IsROF)
     {
-        if (IsRef(dst, curloc, raw))
+        if (IsRef(dst, curloc, adr))
         {
             return 1;
         }

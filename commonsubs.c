@@ -655,7 +655,7 @@ int reg;
             ext1 = getnext_w(ci);
                     /* (ext1 - 2) to reflect PCPos before getnext_w */
             /*LblCalc(dispstr, ext1 - 2, AMode, ea_addr);*/
-            LblCalc(dispstr, ext1 - 2, AMode, PCPos);
+            LblCalc(dispstr, ext1, AMode, ea_addr);
             sprintf (ea, Mode07Strings[reg].str, dispstr);
             return 1;
         case 3:              /* d8(PC,Xn) */
@@ -1355,6 +1355,49 @@ int fread_l(FILE *fp)
 }
 #endif
 
+/* **************************************************************** *
+ * bufReadW() - Returns the word value stored at pos pt in a buffer *
+ * **************************************************************** */
+
+short
+#ifdef __STDC__
+bufReadW(char **pt)
+#else
+bufReadW(pt)
+    char **pt;
+#endif
+{
+    register int val = 0;
+
+    val = *(*pt)++ & 0xff;
+    val = (val << 8) | (*(*pt)++ & 0xff);
+    /*return ((*(*pt)++ & 0xff) << 8) | (*((*pt)++) & 0xff);*/
+    return val;
+}
+
+/* **************************************************************** *
+ * bufReadL() - Returns the long value stored at pos pt in a buffer *
+ * **************************************************************** */
+
+int
+#ifdef __STDC__
+    bufReadL(char **pt)
+#else
+    bufReadL(pt)
+    char **pt;
+#endif
+{
+    register int byteCnt;
+    register int val = 0;
+
+    for (byteCnt = 0; byteCnt < 4; byteCnt++)
+    {
+        val = (val << 8) | (*((*pt)++) & 0xff);
+    }
+
+    return val;
+}
+
 void *
 #ifdef __STDC__
 mem_alloc (int req)
@@ -1398,5 +1441,18 @@ freadstring()
     *strPt = '\0';
     strcpy ((newStr = (char *)mem_alloc(strlen(strBuf) + 1)), strBuf);
     return newStr;
+}
+
+char *
+#ifdef __STDC__
+lbldup (char *lbl)
+#else
+lbldup (lbl)
+    char *lbl;
+#endif
+{
+    char *dupstr = (char *)mem_alloc (strlen(lbl) + 2);
+    strcpy(dupstr, lbl);
+    return dupstr;
 }
 

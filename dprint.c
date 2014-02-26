@@ -9,7 +9,7 @@
  *  *  Date       Comments                                              by  *
  *  -- ---------- -------------------------------------------------     --- *
  *  01 2003/01/31 First began project                                   dlb *
- * ************************************************************************ *
+ * ************************************************************************ *lbl
  * File:  dprint.c                                                          *
  * Purpose: handle printing and output function                             *
  * ************************************************************************ */
@@ -311,7 +311,8 @@ char *pfmt; CMD_ITMS *ci;
     if (  InProg &&
         (nl = findlbl ('L', CmdEnt)))
     {
-        ci->lblname = nl->sname;
+        strcpy (lbl, nl->sname);
+        ci->lblname = lbl;
 
         if (IsROF && nl->global)
         {
@@ -325,7 +326,7 @@ char *pfmt; CMD_ITMS *ci;
     {
         fprintf (AsmPath, "%s %s %s", ci->lblname, ci->mnem, ci->opcode);
 
-        if (strlen (ci->comment))
+        if (ci->comment && strlen (ci->comment))
         {
             fprintf (AsmPath, " %s", ci->comment);
         }
@@ -792,7 +793,14 @@ NonBoundsLbl (char cClass)
 
             if (nl = findlbl (cClass, x))
             {
-                Ci.lblname = nl->sname;
+                char lbl[100];
+                strcpy (lbl, nl->sname);
+                Ci.lblname = lbl;
+
+                if (IsROF && nl->global)
+                {
+                    strcat (Ci.lblname, ":");
+                }
 
                 if (x > CmdEnt)
                 {
@@ -998,7 +1006,7 @@ WrtEnds()
     strcpy (Ci.mnem, "ends");
 
     BlankLine();
-
+    CmdEnt = PCPos;     /* This should always work */
     PrintFormatted (pseudcmd, &Ci);
 
     if (WrtSrc)
@@ -1210,6 +1218,138 @@ dataprintHeader(hdr, klas)
     PrintLine (pseudcmd, &Ci, 'D', 0, 0);
 }
 
+int
+#ifdef __STDC__
+DoAsciiBlock(CMD_ITMS *ci, char *buf, int bufEnd, char iClass)
+#else
+DoAsciiBlock(ci, buf, bufEnd, iClass)
+    CMD_ITMS *ci; char *buf; int bufEnd; char iClass;
+#endif
+{
+    register int count = bufEnd;
+    register char *ch = buf;
+    int hasAscii = 0;
+
+    /* It seems improbable that a string would begin with
+     * NULL
+     */
+    if (!(isprint(*buf)) && !(isspace(*buf)))
+    {
+        return 0;
+    }
+
+    /* At least for the time being, skip any blocks < sizeof(int)
+     * this may overlook some short strings, but it will avoid erroneous
+     * identifying non-ascii numbers.
+     */
+
+    if (bufEnd <= 4)
+    {
+        return 0;
+    }
+
+    while (count-- > CmdEnt)
+    {
+        register unsigned char c;
+
+        c = *(ch++);
+
+        if ( !(isprint (c)) || !(isspace(c)) || (c != '\0'))
+        {
+            return 0;
+        }
+
+        if (isprint(c))
+        {
+            hasAscii = 1;
+        }
+    }
+
+    if (! hasAscii)
+    {
+        return 0;
+    }
+
+    /* Assume that a string _MUST_ be NULL-terminated */
+
+    if (*(--ch) != '\0')
+    {
+        return 0;
+    }
+
+    count = 0;
+
+    while (PCPos < bufEnd)
+    {
+        char tmpbuf[30];       
+
+        while (isprint(*buf))
+        {
+            if (*buf == '"')
+            {
+                strcpy (tmpbuf, "\""); /* To make the resets work */
+                strcpy (ci->opcode, "'\"");
+            }
+            else
+            {
+                strncpy (tmpbuf, buf, 24);
+
+                if (strlen(tmpbuf) >= 24)
+                    tmpbuf[24] = '\0';
+
+                sprintf (ci->opcode, "\"%s\"", tmpbuf);
+            }
+
+
+            buf += strlen(tmpbuf);
+            /*siz -= strlen(tmpbuf);*/
+            count += strlen(tmpbuf);
+            PCPos += strlen(tmpbuf);
+            PrintLine (pseudcmd, ci, iClass, CmdEnt, CmdEnt);
+            CmdEnt = PCPos;
+            PrevEnt = PCPos;
+            ci->lblname = "";
+            ci->opcode[0] = '\0';
+        }
+
+        while (((*buf >= 9) && (*buf <= 0x0d)) || (*buf == '\0'))
+        {
+            if (strlen (ci->opcode) >= 24)
+            {
+                break;
+            }
+
+            sprintf (tmpbuf, "$%d", *(buf++) & 0xff);
+            
+            if (strlen(ci->opcode))
+            {
+                strcat (ci->opcode, ",");
+            }
+
+            strcat (ci->opcode, tmpbuf);
+            ++count;
+            ++PCPos;
+
+            if (PCPos >= bufEnd)
+            {
+                break;
+            }
+        }
+
+        if (strlen(ci->opcode))
+        {
+            strcpy (ci->mnem, "dc.b");
+            PrintLine (pseudcmd, ci, iClass, CmdEnt, CmdEnt);
+            CmdEnt = PCPos;
+            PrevEnt = PCPos;
+            ci->lblname = "";
+            ci->opcode[0] = '\0';
+        }
+    }
+
+    return count;
+}
+
 /* *************
  * ListInitData ()
  *
@@ -1268,6 +1408,7 @@ ListInitData (ldf, nBytes, lclass)
         register int lblCount,
             ppos;
         int isAsc;
+        char lbl[100];
 
         /* Get byte count for this label */
         if (ldf->Next)
@@ -1282,7 +1423,14 @@ ListInitData (ldf, nBytes, lclass)
 
         CmdEnt = PCPos;     /* Save Entry Point */
         ppos = lblCount;
-        Ci.lblname = ldf->sname;
+        strcpy (lbl, ldf->sname);
+        Ci.lblname = lbl;
+
+        if (IsROF && ldf->global)
+        {
+            strcat (Ci.lblname, ":");
+        }
+
         isAsc = 0;
 
         /* Check to see if the whole block might be ASCII */
@@ -1495,7 +1643,7 @@ ROFDataPrint ()
         WrtEnds();
     }
 
-    if (refs_idata)
+    if (ROFHd.idatsz)
     {
         dataprintHeader("* Initialized Data (Class\"%c\")", '_');
 
@@ -1513,7 +1661,12 @@ ROFDataPrint ()
 
         PCPos = 0;
         srch = labelclass ('_') ? labelclass('_')->cEnt : NULL;
-        ListInitROF ("", labelclass('_'), ROFHd.idatsz, '_');
+
+        if (ROFHd.idatsz)
+        {
+            ListInitROF ("", refs_idata, IBuf, ROFHd.idatsz, '_');
+        }
+
         BlankLine();
         WrtEnds();
         /*ListInitData (srch, ROFHd.idatsz, '_');*/
@@ -1523,16 +1676,17 @@ ROFDataPrint ()
 
     if ((srch = labelclass ('G') ? labelclass('G')->cEnt : NULL))
     {
-        dataprintHeader (udat, 'C');
+        dataprintHeader (udat, 'G');
 
         /*first, if first entry is not D000, rmb bytes up to first */
 
         PCPos = 0;
-        ListData (srch, ROFHd.statstorage, 'D');
+        ListData (srch, ROFHd.remotestatsiz, 'G');
         BlankLine();
+        WrtEnds();
     }
 
-    if ((refs_iremote))
+    if ((ROFHd.remoteidatsiz))
     {
         dataprintHeader(idat, 'H');
 
@@ -1545,7 +1699,7 @@ ROFDataPrint ()
 
         PCPos = 0;
         srch = labelclass ('H') ? labelclass('H')->cEnt : NULL;
-        ListInitROF ("", labelclass('H'), ROFHd.idatsz, 'H');
+        ListInitROF ("", refs_iremote,IBuf, ROFHd.idatsz, 'H');
         BlankLine();
         /*ListInitData (srch, ROFHd.idatsz, 'H');*/
         free(IBuf);
@@ -1562,97 +1716,97 @@ ROFDataPrint ()
      * should work here automatically rather than hard-coding the classes
      */
 
-    dattyp[2] = '\0';
+    //dattyp[2] = '\0';
 
-    for (vs = 0; vs < 2; vs++)
-    {
-        dattyp[vs] = rof_class (reftyp[vs], 1);
-    }
+    //for (vs = 0; vs < 2; vs++)
+    //{
+    //    dattyp[vs] = rof_class (reftyp[vs], 1);
+    //}
 
-    if ((sizes[0]) || sizes[1])
-    {
-        strcpy (Ci.mnem, "vsect");
-        BlankLine();
-        PrintLine (realcmd, &Ci, dattyp[vs], 0, 0);
-        BlankLine();
+    //if ((sizes[0]) || sizes[1])
+    //{
+    //    strcpy (Ci.mnem, "vsect");
+    //    BlankLine();
+    //    PrintLine (realcmd, &Ci, dattyp[vs], 0, 0);
+    //    BlankLine();
 
-        /* Process each of un-init, init */
+    //    /* Process each of un-init, init */
 
-        for (isinit = 0; isinit <= 1; isinit++)
-        {
-            dta = labelclass (dattyp[isinit]);
+    //    for (isinit = 0; isinit <= 1; isinit++)
+    //    {
+    //        dta = labelclass (dattyp[isinit]);
 
-            sprintf (mytmp, dptell[isinit], dattyp[isinit]);
+    //        sprintf (mytmp, dptell[isinit], dattyp[isinit]);
 
-            if (isinit)
-            {
-                if (thissz[isinit])
-                {
-                    PrintNonCmd (mytmp, 0, 1);
-                }
+    //        if (isinit)
+    //        {
+    //            if (thissz[isinit])
+    //            {
+    //                PrintNonCmd (mytmp, 0, 1);
+    //            }
 
-                ListInitROF (" * Initialized data (Class %c)", dta, ROFHd.idatsz, '_');
-            }
-            else
-            {
-                if (dta)
-                {
-                    /* for PrintNonCmd(), send isinit so that a pre-blank
-                        * line is not printed, since it is provided by
-                        * PrinLine above */
+    //            ListInitROF (" * Initialized data (Class %c)" ROFHd.idatsz, '_');
+    //        }
+    //        else
+    //        {
+    //            if (dta)
+    //            {
+    //                /* for PrintNonCmd(), send isinit so that a pre-blank
+    //                    * line is not printed, since it is provided by
+    //                    * PrinLine above */
 
-                    if (thissz[isinit])
-                    {
-                        PrintNonCmd (mytmp, isinit, 1);
-                    }
+    //                if (thissz[isinit])
+    //                {
+    //                    PrintNonCmd (mytmp, isinit, 1);
+    //                }
 
-                    srch = dta->cEnt;
+    //                srch = dta->cEnt;
 
-                    /*while (srch->Next)
-                    {
-                        srch = srch->Next;
-                    }*/
+    //                /*while (srch->Next)
+    //                {
+    //                    srch = srch->Next;
+    //                }*/
 
-                    if (srch->myaddr)
-                    {                       /* i.e., if not D000 */
-                        strcpy (Ci.mnem, isinit ? "dc" : "ds");
-                        sprintf (Ci.opcode, "%d", srch->myaddr);
-                        CmdEnt = PrevEnt = 0;
-                        PrintLine (realcmd, &Ci, dattyp[isinit], 0,
-                                                    srch->myaddr);
-                    }
+    //                if (srch->myaddr)
+    //                {                       /* i.e., if not D000 */
+    //                    strcpy (Ci.mnem, isinit ? "dc" : "ds");
+    //                    sprintf (Ci.opcode, "%d", srch->myaddr);
+    //                    CmdEnt = PrevEnt = 0;
+    //                    PrintLine (realcmd, &Ci, dattyp[isinit], 0,
+    //                                                srch->myaddr);
+    //                }
 
-                    /* For max value, send a large value so ListData
-                        * will print all for cClass
-                        */
+    //                /* For max value, send a large value so ListData
+    //                    * will print all for cClass
+    //                    */
 
-                    M_Mem = sizes[isinit];
-                    ListData (dta->cEnt, sizes[isinit], dattyp[isinit]);
-                }          /* end "if (dta)" */
-                else        /* else no labels.. check to see */
-                {           /* if any "hidden" variables */
-                    if (sizes[isinit])
-                    {
-                        PrintNonCmd (mytmp, isinit, 1);
-                        strcpy (Ci.mnem, "rmb");
-                        sprintf (Ci.opcode, "%d", thissz[isinit]);
-                        PrintLine (realcmd, &Ci, dattyp[isinit], 0,
-                                                    0);
-                    }
-                }
-            }
-        }
+    //                M_Mem = sizes[isinit];
+    //                ListData (dta->cEnt, sizes[isinit], dattyp[isinit]);
+    //            }          /* end "if (dta)" */
+    //            else        /* else no labels.. check to see */
+    //            {           /* if any "hidden" variables */
+    //                if (sizes[isinit])
+    //                {
+    //                    PrintNonCmd (mytmp, isinit, 1);
+    //                    strcpy (Ci.mnem, "rmb");
+    //                    sprintf (Ci.opcode, "%d", thissz[isinit]);
+    //                    PrintLine (realcmd, &Ci, dattyp[isinit], 0,
+    //                                                0);
+    //                }
+    //            }
+    //        }
+    //    }
 
-        /* Do "ends" for this vsect */
+    //    /* Do "ends" for this vsect */
 
-        WrtEnds();
-    }
+    //    WrtEnds();
+    //}
 
-    dattyp += 2;  /* Done with this cClass, point to next */
-    /*thissz += 2;*/   /* And to the next data size */
+    //dattyp += 2;  /* Done with this cClass, point to next */
+    ///*thissz += 2;*/   /* And to the next data size */
 
-    BlankLine ();
-    InProg = 1;
+    //BlankLine ();
+    //InProg = 1;
 }
 
 
@@ -1855,6 +2009,8 @@ ListData (me, upadr, cClass)
 
     while (me)
     {
+        char lbl[100];
+
         if (me->myaddr >= upadr)
         {
             break;
@@ -1871,7 +2027,13 @@ ListData (me, upadr, cClass)
 
         strcpy (Ci.mnem, "ds.b");
         sprintf (Ci.opcode, "%d", datasize);
-        Ci.lblname = me->sname;
+        strcpy (lbl, me->sname);
+        Ci.lblname = lbl;
+
+        if (IsROF && me->global)
+        {
+            strcat(Ci.lblname, ":");
+        }
         /*if (me->myaddr != upadr)
         {
             strcpy (Ci.mnem, "ds.b");
@@ -2057,6 +2219,8 @@ TellLabels (me, flg, cClass, minval)
     
     while (me)
     {
+        char lbl[100];
+
         if ((flg < 0) || (flg == me->stdname))
         {
             /* Don't print real OS9 Data variables here */
@@ -2088,7 +2252,13 @@ TellLabels (me, flg, cClass, minval)
                     BlankLine ();
                 }
 
-                Ci.lblname = me->sname;
+                strcpy (lbl, me->sname);
+                Ci.lblname = lbl;
+
+                if (IsROF && me->global)
+                {
+                    strcat (Ci.lblname, ":");
+                }
 
                 if (strchr ("!^", cClass))
                 {
