@@ -1564,7 +1564,7 @@ ListInitData (ldf, nBytes, lclass)
             case 2:
                 val = *(curpos++);
                 val = (val << 8) | (*(curpos++) & 0xff);
-                sprintf (tmp, "$%04x", val);
+                sprintf (tmp, "$%04x", val & 0xffff);
                 break;
             }
 

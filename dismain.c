@@ -492,7 +492,7 @@ dopass(argc,argv,mypass)
 
         WrtEquates (1);
         WrtEquates (0);
-    showem();
+        /*showem();*/
         CmdEnt = 0;
 
         if (IsROF)
