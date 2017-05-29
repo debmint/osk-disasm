@@ -28,4 +28,4 @@ $(DISRELS): $(XTRAS)
 #	$(CC) /c $(CFLAGS) $*.c
 
 clean:
-    del OskDis.exe *.obj
+	del OskDis.exe *.obj
