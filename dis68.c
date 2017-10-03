@@ -1,8 +1,24 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * dis68.c - The Text Mode Front-End for the OSK disassembler          $
- *                                                                     $
- * $Id::                                                               $
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  *
+ * dis68.c - The Text Mode Front-End for the OSK disassembler           *
+ *                                                                      *
+ * Copyright (c) 2017 David Breeding                                    *
+ *                                                                      *
+ * This file is part of osk-disasm.                                     *
+ *                                                                      *
+ * osk-disasm is free software: you can redistribute it and/or modify   *
+ * it under the terms of the GNU General Public License as published by *
+ * the Free Software Foundation, either version 3 of the License, or    *
+ * (at your option) any later version.                                  *
+ *                                                                      *
+ * osk-disasm is distributed in the hope that it will be useful,        *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of       *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        *
+ * GNU General Public License for more details.                         *
+ *                                                                      *
+ * You should have received a copy of the GNU General Public License    *
+ * (see the file "COPYING") along with osk-disasm.  If not,             *
+ * see <http://www.gnu.org/licenses/>.                                  *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  */
 
 #include <ctype.h>
 #include <string.h>

@@ -1,17 +1,36 @@
-/* ************************************************************************ *
- *                                                                          *
- *  oskdisasm - OS9-68K DISASSEMBLER                                        $
- *             following the example of Dynamite+                           *
- *                                                                          *
- *  $Id::                                                                   $
- *                                                                          *
- *  Edition History:                                                        *
- *  *  Date       Comments                                              by  *
- *  -- ---------- -------------------------------------------------     --- *
- *  01 2003/01/31 First began project                                   dlb *
- * ************************************************************************ *lbl
- * File:  dprint.c                                                          *
- * Purpose: handle printing and output function                             *
+/* ******************************************************************** *
+ *                                                                      *
+ *  oskdisasm - OS9-68K DISASSEMBLER                                    *
+ *         following the example of Dynamite+                           *
+ *                                                                      *
+ *  Edition History:                                                    *
+ *  *  Date       Comments                                          by  *
+ *  -- ---------- ---------------------------------------------     --- *
+ *  01 2003/01/31 First began project                               dlb *
+ * ******************************************************************** *
+ * File:  dprint.c                                                      *
+ * Purpose: handle printing and output function                         *
+ *                                                                      *
+ * ******************************************************************** *
+ *                                                                      *
+ * Copyright (c) 2017 David Breeding                                    *
+ *                                                                      *
+ * This file is part of osk-disasm.                                     *
+ *                                                                      *
+ * osk-disasm is free software: you can redistribute it and/or modify   *
+ * it under the terms of the GNU General Public License as published by *
+ * the Free Software Foundation, either version 3 of the License, or    *
+ * (at your option) any later version.                                  *
+ *                                                                      *
+ * osk-disasm is distributed in the hope that it will be useful,        *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of       *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        *
+ * GNU General Public License for more details.                         *
+ *                                                                      *
+ * You should have received a copy of the GNU General Public License    *
+ * (see the file "COPYING") along with osk-disasm.  If not,             *
+ * see <http://www.gnu.org/licenses/>.                                  *
+ *                                                                      *
  * ************************************************************************ */
 
 #include <time.h>

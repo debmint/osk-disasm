@@ -1,10 +1,29 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * disglobs.h - All the global variables used in the OSK disassembler  $
- *      All globals are defined in this file, then one code file will  $
- *      define _MAIN_, causing them to be defined, then all other      $
- *      files will simply have them defined "extern"                   $
- *                                                                     $
- * $Id::                                                               $
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  *
+ * disglobs.h - All the global variables used in the OSK disassembler   *
+ *      All globals are defined in this file, then one code file will   *
+ *      define _MAIN_, causing them to be defined, then all other       *
+ *      files will simply have them defined "extern"                    *
+ *                                                                      *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  *
+ *                                                                      *
+ * Copyright (c) 2017 David Breeding                                    *
+ *                                                                      *
+ * This file is part of osk-disasm.                                     *
+ *                                                                      *
+ * osk-disasm is free software: you can redistribute it and/or modify   *
+ * it under the terms of the GNU General Public License as published by *
+ * the Free Software Foundation, either version 3 of the License, or    *
+ * (at your option) any later version.                                  *
+ *                                                                      *
+ * osk-disasm is distributed in the hope that it will be useful,        *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of       *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        *
+ * GNU General Public License for more details.                         *
+ *                                                                      *
+ * You should have received a copy of the GNU General Public License    *
+ * (see the file "COPYING") along with osk-disasm.  If not,             *
+ * see <http://www.gnu.org/licenses/>.                                  *
+ *                                                                      *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef HAVE_GLOBALS
