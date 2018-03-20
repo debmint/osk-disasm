@@ -767,7 +767,7 @@ char c;
 {
     register int p;
 
-    return ((p = (int)strchr(s, c)) ? (p - (int)s + 1) : 0);
+    return ((p = (int)strchr(s, c)) ? (p - (int)s) : -1);
 }
 
 /* **************************************************************** *

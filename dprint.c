@@ -1507,6 +1507,8 @@ ListInitData (ldf, nBytes, lclass)
                 Ci.opcode[0] = '\0';
             }
             /*MovASC (lblCount, lclass);*/
+
+            continue;
         }  /* End isASC */
 
         /* We might ought to provide for longs, but it might
