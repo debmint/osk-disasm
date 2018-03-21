@@ -805,7 +805,8 @@ MovBytes (db)
 {
     CMD_ITMS Ci;
     char tmps[20];
-    int valu;
+    int valu,
+        bmask;
 #ifdef _OSK
     static
 #endif
@@ -828,15 +829,18 @@ MovBytes (db)
     {
     case 1:
         strcat (Ci.mnem, ".b");
-        maxLst = 8;
+        maxLst = 4;
+        bmask = 0xff;
         break;
     case 2:
         strcat (Ci.mnem, ".w");
-        maxLst = 4;
+        maxLst = 2;
+        bmask = 0xffff;
         break;
     case 4:
         strcat (Ci.mnem, ".l");
-        maxLst = 2;
+        maxLst = 1;
+        bmask = 0xffff;
         break;
     }
 
@@ -873,10 +877,16 @@ MovBytes (db)
 
             sprintf (tmp, xFmt[PBytSiz >> 1], valu);*/
 
-            if (cCount < maxLst)
+            if (cCount == 0)
             {
-                Ci.cmd_wrd =  ((Ci.cmd_wrd << (PBytSiz * 8)) | (valu & 0xff));
+                Ci.cmd_wrd = valu & bmask;
             }
+            else if (cCount < maxLst)
+            {
+                Ci.cmd_wrd =  ((Ci.cmd_wrd << (PBytSiz * 8)) | (valu & bmask));
+            }
+
+            ++cCount;
 
             if (strlen(Ci.opcode))
             {
