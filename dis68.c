@@ -52,16 +52,24 @@ extern int DoingCmds;
 static void
 usage()
 {
+    char *tab = "    ";
     fprintf (stderr, "\nOSKDis: Disassemble an OS9-68K Module\n");
     fprintf (stderr, "  Options:\n");
-    fprintf (stderr, "\t-c\tSpecify the command file\n");
-    fprintf (stderr, "\t-m=<x>\tSpecify CPU\n");
-    fprintf (stderr, "\t\tx =\t 0  - 68000 (default)\n");
-    fprintf (stderr, "\t\t\t 8  - 68008\n");
-    fprintf (stderr, "\t\t\t20 - 68020\n");
-    fprintf (stderr, "\t\t-s      Specify a label file (%d allowed)\n", MAX_LBFIL);
-    fprintf (stderr, "\t\t-u      print unformatted listing (without line #, headers or blank lines\n");
-    fprintf (stderr, "\t\t-?, -h  Show this help\n");
+    fprintf (stderr,
+            "%s-a%sPrint All code data (Default: print first 4 bytes)\n",
+            tab, tab);
+    fprintf (stderr, "%s-c%sSpecify the command file\n\n", tab, tab);
+    fprintf (stderr, "%s-m=<x>%sSpecify CPU\n", tab, tab);
+    fprintf (stderr, "%s%sx = 0 - 68000 (default)\n", tab, tab, tab);
+    fprintf (stderr, "%s%s    8 - 68008\n", tab, tab);
+    fprintf (stderr, "%s%s   20 - 68020\n", tab, tab);
+    fprintf (stderr, "\n%s-o=<filename>%sWrite an assembler source file\n",
+            tab, tab);
+    fprintf (stderr,
+        "%s-s      Specify a label file (%d allowed)\n", tab, MAX_LBFIL);
+    fprintf (stderr,
+        "%s-u      print unformatted listing (without line #, headers or blank lines\n", tab);
+    fprintf (stderr, "%s-?, -h  Show this help\n", tab);
 }
 
 /* **************************************************************** *

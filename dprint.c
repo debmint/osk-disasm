@@ -72,6 +72,7 @@ extern struct rof_hdr ROFHd;
 char pseudcmd[80] = "%5d  %05x %04x %-10s %-6s %-10s %s\n";
 char realcmd[80] =  "%5d  %05x %04x %-9s %-10s %-6s %-10s %s\n";
 char allcodcmd[80] = "%5d        %04x %04x\n";
+char *xtraFmt = "             %s\n";
 char allcodcmd1[80] ="%5d        %04x\n";
 char *blankcmd = "%5d";
 
@@ -674,6 +675,26 @@ PrintFormatted (pfmt, ci)
 
     printf ("%s", FmtBuf);
     fflush (stdout);
+}
+
+/* **************************************************************** *
+ * Print additional data bytes in line following main line          *
+ * **************************************************************** */
+
+void
+printXtraBytes (char *data)
+{
+    if (strlen (data))
+    {
+        printf (xtraFmt, data);
+        data[0] = '\0';     /* Reset data to empty string */
+        ++PgLin;
+
+        if (PgLin >= (PgDepth - 3))
+        {
+            StartPage ();
+        }
+    }
 }
 
 static void

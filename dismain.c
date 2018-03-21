@@ -54,6 +54,11 @@ int CodeEnd;
 
 extern struct databndaries *dbounds;
 extern char realcmd[], pseudcmd[];
+#ifdef __STDC__
+    extern void printXtraBytes (char *);
+#else
+    extern void printXtraBytes ();
+#endif
 
 static int get_asmcmd(
 #ifdef __STDC__
@@ -574,25 +579,35 @@ dopass(argc,argv,mypass)
                 if (PrintAllCode && Instruction.wcount)
                 {
                     int count = Instruction.wcount;
+                    char codbuf[50];
                     int wpos = 0;
                     /*printf("%6s", "");*/
+                    codbuf[0] = '\0';
 
                     while (count)
                     {
-                        if (count > 1)
-                        {
-                            PrintAllCodLine(Instruction.code[wpos], Instruction.code[wpos + 1]);
-                            count -= 2;
-                            wpos += 2;
-                        }
-                        else
-                        {
-                            PrintAllCodL1(Instruction.code[wpos]);
-                            --count;
-                            ++wpos;
-                        }
+                        char tmpcod[10];
+
+                        sprintf (tmpcod, "%04x ", Instruction.code[wpos++]);
+                        strcat (codbuf, tmpcod);
+                        --count;
+//                        if (count > 1)
+//                        {
+//                            PrintAllCodLine(Instruction.code[wpos],
+//                                    Instruction.code[wpos + 1]);
+//                            count -= 2;
+//                            wpos += 2;
+//                        }
+//                        else
+//                        {
+//                            PrintAllCodL1(Instruction.code[wpos]);
+//                            --count;
+//                            ++wpos;
+//                        }
                        /*printf("%04x ", Instruction.code[count] & 0xffff);*/
                     }
+
+                    printXtraBytes (codbuf);
                 }
             }
         }
@@ -601,7 +616,8 @@ dopass(argc,argv,mypass)
             if (Pass == 2)
             {
                 strcpy (Instruction.mnem, "dc.w");
-                sprintf (Instruction.opcode, "$%x", Instruction.cmd_wrd & 0xffff);
+                sprintf (Instruction.opcode, "$%x",
+                        Instruction.cmd_wrd & 0xffff);
                 PrintLine (pseudcmd, &Instruction, 'L', CmdEnt, PCPos);
                 CmdEnt = PCPos;
                 /*list_print (&Instruction, CmdEnt, NULL);*/
@@ -703,7 +719,7 @@ get_asmcmd()
 
     int opword;
     int h,
-      j;
+        j;
     int size;
 
 
@@ -811,19 +827,31 @@ MovBytes (db)
     static
 #endif
     char *xFmt[3] = {"$%02x", "$%04x", "$%08x"};
+    char xtrabytes[50];
     int cCount = 0,
         maxLst;
+    char *xtrafmt;
 
     CmdEnt = PCPos;
 
     /* This may be temporary, and we may set PBytSiz
      * to the appropriate value */
+    *xtrabytes = '\0';
     strcpy (Ci.mnem, "dc");
     Ci.opcode[0] = '\0';
     Ci.lblname = "";
     Ci.comment = NULL;
     Ci.cmd_wrd = 0;
     PBytSiz = db->b_siz;
+
+    if (PBytSiz < 4)
+    {
+        xtrafmt = "%02x";
+    }
+    else
+    {
+        xtrafmt = "%04x";
+    }
 
     switch (PBytSiz)
     {
@@ -873,9 +901,7 @@ MovBytes (db)
 
         if (Pass == 2)
         {
-            /*char tmp[20];
-
-            sprintf (tmp, xFmt[PBytSiz >> 1], valu);*/
+            char tmpval[10];
 
             if (cCount == 0)
             {
@@ -884,6 +910,11 @@ MovBytes (db)
             else if (cCount < maxLst)
             {
                 Ci.cmd_wrd =  ((Ci.cmd_wrd << (PBytSiz * 8)) | (valu & bmask));
+            }
+            else
+            {
+                sprintf (tmpval, xtrafmt, valu & bmask);
+                strcat (xtrabytes, tmpval);
             }
 
             ++cCount;
@@ -900,6 +931,12 @@ MovBytes (db)
             if ( (strlen (Ci.opcode) > 22) || findlbl ('L', PCPos))
             {
                 PrintLine(pseudcmd, &Ci, 'L', CmdEnt, PCPos);
+
+                if (strlen(xtrabytes))
+                {
+                    printXtraBytes (xtrabytes);
+                }
+
                 Ci.opcode[0] = '\0';
                 Ci.cmd_wrd = 0;
                 Ci.lblname = NULL;
@@ -913,9 +950,14 @@ MovBytes (db)
 
     /* Loop finished.. print any unprinted data */
 
-    if ((Pass==2) && strlen (Ci.opcode))
+    if ((Pass == 2) && strlen (Ci.opcode))
     {
         PrintLine (pseudcmd, &Ci, 'L', CmdEnt, PCPos);
+
+        if (strlen(xtrabytes))
+        {
+            printXtraBytes (xtrabytes);
+        }
     }
 }
 
