@@ -1,2 +1,9 @@
+Debug
+.vs
 *.o
+*.obj
 dis68
+*.exe
+*.db
+*.?db
+*.ilk

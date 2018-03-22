@@ -149,8 +149,6 @@ PrintAllCodLine (w1, w2)
     int w1, w2;
 #endif
 {
-    char *fmtstr;
-
     if (IsUnformatted)
     {
         printf (&(allcodcmd[3]), w1 & 0xffff, w2 & 0xffff);
@@ -199,13 +197,10 @@ PrintAllCodL1 (w1)
 void
 PrintPsect()
 {
-    register struct modnam *pt;
     char *ProgType = NULL;
     char *ProgLang = NULL;
     char ProgAtts[50];
     /*char *StackAddL;*/
-    char *prgsets[4];
-    unsigned char hdrvals[3];
     int c;
     CMD_ITMS Ci;
     char *psecfld[2];
@@ -1099,7 +1094,6 @@ ParseIRefs(rClass)
 {
     register int rCount;  /* The count for this block */
     register int MSB;
-    register int dLoc;   /* The actual D location (with MSB appended) */
 
     LoadIData();  /* Make sure Init data list is loaded */
 
@@ -1245,7 +1239,7 @@ dataprintHeader(hdr, klas)
 
     if (WrtSrc)
     {
-        fprintf (AsmPath, "%s", klas);
+        fprintf (AsmPath, "%c", klas);
     }
 
     BlankLine ();
@@ -1424,12 +1418,12 @@ ListInitData (ldf, nBytes, lclass)
 
     if (IsUnformatted)
     {
-        printf (" %s\n", "", what);
+        printf (" %s\n", what);
         ++LinNum;
     }
     else
     {
-        printf ("%5d %s\n", LinNum++, "", what);
+        printf ("%5d %s\n", LinNum++, what);
     }
 
     ++PgLin;
@@ -1654,24 +1648,20 @@ ListInitData (ldf, nBytes, lclass)
 void
 ROFDataPrint ()
 {
-    CMD_ITMS Ci;
-    LBLCLAS *dta;
     LBLDEF *srch;
     char *dptell[2] = {"* Uninitialized data (Class %c)",
                        "* Initialized Data (Class %c)"};
-    int sizes[2] = {ROFHd.statstorage, ROFHd.idatsz},
+	int sizes[2], /* = { ROFHd.statstorage, ROFHd.idatsz },*/
         *thissz = sizes;
 
-    int vs,
-        isinit;
     int reftyp[] = {2, 3, 0, 1};     /* Label ref Type */
     char dattmp[5];
     char *dattyp = dattmp;
-    char mytmp[50];
     register char *udat = "* Uninitialized data (Class %c)";
     char *idat = "* Initialized data (Class %c)";
-    struct rof_extrn *re;
 
+	sizes[0] = ROFHd.statstorage;
+	sizes[1] = ROFHd.idatsz;
     InProg = 0;
 
     if ((srch = labelclass ('D') ? labelclass('D')->cEnt : NULL))
@@ -1874,7 +1864,7 @@ LoadIData()
         }
 
         /* Read data into buffer*/
-        if (fread (IBuf, 1, IDataCount, ModFP) < IDataCount)
+        if (fread (IBuf, 1, IDataCount, ModFP) < (unsigned)IDataCount)
         {
             errexit( "Cannot read Initialized Data bytes");
         }
@@ -1996,7 +1986,6 @@ ListData (me, upadr, cClass)
 #endif
 {
     CMD_ITMS Ci;
-    register LBLDEF *srch;
     register int datasize;
 
     memset (&Ci, 0, sizeof (Ci));

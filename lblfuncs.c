@@ -456,7 +456,7 @@ addlbl (lblclass, val, newname)
 
     if ((oldlbl = lblpos (lblclass, val)))
     {
-        register int maxsize = sizeof (oldlbl->sname);
+        register unsigned int maxsize = sizeof (oldlbl->sname);
 
         if ((newname) && (strlen(newname) >= maxsize))
         {
@@ -583,7 +583,6 @@ parsetree(c)
 {
     LBLDEF *l;
     LBLCLAS *lc;
-    int x;
 
     if (Pass == 1)
         return;

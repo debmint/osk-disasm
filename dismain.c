@@ -165,8 +165,6 @@ get_drvr_jmps(mty)
 static int
 get_modhead()
 {
-    int oldpos;
-    int s;
     /* Get standard (common to all modules) header fields */
 
     M_ID = fread_w(ModFP) & 0xffff;
@@ -385,8 +383,6 @@ static void
 GetLabels ()                    /* Read the labelfiles */
 {
     register int x;
-    register struct nlist *nl;
-    char  filename[500];
 
     /* First, get built-in ascii definitions.  Later, if desired,
      * they can be redefined */
@@ -569,8 +565,6 @@ dopass(argc,argv,mypass)
         {
             if (Pass == 2)
             {
-                char *ilcmnt;
-
                 /*PrintComment('L', CmdEnt, PCPos);*/
                 Instruction.comment = get_apcomment ('L', CmdEnt);
                 /*list_print (&Instruction, CmdEnt, NULL);*/
@@ -640,7 +634,6 @@ int showem()
     char c = '_';
     struct rof_extrn *rf = refs_code;
     LBLCLAS *l = labelclass(c);
-    LBLDEF *d;
 
     if (!rf)
         fprintf(stderr, "No Code refs found!\n");
@@ -718,8 +711,7 @@ get_asmcmd()
     extern int error;
 
     int opword;
-    int h,
-        j;
+    int j;
     int size;
 
 

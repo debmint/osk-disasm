@@ -106,7 +106,7 @@ void
 #ifdef __STDC__
 AddInitLbls (struct rof_extrn *tbl, int dataSiz, char klas)
 #else
-1141 (tbl, dataSiz, klas);
+AddInitLbls(tbl, dataSiz, klas);
     struct rof_extrn *tbl, int dataSiz; char klas;
 #endif
 {
@@ -221,7 +221,6 @@ rofhdr()
         LBLDEF *me;
         int adrs;
         int typ;
-        char klas;
 
         name = freadString();
         typ = fread_w (progpath);
@@ -326,9 +325,6 @@ void
     ROFLoadInitData()
 #endif
 {
-    int ext_count;
-    int local_count;
-
     /* ********************************** *
      * Initialized data section           *
      * ********************************** */
@@ -358,8 +354,6 @@ rof_class (typ)
     int typ; int refTy
 #endif
 {
-    int cclass;
-
     /* We'll tie up additional classes for data/bss as follows
      * D for data
      * _ for init data
@@ -855,8 +849,8 @@ static char *
 DataDoBlock (struct rof_extrn **refsList, LBLDEF **lblList, char *iBuf, int blkEnd,
              struct asc_data *ascdat, char cclass)
 #else
-DataDoBlock (refsList, iBuf, int blkEnd, ascdat, cclass)
-    struct rof_extrn **refsList; char *iBuf; int blkEnd;
+DataDoBlock (refsList, lblList, iBuf, int blkEnd, ascdat, cclass)
+struct rof_extrn **refsList; LBLDEF **lblList; char *iBuf; int blkEnd;
              struct asc_data *ascdat, char cclass;
 #endif
 {
@@ -947,7 +941,6 @@ DataDoBlock (refsList, iBuf, int blkEnd, ascdat, cclass)
         }
         else      /* No reference entry for this area */
         {
-            struct asc_data *mydat;
             register int bytCount,
                 bytSize;
 
@@ -984,7 +977,6 @@ DataDoBlock (refsList, iBuf, int blkEnd, ascdat, cclass)
                 while (bytCount--)
                 {
                     int val = 0;
-                    register int byteNum;
 
                     switch (bytSize)
                     {
@@ -1059,9 +1051,7 @@ ROFDataLst (mylist, maxcount, ascdat, cclass)
     struct rof_extrn *mylist; int maxcount; struct asc_data *ascdat; char cclass;
 #endif
 {
-    struct rof_extrn *my_ref,
-                     *srch;
-    int datasize;
+	struct rof_extrn *my_ref;
 
     my_ref = mylist;
 
@@ -1101,14 +1091,10 @@ void
 ListInitROF (char * hdr, struct rof_extrn *refsList, char *iBuf, int isize, char iClass)
 #else
 ListInitROF (hdr, refsList, iBuf, isize, iClass)
-    hdr; struct rof_extrn *refsList; char *iBuf; int isize; char iClass;
+    char *hdr; struct rof_extrn *refsList; char *iBuf; int isize; char iClass;
 #endif
 {
-    struct rof_extrn *srchlst;
     struct asc_data *ascdat;
-    CMD_ITMS Ci;
-    int r;
-    int rcount;
     LBLDEF *lblList = labelclass(iClass) ? labelclass(iClass)->cEnt : NULL;
 
     ascdat = data_ascii;
@@ -1119,7 +1105,6 @@ ListInitROF (hdr, refsList, iBuf, isize, iClass)
 
     while (PCPos < (isize))
     {
-        char *dstname;
         register int blkEnd;
 
         blkEnd = isize;     /* Make this a default */

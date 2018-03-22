@@ -96,7 +96,6 @@ set_indirect_idx (dest, extW)
     struct extWbrief *extW;
 #endif
 {
-    char rgnum[3];
 
     /* Scale not allowed for < 68020 */
     /* Note: we might be able to ignore this */
@@ -479,10 +478,7 @@ int reg;
 {
     int ext1;
     int ext2;
-    int displac_w;
-    int displac_l;
     char dispstr[50];
-    char dispReg[4];
     struct extWbrief ew_b;
     int ea_addr;
 
@@ -644,7 +640,6 @@ int reg;
 
             switch (size)
             {
-                char b;
             case SIZ_BYTE:
                 if ((ext1 < -128) || (ext1 > 0xff))
                 {
@@ -827,7 +822,6 @@ get_extends_common(ci, mnem)
     int mode, reg;
     int size;
     char addr_mode[20];              /* Destination for the opcode */
-    int data_word;
 
     mode = (ci->cmd_wrd >> 3) & 7;
     reg = ci->cmd_wrd & 7;
@@ -1050,7 +1044,7 @@ revbits(num, lgth)
 #endif
 {
     int n2 = 0;
-    int c, i, b;
+    int c, i;
 
     for (c = (lgth - 1), i = 0; c >= 0; c--,i++)
     {
@@ -1347,7 +1341,6 @@ short fread_w(FILE *fp)
     int tmpi[2] = {0,0};
     /*int *tt = tmpi;*/
     int tt;
-    int count;
 
     tt = (fgetc(ModFP) << 8) | (fgetc (ModFP) & 0xff);
     return tt;

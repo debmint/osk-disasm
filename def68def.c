@@ -141,8 +141,7 @@ tablematch (opword, entry)
 {
     /*extern OPSTRUCTURE syntax1[];*/
     extern int error;
-    int Bmatch,
-      maxinstr;
+	int Bmatch;
     int j,
         b,
         c;
@@ -197,7 +196,7 @@ bitnum (startbit, endbit, opword)
 
     for (i = 0; i <= (startbit - endbit); i++)
     {
-        shifted_word = (opword >> i + endbit);
+        shifted_word = (opword >> (i + endbit));
         if ((shifted_word & 0x1) == 1)
             value = value + (1 << i);
     }

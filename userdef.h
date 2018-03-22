@@ -18,7 +18,11 @@
  * see <http://www.gnu.org/licenses/>.                                  *
  *                                                                      *
  * ******************************************************************** */
+
+#ifndef USERDEF_H
+#define USERDEF_H
 #include "targetsys.h"
+#include "structs.h"
 
 #if (COPROCESSOR==TRUE || DEVICE==68040)
 
@@ -83,7 +87,6 @@ typedef struct
 	char EAentry[7];
 }EA_TABLE;
 
-
 typedef struct opst
 {
 	char *name;
@@ -95,8 +98,8 @@ typedef struct opst
 	short sizeendbit;
     int cpulvl;
     int id;
-    int (*opfunc)();    
-}OPSTRUCTURE;
+    int (*opfunc)(CMD_ITMS *, int, struct opst *);    
+} OPSTRUCTURE;
 
 typedef struct
 {
@@ -232,4 +235,5 @@ extern char ERR08[];
 extern char ERR09[];
 
 /* ***************************************************************** */
+#endif
 

@@ -28,7 +28,7 @@ LFLAGS = /ZI
 DISRELS = dis68.obj dismain.obj def68def.obj opcode00.obj commonsubs.obj lblfuncs.c opcodes020.obj\
                 cmdfile.obj dprint.obj rof.obj
 XTRAS = disglobs.h Makefile.Win32
-CFLAGS = /ZI /D__STDC__
+CFLAGS = /Zi /Za /D"WIN32" /D"_CRT_SECURE_NO_WARNINGS"
 EXE = OskDis.exe
 
 $(EXE): $(DISRELS)

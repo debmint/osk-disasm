@@ -102,7 +102,7 @@ cmp2_chk2(ci, j, op)
             char dispreg[5];
             
             strcat (ci->mnem, stdSiz[size]);
-            sprintf(ci->opcode, "%s,%c%d", EaString, ewReg (w2, dispreg));
+            sprintf(ci->opcode, "%s,%s", EaString, ewReg (w2, dispreg));
         }
 
         return 1;

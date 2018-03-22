@@ -86,7 +86,6 @@ struct databndaries {
 };
 
 
-#endif             /*    #define HAVE_STRUCTS */
 
 /* ******************************************** *
  * xtndcmnt structures                          *
@@ -176,5 +175,6 @@ struct rof_extrn {
                              *ENext,    /* Next Reference for All externs   */
                              *MyNext;   /* Next ref for this name.  If NULL, we can free EName */
 };
+#endif             /*    #define HAVE_STRUCTS */
 
 

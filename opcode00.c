@@ -558,7 +558,6 @@ move_instr(ci, j, op)
     OPSTRUCTURE *op;
 #endif
 {
-    char *dst_opcode, *src_opcode;
     int d_mode, d_reg, src_mode, src_reg;
     char src_ea[50], dst_ea[50];
     register int size;
@@ -967,7 +966,7 @@ bra_bsr(ci, j, op)
     OPSTRUCTURE *op;
 #endif
 {
-    register int displ, dstAddr;
+    register int displ;
     register int jmp_base = PCPos;
     char siz[4];
 
@@ -1163,7 +1162,6 @@ add_sub(ci, j, op)
     OPSTRUCTURE *op;
 #endif
 {
-    int size;
     int datareg = (ci->cmd_wrd >> 9) & 7;
     int ea_mode = (ci->cmd_wrd >> 3) & 7;
     int ea_reg = ci->cmd_wrd & 7;

@@ -60,7 +60,7 @@ usage()
             tab, tab);
     fprintf (stderr, "%s-c%sSpecify the command file\n\n", tab, tab);
     fprintf (stderr, "%s-m=<x>%sSpecify CPU\n", tab, tab);
-    fprintf (stderr, "%s%sx = 0 - 68000 (default)\n", tab, tab, tab);
+    fprintf (stderr, "%s%sx = 0 - 68000 (default)\n", tab, tab);
     fprintf (stderr, "%s%s    8 - 68008\n", tab, tab);
     fprintf (stderr, "%s%s   20 - 68020\n", tab, tab);
     fprintf (stderr, "\n%s-o=<filename>%sWrite an assembler source file\n",
@@ -119,8 +119,6 @@ main(argc,argv)
     char **argv;
 #endif
 {
-    int ret;
-    char buf[100];
 
     /* Process command-line options first */
 
