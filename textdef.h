@@ -8,23 +8,7 @@
  *                                                                      *
  * ******************************************************************** *
  *                                                                      *
- * Copyright (c) 2017 David Breeding                                    *
- *                                                                      *
- * This file is part of osk-disasm.                                     *
- *                                                                      *
- * osk-disasm is free software: you can redistribute it and/or modify   *
- * it under the terms of the GNU General Public License as published by *
- * the Free Software Foundation, either version 3 of the License, or    *
- * (at your option) any later version.                                  *
- *                                                                      *
- * osk-disasm is distributed in the hope that it will be useful,        *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of       *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        *
- * GNU General Public License for more details.                         *
- *                                                                      *
- * You should have received a copy of the GNU General Public License    *
- * (see the file "COPYING") along with osk-disasm.  If not,             *
- * see <http://www.gnu.org/licenses/>.                                  *
+ * This file came from Motorola's FBug and is in the public domain      *
  *                                                                      *
  * ******************************************************************** */
 
@@ -38,151 +22,9 @@ of every command, general, print, getline,main, and assembley routine.
 #include "userdef.h"
  
 /*
-vardef.h has the variables that are global and live in ram.
-*/
- 
-#include "vardef.h"
-
-/*
  * proto.h includes defs for the jump routines in the tables
 */
 #include "proto.h"
-
-/*
-these are the external declerations for use by main. Any command
-added/deleted should be added/deleted from here.
-*/
-/* Commented out by DLB 
-extern dccmd(),bfcmd(),bmcmd(),brcmd(),bscmd(),hecmd(),locmd();
-extern tmcmd(),rdcmd(),rmcmd(),mmcmd(),mdcmd(),gocmd();
-extern trcmd(),ascmd(),sdcmd();
-*/
-
-/*extern notimplemented(),bit_movep_immediate(),move_instr();
-extern biti_reg(), bit_static(), bit_dynamic(), biti_size();*/
-
-/* ****************ADDITIONS*********************** */
-
-EAFIELD seperatorfield[5];
-EAFIELD actualfield[5];
-
-
-#if (COPROCESSOR==TRUE || DEVICE==68040)
-
-COPROCCONTROLREG COPROCCRreg[]=
-{
-	{"xxxx",		0    	}, /* entry 0  */
-	{"xxxx",		0	}  /* entry 1  */
-
-};
-
-
-COPROCCONDITIONALS typepredicate[32]=
-{
-	{"f"},/* entry 0  */
-	{"eq"},/* entry 1  */
-	{"ogt"},/* entry 2  */
-	{"oge"},/* entry 3  */
-	{"olt"},/* entry 4  */
-	{"ole"},/* entry 5  */
-	{"ogl"},/* entry 6  */
-	{"or"},/* entry 7  */
-	{"un"},/* entry 8  */
-	{"ueq"},/* entry 9  */
-	{"ugt"},/* entry 10  */
-	{"uge"},/* entry 11  */
-	{"ult"},/* entry 12  */
-	{"ule"},/* entry 13  */
-	{"ne"},/* entry 14  */
-	{"t"},/* entry 15  */
-	{"sf"},/* entry 16  */
-	{"seq"},/* entry 17  */
-	{"gt"},/* entry 18  */
-	{"ge"},/* entry 19  */
-	{"lt"},/* entry 20  */
-	{"le"},/* entry 21  */
-	{"gl"},/* entry 22  */
-	{"gle"},/* entry 23  */
-	{"ngle"},/* entry 24  */
-	{"ngl"},/* entry 25  */
-	{"nle"},/* entry 26  */
-	{"nlt"},/* entry 27  */
-	{"nge"},/* entry 28  */
-	{"ngt"},/* entry 29  */
-	{"sne"},/* entry 30  */
-	{"st"} /* entry 31  */
-
-};
-
-MONADICDYADIC MONAorDYA[]=
-{
-/* HARDWARE SUPPORTED */
-	{"fabs",	0x18    }, /* entry 0  */
-	{"fadd",	0x22    }, /* entry 1  */
-	{"fcmp",	0x38    }, /* entry 2  */
-	{"fdiv",	0x20    }, /* entry 3  */
-	{"fmul",	0x23    }, /* entry 4  */
-	{"fneg",	0x1a    }, /* entry 5  */
-	{"fsqrt",	0x04    }, /* entry 6  */
-	{"fsub",	0x28    }, /* entry 7  */
-/* EMULATOR SUPPORTED */
-	{"facos",	0x1c    }, /* entry 8  */
-	{"fasin",	0x0c    }, /* entry 9  */
-	{"fatan",	0x0a    }, /* entry 10  */
-	{"fatanh",	0x0d    }, /* entry 11  */
-	{"fcos",	0x1d    }, /* entry 12  */
-	{"fcosh",	0x19    }, /* entry 13  */
-	{"fetox",	0x10    }, /* entry 14  */
-	{"fetoxm1",	0x08    }, /* entry 15  */
-	{"fgetexp",	0x1e    }, /* entry 16  */
-	{"fgetman",	0x1f    }, /* entry 17  */
-	{"fint",	0x01    }, /* entry 18  */
-	{"fintrz",	0x03    }, /* entry 19  */
-	{"flog10",	0x15    }, /* entry 20  */
-	{"flog2",	0x16    }, /* entry 21  */
-	{"flogn",	0x14    }, /* entry 22  */
-	{"flognp1",	0x06    }, /* entry 23  */
-	{"fsin",	0x0e    }, /* entry 24  */
-	{"fsinh",	0x02    }, /* entry 25  */
-	{"ftan",	0x0f    }, /* entry 26  */
-	{"ftanh",	0x09    }, /* entry 27  */
-	{"ftentox",	0x12    }, /* entry 28  */
-	{"ftwotox",	0x11    }, /* entry 29  */
-	{"fmod",	0x21    }, /* entry 30  */
-	{"frem",	0x25    }, /* entry 31  */
-	{"fscale",	0x26    }, /* entry 32  */
-	{"fsgldiv",	0x24    }, /* entry 33  */
-	{"fsglmul",	0x27    }  /* entry 34  */
-};
-
-#endif/* COPROCESSOR==TRUE */
-
-
-CONTROLREG CRreg[]=
-{
-	{"sfc",		0    }, /* entry 0  */
-	{"dfc",		1    }, /* entry 1  */
-	{"cacr",	2    }, /* entry 2  */
-	{"usp",		0x800}, /* entry 3  */
-	{"vbr",		0x801}, /* entry 4  */
-	{"caar",	0x802}, /* entry 5  */
-	{"msp",		0x803}, /* entry 6  */
-#if (DEVICE <= 68030)
-	{"isp",		0x804} /* entry 7  */
-#endif
-#if (DEVICE >= 68040)
-	{"isp",		0x804}, /* entry 7  */
-	{"tc",		0x003}, /* entry 8  */
-	{"itt0",	0x004}, /* entry 9  */
-	{"itt1",	0x005}, /* entry 10 */
-	{"dtt0",	0x006}, /* entry 11 */
-	{"dtt1",	0x007}, /* entry 12 */
-	{"psr",		0x805}, /* entry 13 */
-	{"urp",		0x806}, /* entry 14 */
-	{"srp",		0x807}  /* entry 15 */
-#endif
-
-};
 
 SIZETYPES sizefield[]=
 {
@@ -212,17 +54,6 @@ SIZETYPES sizefield[]=
 	{"lsx~wdb"}   /* entry 19  */
 };
 
-TYPES typebitfield[8]=
-{
-	{"tst"}, /* entry 0  */
-	{"extu"},/* entry 1  */
-	{"chg"}, /* entry 2  */
-	{"exts"},/* entry 3  */
-	{"clr"}, /* entry 4  */
-	{"ffo"}, /* entry 5  */
-	{"set"}, /* entry 6  */
-	{"ins"}  /* entry 7  */
-};
 
 CONDITIONALS typecondition[16]=
 {
@@ -303,7 +134,6 @@ EAALLOWED_TYPE EAtype[]=
 	{0x1a000} 	/* entry 54 'O' Fpcr list	*/
 };
 
-ACTUALFIELD_T_F Field_option[5];
 
 EASPEC EA[2];	/* where SorD will be either TRUE or FALSE and be used to
 		   determine which is being used ie. EA[SorD]		*/
@@ -887,61 +717,6 @@ from here and in doinit under main.c .
 char ROMSYMB[] = "/rom";
 
 /*
-these are the registers known. They are currently set up for a maximum
-size of 4 char plus a blank. To add or delete registers known, change
-the names here and in doinit under main.c 
-*/
-
-char d_0[] = "D0   ";
-char d_1[] = "D1   ";
-char d_2[] = "D2   ";
-char d_3[] = "D3   ";
-char d_4[] = "D4   ";
-char d_5[] = "D5   ";
-char d_6[] = "D6   ";
-char d_7[] = "D7   ";
-char a_0[] = "A0   ";
-char a_1[] = "A1   ";
-char a_2[] = "A2   ";
-char a_3[] = "A3   ";
-char a_4[] = "A4   ";
-char a_5[] = "A5   ";
-char a_6[] = "A6   ";
-char a_7[] = "A7   ";
-char p_c[] = "PC   ";
-char s_r[] = "SR   ";
-char usp[] = "USP  ";
-char msp[] = "MSP  ";
-#if (DEVICE<68020)
-char ssp[] = "SSP  ";
-#else
-char isp[] = "ISP  ";
-#endif
-char sfc[] = "SFC  ";
-char dfc[] = "DFC  ";
-char vbr[] = "VBR  ";
-char cac[] = "CACR ";
-char caa[] = "CAAR ";
-#if (DEVICE==68030)
-char crp[] = "CRP  ";
-char srp[] = "SRP  ";
-char tc[]  = "TC   ";
-char tt_0[] = "TT0  ";
-char tt_1[] = "TT1  ";
-char mmusr[] = "PSR  ";
-#endif
-#if (DEVICE==68040)
-char urp[] = "URP  ";
-char srp[] = "SRP  ";
-char tc[]  = "TC   ";
-char dtt_0[] = "DTT0 ";
-char dtt_1[] = "DTT1 ";
-char itt_0[] = "ITT0 ";
-char itt_1[] = "ITT1 ";
-char mmusr[] = "PSR  ";
-#endif
-
-/*
 these are the miscellanous messages that are needed in different parts
 of the program.
 */
@@ -954,51 +729,6 @@ char UNKNOWNMSG[] = "UNKNOWN\t\t\t?";
 char HITKEYMSG[] = "Hit any key to continue ...\n";
 char MMASHELPMSG[] = "\nDirectives.\nBackup -[<number>], Advance +[<number>], Help '?', Quit 'q' or '.'\n\n";
 
-/*
-hese are the error messages that are printed out at different
-procedures thoughout the program.
-*/
-
-char NOERR[] = "";
-char ERR01[] = "ERROR 01: illegal number of arguments\n";
-char ERR02[] = "ERROR 02: illegal address syntax\n";
-char ERR03[] = "ERROR 03: illegal number syntax\n";
-char ERR04[] = "ERROR 04: illegal option\n";
-char ERR05[] = "ERROR 05: insufficient room to insert data\n";
-char ERR06[] = "ERROR 06: breakpoint table is full\n";
-char ERR07[] = "ERROR 07: illegal command call\n";
-char ERR08[] = "\nERROR 08: S-record load failed, invalid checksum = ";
-char ERR09[] = "ERROR 09: invalid assembly => ";
-
-/*
-this is a list of the various syntaxes for the commands. It is
-accessed under he command, by typing he and then the syntax name.
-*/
-
-struct syntax_element syn[]=
-{
-	{"range <addr>,<addr>\nrange <addr>:<count>\n"},
-	{"addr <number>\n"},
-	{"offset <number>\n"},
-	{"hex [$]<0-9 || A-F || a-f>[<0-9 || A-F || a-f>]...\n"},
-	{"dec &<0-9>[<0-9>]...\n"},
-	{"oct @<0-7>[<0-7>]...\n"},
-	{"bin %<0-1>[<0-1>]...\n"},
-	{"number <hex> || <dec> || <oct> || <bin> || <symbol>\n"},
-	{"symbol /<ASCII character>[<ASCII character>]...\n"},
-	{"count <number>\n"},
-	{"data <number>\n"},
-	{"size -b || -h || -w || -l\n"},
-	{"exp [<sign>]<number>[<sign><number>]...\n"},
-	{"sign + || -\n"},
-	{"mask <number>\n"},
-	{"text ;<character string>\n"},
-	{"name name of command or device i.e. dc,he or host\n"},
-	{"unit -c0 || -c1 || -p || -f || -m\n"},
-	{"escape a control character that will be used to break the transparent mode\n"},
-	{"control '^' | '=' | '.'\n"},
-	{LASTCMD}
-};
 
 /*
 these are the ports known by the monitor. To add ports, add them here
@@ -1010,65 +740,6 @@ struct port_element p[]=
 	{"host ",HOST,8},
 	{LASTCMD,0}
 };
-
-/*
-this is the table of commands known, the pointer to the procedure that
-handles the command and the syntax for each command. To add or delete
-new commands, do so here. Alphabetical order is suggested, but not
-required.
-*/
-/*   Commented out by DLB
-struct table_element f[]=
-{
-	{"as Assembler/Disassembler\n",ascmd,"as <addr>\n"},
-	{"bf Block Fill\n",bfcmd,"bf [<size>] <range> <data>\n"},
-	{"bm Block Move\n",bmcmd,"bm [<size>] <range> <addr>\n"},
-	{"br Break Point Insertion\n",brcmd,"br [<addr>][<COUNTDEL><count>]\nbr -r [<addr>]\n"},
-	{"bs Block Search\n",bscmd,"bs [<size>] <range> (<data>[ <mask>])||(<text>)\n"},
-	{"dc Data Conversion\n",dccmd,"dc <exp>\n"},
-	{"g  \n",gocmd,"g  [-b] [<addr>]\n"},
-	{"go Go Execute User Program\n",gocmd,"go [-b] [<addr>]\n"},
-	{"?  \n",hecmd,"? [<name>]||[<syntax>]\n"},
-	{"he \n",hecmd,"he [<name>]||[<syntax>]\n"},
-	{"help Help\n",hecmd,"help [<name>]||[<syntax>]\n"},
-	{"lo Load S-Records\n",locmd,"lo [<offset>] [<text>]\n"},
-	{"md Memory Display\n",mdcmd,"md [<size>] <addr>||<range>\n\nMemory Display with Disassembly\nmd -di <addr>\n"},
-	{"mm Memory Modify\n",mmcmd,"mm [<size>] <addr> [<control>]\n"},
-	{"rd Register Display\n",rdcmd,"rd [<unit>]\n"},
-	{"rm Register Modify\n",rmcmd,"rm [<register> [<New Value>]]\n"},
-	{"sd Symbol Define\n",sdcmd,"sd [<symbol> <exp>]\n"},
-	{"tm Transparent Mode\n",tmcmd,"tm [<escape>]\n"},
-	{"tr Trace\n",trcmd,"tr \n"},
-	{LASTCMD,0,0}
-};
-Commented out by DLB */
-
-/*
-this is a table used for determining the m5 field for bcnd and tcnd
-instructions. It is used in disasm88 and can be commented out if the
-assembler/disassembler is a 68000 family one.
-*/
-
-char *equality[] =
-{
-	"",
-	"\tgt0",
-	"\teq0",
-	"\tge0",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"\tlt0",
-	"\tne0",
-	"\tle0"
-};
-
-
 
 
 /* ***************************************************************** */

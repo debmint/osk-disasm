@@ -1,21 +1,7 @@
 /* ******************************************************************** *
- * Copyright (c) 2017 David Breeding                                    *
  *                                                                      *
- * This file is part of osk-disasm.                                     *
- *                                                                      *
- * osk-disasm is free software: you can redistribute it and/or modify   *
- * it under the terms of the GNU General Public License as published by *
- * the Free Software Foundation, either version 3 of the License, or    *
- * (at your option) any later version.                                  *
- *                                                                      *
- * osk-disasm is distributed in the hope that it will be useful,        *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of       *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        *
- * GNU General Public License for more details.                         *
- *                                                                      *
- * You should have received a copy of the GNU General Public License    *
- * (see the file "COPYING") along with osk-disasm.  If not,             *
- * see <http://www.gnu.org/licenses/>.                                  *
+ * This file came from Motorola's FBug program and is in the public     *
+ * domain.                                                              *
  *                                                                      *
  * ******************************************************************** */
 
@@ -222,17 +208,6 @@ extern char BERRMSG[];
 extern char UNKNOWNMSG[];
 extern char HITKEYMSG[];
 extern char MMASHELPMSG[];
-
-extern char NOERR[];
-extern char ERR01[];
-extern char ERR02[];
-extern char ERR03[];
-extern char ERR04[];
-extern char ERR05[];
-extern char ERR06[];
-extern char ERR07[];
-extern char ERR08[];
-extern char ERR09[];
 
 /* ***************************************************************** */
 #endif
