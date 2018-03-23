@@ -120,9 +120,6 @@
     <ClInclude Include="userdef.h" />
     <ClInclude Include="vardef.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Makefile.Win32" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

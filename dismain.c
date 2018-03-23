@@ -35,6 +35,7 @@
 #include "modtypes.h"
 #include <string.h>
 #include "proto.h"
+int error;
 
 void reflst();
 #ifdef _WIN32
@@ -708,7 +709,6 @@ get_asmcmd()
     /*extern OPSTRUCTURE syntax1[];
     extern COPROCSTRUCTURE syntax2[];*/
     register OPSTRUCTURE *optbl;
-    extern int error;
 
     int opword;
     int j;
