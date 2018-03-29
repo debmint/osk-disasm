@@ -34,6 +34,8 @@
  * ************************************************************************ */
 
 #include <time.h>
+#include <errno.h>
+#include <stdlib.h>
 #include "disglobs.h"
 #include <string.h>
 #include <ctype.h>
@@ -203,12 +205,10 @@ PrintPsect()
     /*char *StackAddL;*/
     int c;
     CMD_ITMS Ci;
-    char *psecfld[2];
     int pgWdthSave;
 
     Ci.comment = "";
     strcpy (Ci.mnem, "set");
-    psecfld[0] = ",((%s<<8)"; psecfld[1] = "|%s)";
     BlankLine();
 
     /* Module name */
@@ -290,8 +290,9 @@ PrintPsect()
 
     if (M_Except)
     {
+        LBLDEF *excep = findlbl('L', M_Except);
         strcat(EaString, ",");
-        strcat(EaString, findlbl('L', M_Except)->sname);
+        strcat(EaString, excep->sname);
     }
 
     strcpy (Ci.opcode, EaString);
@@ -826,7 +827,7 @@ NonBoundsLbl (char cClass)
         for (x = PrevEnt + 1; x < CmdEnt; x++)
         {
 
-            if (nl = findlbl (cClass, x))
+            if ((nl = findlbl (cClass, x)))
             {
                 char lbl[100];
                 strcpy (lbl, nl->sname);
@@ -924,109 +925,6 @@ ROFPsect (rptr)
 }
 
 
-/* ********************************************* *
- * OS9Modline()  - print out OS9 mod line        *
- * Note: We're going to assume that the          *
- *    file is positioned at the right            *
- *    place - we may try merged modules          *
- * ********************************************* */
-
-/*void
-OS9Modline ()
-{
-    struct nlist *LL = SymLst[strpos (lblorder, 'L')];
-    struct printbuf PBf, *prtbf = &PBf;
-    char hbf[10];
-    long progstart = ftell (progpath);
-
-    hbf[0] = '\0';
-    InProg = 0;
-    memset (prtbf, 0, sizeof (struct printbuf));
-    CmdEnt = o9_fgetword (progpath);
-
-    sprintf (prtbf->instr, "%04x", o9_fgetword (progpath));
-
-    PrevEnt = CmdEnt + 1;       /* To prevent NonBoundsLbl() printouts */
-
-    /*strcpy (prtbf->mnem, "mod");
-
-    /* Now copy the operand line */
-    /*sprintf (prtbf->operand, "%s,%s,$%02x,$%02x,%s",
-             FindLbl (LL, ModSiz)->sname, FindLbl (LL, ModNam)->sname,
-             ModTyp, ModRev, FindLbl (LL, ModExe)->sname);
-
-    if (HdrLen == 13)
-    {
-        strcat (prtbf->operand, ",");
-        strcat(prtbf->operand,FindLbl(SymLst[strpos(lblorder,'D')],
-                    M_Mem)->sname);
-    }
-
-    PrintLine (pseudcmd, prtbf, CNULL, 0, 0);
-    InProg = 1;
-    fseek (progpath, progstart+HdrLen, SEEK_SET);
-}*/
-
-/* **************************************** *
- * coco_wrt_end() - write the end statement *
- * to the listing                           *
- * **************************************** */
-
-void
-coco_wrt_end ()
-{
-    /* Fill in later */
-}
-
-/* WrtEmod() - writes EMOD statement to OS9 file */
-/*void
-WrtEmod ()
-{
-    struct printbuf PBf, *prtbf = &PBf;
-    register struct nlist *nl;
-    int first;
-    unsigned char last;
-
-    CmdEnt = Pc;
-    memset (prtbf, 0, sizeof (struct printbuf));
-    first = o9_fgetword (progpath);
-    last = fgetc (progpath);
-    sprintf(prtbf->instr, "%04x%02x", first, last);
-    strcpy (prtbf->mnem, "emod");
-    BlankLine ();
-/*	PrintLine("%5d  %06x %-12s%s %-10s %-6s %s\n",prtbf);*/
-    /*PrintLine (pseudcmd, prtbf, CNULL, 0, 0);
-    BlankLine ();
-    memset (prtbf, 0, sizeof (struct printbuf));
-    Pc += 3;
-    CmdEnt = Pc;
-
-    if ((nl = FindLbl (SymLst[strpos (lblorder, 'L')], Pc)))
-    {
-        strcpy (prtbf->lbnm, nl->sname);
-        strcpy (prtbf->mnem, "equ");
-        strcpy (prtbf->operand, "*");
-        PrintLine (realcmd, prtbf, CNULL, 0, 0);
-    }
-
-    BlankLine ();
-    memset (prtbf, 0, sizeof (struct printbuf));
-    strcpy (prtbf->mnem, "end");
-    prtbf->comment = "";
-
-    if (UpCase)
-    {
-        UpPbuf (prtbf);
-    }
-
-    PrintFormatted (realcmd, prtbf);
-    /*printf("%5d  %20s%s\n",LinNum,"","end"); */
-
-    /*if (WrtSrc)
-    {
-        fprintf (AsmPath, " %s\n", "end");
-    }
-}*/
 
 /* *************************************************** *
  * WrtEnds() - writes the "ends" command line          *
@@ -1061,21 +959,7 @@ struct ireflist {
     struct ireflist *Prev;
     struct ireflist *Next;
     int dAddr;
-    LBLDEF *lbl;
-    char IClass;
 } *IRefs;
-
-void showIRefs()
-{
-    struct ireflist *ir = IRefs;
-    printf ("\n"); 
-    while (ir)
-    {
-        printf ("--- Address: $%04x    Dest: %s ---\n", ir->dAddr, ir->lbl->sname);
-        ir = ir->Next;
-    }
-    printf ("\n");
-}
 
 /* *******
  * ParseIRefs() - Parse through the Initialized Refs list for either
@@ -1095,9 +979,13 @@ ParseIRefs(rClass)
     register int rCount;  /* The count for this block */
     register int MSB;
 
-    LoadIData();  /* Make sure Init data list is loaded */
-
     /* Get an initial reading */
+
+    if (fseek (ModFP, M_IRefs, SEEK_SET))
+    {
+        errexit ("Fatal: Failed to seek to Initialized Refs location");
+    }
+
     MSB = fread_w(ModFP) << 16;
     rCount = fread_w(ModFP);
 
@@ -1106,29 +994,10 @@ ParseIRefs(rClass)
         while (rCount--)
         {
             struct ireflist *il, *ilpt;
-            register int lblLoc;
-            unsigned char *lblPos;
-            int pCount;
 
             il = (struct ireflist *)mem_alloc (sizeof(struct ireflist));
             memset (il, 0, sizeof(struct ireflist));
-
-            il->dAddr = MSB | (fread_w(ModFP) & 0xffff);
-            lblLoc = 0;
-            lblPos = (unsigned char *)&IBuf[il->dAddr - IDataBegin];
-
-            for (pCount = 0; pCount < 4; pCount++)
-            {
-                lblLoc = (lblLoc << 8) | (*(lblPos++));
-            }
-
-            /*if ((rClass == 'D') || ((lblLoc >= HdrEnd) && (lblLoc <= M_Size)))*/
-            if ((rClass == 'D') || (lblLoc <= M_Size))
-            {
-                il->lbl = addlbl (rClass, lblLoc, NULL);
-            }
-
-            il->IClass = rClass;
+            il->dAddr = MSB | fread_w(ModFP);
 
             if (IRefs)   /* First entry? */
             {
@@ -1145,17 +1014,28 @@ ParseIRefs(rClass)
                         /* Find iref PRECEDING this entry */
                     while (ilpt->Next && (il->dAddr >= ilpt->Next->dAddr))
                     {
+                        if ((il->dAddr == ilpt->dAddr) ||
+                                (il->dAddr == ilpt->Next->dAddr))
+                        {
+                            free(il);   /* We don't need this one */
+                            il = NULL;
+                            break;
+                        }
+
                         ilpt = ilpt->Next;
                     }
 
-                    if (ilpt->Next)
+                    if (il)
                     {
-                        ilpt->Next->Prev = il;
-                    }
+                        if (ilpt->Next)
+                        {
+                            ilpt->Next->Prev = il;
+                        }
 
-                    il->Next = ilpt->Next;
-                    il->Prev = ilpt;
-                    ilpt->Next = il;             
+                        il->Next = ilpt->Next;
+                        il->Prev = ilpt;
+                        ilpt->Next = il;             
+                    }
                 }
             }
             else
@@ -1200,13 +1080,7 @@ GetIRefs()
         if (M_IRefs == 0)
             return;
 
-        if (fseek (ModFP, M_IRefs, SEEK_SET))
-        {
-            errexit ("Fatal: Failed to seek to Initialized Refs location");
-        }
-
         ParseIRefs('L');
-        ParseIRefs('D');
     }
 }
 
@@ -1398,10 +1272,9 @@ ListInitData (ldf, nBytes, lclass)
 #endif
 {
     CMD_ITMS Ci;
-    register char *curpos;
-    struct ireflist *il;
     char *hexFmt;
     char *what = "* Initialized Data Definitions";
+    LBLDEF *curlbl;
 
     Ci.cmd_wrd = Ci.wcount = 0;
     Ci.comment = Ci.lblname = "";
@@ -1410,233 +1283,221 @@ ListInitData (ldf, nBytes, lclass)
     PCPos = IDataBegin;        /* MovBytes/MovASC use PCPos */
     CmdEnt = PCPos;
 
-    il = IRefs;
-
-    curpos = IBuf;
-
-    BlankLine ();
-
-    if (IsUnformatted)
+    if (!(curlbl = findlbl('D', PCPos)))
     {
-        printf (" %s\n", what);
-        ++LinNum;
+        curlbl = addlbl('D', PCPos, "");
+    }
+
+    if (fseek(ModFP, 0x40l, SEEK_SET) != -1)
+    {
+        int     idatbegin,
+                idatcount;
+        LBLDEF *curlbl;
+
+        if (fseek(ModFP, (long)fget_l(ModFP), SEEK_SET) == -1)
+        {
+            fprintf(stderr, "Cannot seek to Init Data Buffer\n");
+            return;
+        }
+
+        idatbegin = fget_l(ModFP);
+        idatcount = fget_l(ModFP);
+
+        if (idatcount == 0)
+        {
+            return;
+        }
+
+        BlankLine ();
+
+        if (IsUnformatted)
+        {
+            printf (" %s\n", what);
+            ++LinNum;
+        }
+        else
+        {
+            printf ("%5d %s\n", LinNum++, what);
+        }
+
+        ++PgLin;
+
+        if (WrtSrc)
+        {
+            fprintf (AsmPath, "%s\n", what);
+        }
+
+        BlankLine ();
+
+        AMode = 0;             /* Mode for Data             */
+
+        curlbl = findlbl('D', idatbegin);
+
+        while (idatcount > 0)
+        {
+            register int lblCount,
+                         ppos;
+            char         lbl[100];
+
+            /* Get byte count for this label */
+            curlbl = curlbl->Next;
+
+            if (curlbl)
+                lblCount = curlbl->myaddr - curlbl->Prev->myaddr;
+            else
+                lblCount = idatcount;
+
+            if (lblCount > idatcount)
+            {
+                lblCount = idatcount;  /* Don't go past the end of data */
+            }
+
+            CmdEnt = PCPos;     /* Save Entry Point */
+            ppos = lblCount;
+            strcpy (lbl, ldf->sname);
+            Ci.lblname = lbl;
+
+            if (IsROF && ldf->global)
+            {
+                strcat (Ci.lblname, ":");
+            }
+
+            /* We might ought to provide for longs, but it might
+            * be more confusing */
+            if (lblCount & 1)
+            {
+                PBytSiz = 1;
+                strcpy (Ci.mnem, "dc.b");
+                hexFmt = "$%02x";
+            }
+            else
+            {
+                PBytSiz = 2;
+                strcpy (Ci.mnem, "dc.w");
+                hexFmt = "$%04x";
+            }
+
+            /*Ci.lblname = findlbl ('D', CmdEnt)->sname;
+            Ci.opcode[0] = '\0';*/
+            ppos = lblCount;
+
+            while (lblCount > 0)
+            {
+                char tmp[20];
+                int val;
+
+                if ((IRefs) && (PCPos == IRefs->dAddr))
+                {
+                    char xtrabytes[10];
+                    val = 0;
+                    tmp[0] = '\0';
+                    LBLDEF *mylbl;
+                    struct ireflist *tmpref;
+
+                    xtrabytes[0] = '\0';
+
+                    if (strlen(Ci.opcode))
+                    {
+                        OutputLine(pseudcmd, &Ci);
+                        Ci.lblname = "";
+                        PrintCleanup ();
+                        CmdEnt = PCPos;
+                        Ci.opcode[0] = '\0';
+                    }
+
+                    val = fget_l(ModFP);
+                    PCPos += 4;
+                    lblCount -= 4;
+                    idatcount -= 4;
+
+                    if (!findlbl('L', val))
+                    {
+                        addlbl('L', val, NULL);
+                    }
+
+                    if (strlen(Ci.opcode))
+                    {
+                        strcat(Ci.opcode, ",");
+                    }
+
+                    if ((mylbl = findlbl('L', val)))
+                    {
+                        strcat (Ci.opcode, mylbl->sname);
+                    }
+                    else
+                    {
+                        sprintf (&Ci.opcode[strlen(Ci.opcode)], "$%04x", val);
+                    }
+
+                    strcpy (Ci.mnem, "dc.l");
+                    OutputLine (pseudcmd, &Ci);
+                    printXtraBytes (xtrabytes);
+                    CmdEnt = PCPos;
+                    tmpref = IRefs;
+                    IRefs = IRefs->Next;
+                    free(tmpref);
+                    Ci.lblname = "";
+                    Ci.opcode[0] = '\0';
+                    /* Reset mnem to original status */
+                    strcpy (Ci.mnem, PBytSiz == 1 ? "dc.b" : "dc.w");
+                    PrintCleanup ();
+                    ppos -= 4;
+                    continue;
+                }
+                else
+                {
+                    switch (PBytSiz)
+                    {
+                    case 1:
+                        sprintf (tmp, "$%02x", (fgetc(ModFP) & 0xff));
+                        break;
+                    case 2:
+                        val = fget_w(ModFP);
+                        sprintf (tmp, "$%04x", val & 0xffff);
+                        break;
+                    }
+
+                    if (strlen(Ci.opcode))
+                    {
+                        strcat (Ci.opcode, ",");
+                    }
+
+                    strcat (Ci.opcode, tmp);
+                    ppos -= PBytSiz;
+                    PCPos += PBytSiz;
+                    idatcount -= PBytSiz;
+                    lblCount -= PBytSiz;
+
+                    if (strlen(Ci.opcode) > 24)
+                    {
+                        OutputLine (pseudcmd, &Ci);
+                        PrintCleanup ();
+                        CmdEnt = PCPos;
+                        Ci.lblname = "";
+                        Ci.opcode[0] = '\0';
+                        Ci.wcount = 0;
+                    }
+                }
+            }
+
+            if (strlen(Ci.opcode))   /* Any final cleanup */
+            {
+                PrevEnt = PCPos;
+                OutputLine (pseudcmd, &Ci);
+                CmdEnt = PCPos;
+                Ci.wcount = 0;
+                Ci.opcode[0] = '\0';
+            }
+
+            CmdEnt = PCPos;
+            idatcount -= lblCount;
+            ldf = ldf->Next;
+        }
     }
     else
     {
-        printf ("%5d %s\n", LinNum++, what);
-    }
-
-    ++PgLin;
-
-    if (WrtSrc)
-    {
-        fprintf (AsmPath, "%s\n", what);
-    }
-
-    BlankLine ();
-
-    AMode = 0;             /* Mode for Data             */
-
-    while (nBytes > 0)
-    {
-        register int lblCount,
-            ppos;
-        int isAsc;
-        char lbl[100];
-
-        /* Get byte count for this label */
-        if (ldf->Next)
-            lblCount = ldf->Next->myaddr - ldf->myaddr;
-        else
-            lblCount = nBytes;
-
-        if (lblCount > nBytes)
-        {
-            lblCount = nBytes;  /* Don't go past the end of data */
-        }
-
-        CmdEnt = PCPos;     /* Save Entry Point */
-        ppos = lblCount;
-        strcpy (lbl, ldf->sname);
-        Ci.lblname = lbl;
-
-        if (IsROF && ldf->global)
-        {
-            strcat (Ci.lblname, ":");
-        }
-
-        isAsc = 0;
-
-        /* Check to see if the whole block might be ASCII */
-        if ((il->dAddr >= PCPos + lblCount)
-                && (isprint(*curpos) || isspace(*curpos)))
-        {
-            register char *ch = curpos;
-            isAsc = 1;
-
-            while (ppos--)
-            {
-                int c = *(ch++);
-
-                if ( !(isprint (c) || (isspace(c)) || (c == 0)))
-                {
-                    isAsc = 0;
-                    break;
-                }
-            }
-        }
-
-        if (isAsc)
-        {
-            register char *ch = curpos;
-            char *strEnd = &curpos[lblCount];
-            strcpy (Ci.mnem, "dc.b");
-
-            while (strlen(curpos) && (curpos < strEnd))
-            {
-                char tmpbuf[30];
-
-                if (*curpos == '"')
-                {
-                    strcpy (tmpbuf, "\""); /* To make the resets work */
-                    strcpy (Ci.opcode, "'\"");
-                }
-                else
-                {
-                    strncpy (tmpbuf, curpos, 24);
-
-                    if (strlen(tmpbuf) >= 24)
-                        tmpbuf[24] = '\0';
-
-                    sprintf (Ci.opcode, "\"%s\"", tmpbuf);
-                }
-
-                curpos += strlen(tmpbuf);
-                lblCount -= strlen(tmpbuf);
-                nBytes -= strlen(tmpbuf);
-                PCPos += strlen(tmpbuf);
-                PrintLine (pseudcmd, &Ci, 'D', CmdEnt, CmdEnt);
-                CmdEnt = PCPos;
-                PrevEnt = PCPos;
-                Ci.lblname = "";
-                Ci.opcode[0] = '\0';
-            }
-            /*MovASC (lblCount, lclass);*/
-
-            continue;
-        }  /* End isASC */
-
-        /* We might ought to provide for longs, but it might
-        * be more confusing */
-        if (lblCount & 1)
-        {
-            PBytSiz = 1;
-            strcpy (Ci.mnem, "dc.b");
-            hexFmt = "$%02x";
-        }
-        else
-        {
-            PBytSiz = 2;
-            strcpy (Ci.mnem, "dc.w");
-            hexFmt = "$%04x";
-        }
-
-        /*Ci.lblname = findlbl ('D', CmdEnt)->sname;
-        Ci.opcode[0] = '\0';*/
-        ppos = lblCount;
-
-        while (ppos > 0)
-        {
-            char tmp[20];
-            int val;
-
-            if (PCPos == il->dAddr)
-            {
-                register int count;
-                val = 0;
-                tmp[0] = '\0';
-
-                if (strlen(Ci.opcode))
-                {
-                    OutputLine(pseudcmd, &Ci);
-                    Ci.lblname = "";
-                    CmdEnt = PCPos;
-                    Ci.opcode[0] = '\0';
-                }
-
-                for (count = 0; count < 4; count++)
-                {
-                    val = (val << 8) | ((*curpos++) & 0xff);
-                }
-
-                if (il->lbl)
-                {
-                    strcpy (Ci.opcode, il->lbl->sname);
-                }
-                else
-                {
-                    sprintf (Ci.opcode, "$%04x", val);
-                }
-
-                strcpy (Ci.mnem, "dc.l");
-                OutputLine (pseudcmd, &Ci);
-                il = il->Next;
-                Ci.lblname = "";
-                Ci.opcode[0] = '\0';
-                /* Reset mnem to original status */
-                strcpy (Ci.mnem, PBytSiz == 1 ? "dc.b" : "dc.w");
-                PCPos += 4;
-                CmdEnt = PCPos;
-                ppos -= 4;
-                PrevEnt = PCPos;
-                continue;
-            }
-
-            switch (PBytSiz)
-            {
-            case 1:
-                sprintf (tmp, "$%02x", *(curpos++));
-                break;
-            case 2:
-                val = *(curpos++);
-                val = (val << 8) | (*(curpos++) & 0xff);
-                sprintf (tmp, "$%04x", val & 0xffff);
-                break;
-            }
-
-            if (strlen(Ci.opcode))
-            {
-                strcat (Ci.opcode, ",");
-            }
-
-            strcat (Ci.opcode, tmp);
-            ppos -= PBytSiz;
-            PCPos += PBytSiz;
-
-            if (strlen(Ci.opcode) > 24)
-            {
-                PrevEnt = PCPos;
-                OutputLine (pseudcmd, &Ci);
-                Ci.lblname = "";
-                Ci.opcode[0] = '\0';
-                Ci.wcount = 0;
-                CmdEnt = PCPos;
-            }
-        }
-
-        if (strlen(Ci.opcode))   /* Any final cleanup */
-        {
-            PrevEnt = PCPos;
-            OutputLine (pseudcmd, &Ci);
-            Ci.wcount = 0;
-            Ci.opcode[0] = '\0';
-        }
-
-        CmdEnt = PCPos;
-        isAsc = 1;
-
-        nBytes -= lblCount;
-        ldf = ldf->Next;
+        fprintf(stderr, "Failed seek to Init Data pointer location\n");
+        return;
     }
 }
 
@@ -1649,19 +1510,11 @@ void
 ROFDataPrint ()
 {
     LBLDEF *srch;
-    char *dptell[2] = {"* Uninitialized data (Class %c)",
-                       "* Initialized Data (Class %c)"};
-	int sizes[2], /* = { ROFHd.statstorage, ROFHd.idatsz },*/
-        *thissz = sizes;
 
-    int reftyp[] = {2, 3, 0, 1};     /* Label ref Type */
     char dattmp[5];
-    char *dattyp = dattmp;
     register char *udat = "* Uninitialized data (Class %c)";
     char *idat = "* Initialized data (Class %c)";
 
-	sizes[0] = ROFHd.statstorage;
-	sizes[1] = ROFHd.idatsz;
     InProg = 0;
 
     if ((srch = labelclass ('D') ? labelclass('D')->cEnt : NULL))
@@ -1873,7 +1726,6 @@ LoadIData()
     return IBuf;
 }
 
-
 /* ************
  * OS9DataPrint()	Mainline routine to list data defs
  *
@@ -1938,7 +1790,7 @@ OS9DataPrint ()
         if (srch->myaddr)              /* i.e., if not D000 */
         {
             strcpy (Ci.mnem, "ds.b");
-            sprintf (Ci.opcode, "%d", srch->myaddr);
+            sprintf (Ci.opcode, "%ld", srch->myaddr);
             Ci.lblname = "";
             PrintLine (pseudcmd, &Ci, 'D', 0, srch->myaddr);
         }
@@ -1947,7 +1799,7 @@ OS9DataPrint ()
 
         if (IDataBegin < M_Mem)
         {
-            if (dta = findlbl('D', IDataBegin))
+            if ((dta = findlbl('D', IDataBegin)))
             {
                 ListInitData (dta, IDataCount, 'D');
             }
@@ -2293,11 +2145,11 @@ TellLabels (me, flg, cClass, minval)
 
                 if (strchr ("!^", cClass))
                 {
-                    sprintf (Ci.opcode, "$%02x", me->myaddr);
+                    sprintf (Ci.opcode, "$%02lx", me->myaddr);
                 }
                 else
                 {
-                    sprintf (Ci.opcode, "$%05x", me->myaddr);
+                    sprintf (Ci.opcode, "$%05lx", me->myaddr);
                 }
 
                 CmdEnt = PrevEnt = me->myaddr;

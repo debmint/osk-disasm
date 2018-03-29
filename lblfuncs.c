@@ -104,7 +104,7 @@ lblpos (lblclass, lblval)
 
     if (me)
     {
-        while ((me->Next) && (lblval >= (me->Next)->myaddr))
+        while ((me->Next) && (lblval > me->myaddr))
         {
             me = me->Next;
         }
@@ -446,75 +446,21 @@ addlbl (lblclass, val, newname)
     char *newname;
 #endif
 {
-    LBLDEF *oldlbl;
-    LBLDEF *newlbl;
+    register LBLDEF *oldlbl;
+    register LBLDEF *newlbl;
+    register unsigned int maxsize = sizeof (oldlbl->sname);
 
     if (strchr("^@$&", lblclass))
     {
         return NULL;
     }
 
-    if ((oldlbl = lblpos (lblclass, val)))
+    if ((newname) && (strlen(newname) >= maxsize))
     {
-        register unsigned int maxsize = sizeof (oldlbl->sname);
-
-        if ((newname) && (strlen(newname) >= maxsize))
-        {
-            newname[maxsize - 1] = '\0';
-        }
-
-        if (oldlbl->myaddr == val)   /* Simply a rename */
-        {
-            if ((newname) && strlen (newname))
-            {
-                if (strcmp(newname, oldlbl->sname))
-                {
-                    strcpy(oldlbl->sname, newname);
-                }
-            }
-
-            return oldlbl;
-        }
-        else /* Creating a new label (with others existing) */
-        {
-            if (newlbl = create_lbldef(lblclass, val, newname))
-            {
-                /* New beginning entry ?  */
-                if (val < labelclass(lblclass)->cEnt->myaddr)
-                {
-                    LBLCLAS *clas = labelclass(lblclass);
-
-                    if (clas)
-                    {
-                        oldlbl = clas->cEnt;
-                        clas->cEnt = newlbl;
-                        oldlbl->Prev = newlbl;
-                        newlbl->Next = oldlbl;
-                    }
-                    else
-                    {
-                        fprintf (stderr, "*** Label class '%c' not found\n",
-                                lblclass);
-                    }
-                }
-                else        /* Insert into chain */
-                {
-                    newlbl->Prev = oldlbl;
-
-                    if (oldlbl->Next)
-                    {
-                        newlbl->Next = oldlbl->Next;
-                        oldlbl->Next->Prev = newlbl;
-                    }
-
-                    oldlbl->Next = newlbl;
-                }
-
-                return newlbl;
-            }
-        }
+        newname[maxsize-1] = '\0';
     }
-    else    /* first entry in this tree */
+
+    if (!labelclass(lblclass)->cEnt)      /* first entry in this tree */
     {
         if (newlbl = create_lbldef(lblclass, val, newname))
         {
@@ -532,6 +478,70 @@ addlbl (lblclass, val, newname)
 
             return newlbl;
         }
+    }
+
+    oldlbl = lblpos (lblclass, val);
+
+    if ((oldlbl) && (oldlbl->myaddr == val))        /* Simply a rename */
+    {
+        if ((newname) && strlen (newname))
+        {
+            if (strcmp(newname, oldlbl->sname))
+            {
+                strcpy(oldlbl->sname, newname);
+            }
+        }
+
+        return oldlbl;
+    }
+
+    newlbl = create_lbldef(lblclass, val, newname);
+
+        /* New beginning entry ?  */
+    if ((newlbl) && (val < labelclass(lblclass)->cEnt->myaddr))
+    {
+        if (val < labelclass(lblclass)->cEnt->myaddr)
+        {
+            LBLCLAS *clas = labelclass(lblclass);
+
+            if (clas)
+            {
+                oldlbl = clas->cEnt;
+                clas->cEnt = newlbl;
+                oldlbl->Prev = newlbl;
+                newlbl->Next = oldlbl;
+                return newlbl;
+            }
+            else
+            {
+                fprintf (stderr, "*** Label class '%c' not found\n",
+                        lblclass);
+            }
+        }
+    }
+    else        /* Insert into chain */
+    {
+        if (newlbl->myaddr > oldlbl->myaddr)
+        {
+            newlbl->Prev = oldlbl;
+
+            if (oldlbl->Next)
+            {
+                newlbl->Next = oldlbl->Next;
+                oldlbl->Next->Prev = newlbl;
+            }
+
+            oldlbl->Next = newlbl;
+        }
+        else
+        {
+            oldlbl->Prev->Next = newlbl;
+            newlbl->Prev = oldlbl->Prev;
+            oldlbl->Prev = newlbl;
+            newlbl->Next = oldlbl;
+        }
+
+        return newlbl;
     }
 
     return 0;

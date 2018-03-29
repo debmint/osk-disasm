@@ -693,9 +693,7 @@ getrange (pt, lo, hi, usize, allowopen)
     char *pt; int *lo, *hi, usize, allowopen;
 #endif
 {
-    char tmpdat[50], *dpt, c;
-
-    dpt = tmpdat;               /* just to be sure */
+    char tmpdat[50], c;
 
     /* see if it's just a single byte/word */
 
@@ -825,7 +823,6 @@ do_mode (lpos)
 {
     struct databndaries *mptr;
     register int mclass;         /* addressing mode */
-    register int notimm = 4;    /* Was 5, but we moved AM_DRCT */
     char c;
     int lo, hi;
     register struct databndaries *lp;
@@ -833,7 +830,6 @@ do_mode (lpos)
 
     if (*(lpos = skipblank (lpos)) == '#')
     {
-        notimm = 0;
         lpos = skipblank (++lpos);
     }
 
@@ -846,7 +842,7 @@ do_mode (lpos)
         c = *(lpos++);
 
          /* Must be a0, a1, ..., a7 */
-        if ((c > '0') && c < ('8'))
+        if ((c >= '0') && c < ('8'))
         {
             AMode += (c - '0');
         }
@@ -1252,6 +1248,20 @@ setupbounds (lpos)
                 break;
             }
 
+            lpos = skipblank(++lpos);
+
+            switch (*lpos)
+            {
+                case '&':
+                case '^':
+                case '$':
+                    lclass = *lpos;
+                    break;
+                default:
+                    --lpos;
+                    break;
+            }
+
             break;
 
         case 'A':    /* ASCII string  data */
@@ -1265,7 +1275,7 @@ setupbounds (lpos)
             badexit ("Illegal boundary name");
     }
 
-    bdtyp = (int) strpos (BoundsNames, c);
+    bdtyp = (int) strpos (BoundsNames, c) + 1;
 
     /* Offset spec (if any) */
 

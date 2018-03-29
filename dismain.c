@@ -583,7 +583,7 @@ dopass(argc,argv,mypass)
                     {
                         char tmpcod[10];
 
-                        sprintf (tmpcod, "%04x ", Instruction.code[wpos++]);
+                        sprintf (tmpcod, "%04x ", (unsigned short)Instruction.code[wpos++]);
                         strcat (codbuf, tmpcod);
                         --count;
 //                        if (count > 1)
@@ -813,8 +813,8 @@ MovBytes (db)
 {
     CMD_ITMS Ci;
     char tmps[20];
-    int valu,
-        bmask;
+    unsigned int valu;
+    int bmask;
 #ifdef _OSK
     static
 #endif

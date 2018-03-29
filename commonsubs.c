@@ -1208,6 +1208,27 @@ strdup (oldstr)
 }
 #endif
 
+unsigned int
+fget_w (FILE *fp)
+{
+    return ((unsigned char)fgetc(fp) << 8) | (unsigned char)fgetc(fp);
+}
+
+unsigned int
+fget_l(FILE *fp)
+{
+    unsigned int val,
+                 c;
+    val = (unsigned char)fgetc(fp);
+
+    for (c = 0; c < 3; c++)
+    {
+        val = (val << 8) | (unsigned char)(fgetc(fp) & 0xff);
+    }
+
+    return val;
+}
+
 /* ************************************************************************* *
  * fread_* functions - These are partly convenience functions but mostly are *
  * used to enable retrieving multi-byte values regardless of the             *
@@ -1327,10 +1348,13 @@ int fread_l(fp)
     FILE *fp;
 {
     int l;
+    int count;
     
-    if (fread(&l, 4, 1, fp) < 1)
+    l = (unsigned char)fgetc(fp)  & 0xff;
+
+    for (count = 1; count < sizeof(int); count++)
     {
-        filereadexit();
+        l = (l << 8) | (unsigned char)fgetc(fp) & 0xff;
     }
 
     return l;
