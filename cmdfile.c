@@ -842,7 +842,7 @@ do_mode (lpos)
         c = *(lpos++);
 
          /* Must be a0, a1, ..., a7 */
-        if ((c > '0') && c < ('8'))
+        if ((c >= '0') && c < ('8'))
         {
             AMode += (c - '0');
         }
