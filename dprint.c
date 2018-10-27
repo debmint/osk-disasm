@@ -226,12 +226,14 @@ PrintPsect()
     /* Type/Language */
     InProg = 0;    /* Inhibit Label Lookup */
     ProgType = modnam_find (ModTyps, (unsigned char)M_Type)->name;
+    Ci.cmd_wrd = M_Type;
     Ci.lblname = ProgType;
     sprintf (Ci.opcode, "$%x", M_Type);
     PrintLine(pseudcmd, &Ci, CNULL, 0, 0);
     /*hdrvals[0] = M_Type;*/
     ProgLang = modnam_find (ModLangs, (unsigned char)M_Lang)->name;
     Ci.lblname = ProgLang;
+    Ci.cmd_wrd = M_Lang;
     sprintf (Ci.opcode, "$%02x", M_Lang);
     PrintLine(pseudcmd, &Ci, CNULL, 0, 0);
     /*hdrvals[1] = M_Lang;*/
@@ -255,6 +257,7 @@ PrintPsect()
             }
 
             Ci.lblname = ModAtts[c].name;
+            Ci.cmd_wrd = ModAtts[c].val;
             sprintf (Ci.opcode, "$%02x",ModAtts[c].val);
             PrintLine (pseudcmd, &Ci, CNULL, 0, 0); 
         }
@@ -2137,6 +2140,7 @@ TellLabels (me, flg, cClass, minval)
 
                 strcpy (lbl, me->sname);
                 Ci.lblname = lbl;
+                Ci.cmd_wrd = me->myaddr;
 
                 if (IsROF && me->global)
                 {
