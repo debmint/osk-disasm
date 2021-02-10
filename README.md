@@ -1,7 +1,9 @@
-WHAT IS dis68?
+This project has been moved to https://gitlab.com/debmint/osk-disasm
 -------------
 
-dis68 is a disassembler that will disassemble Microware OS9-68K code.  It
+#### WHAT IS dis68?
+
+_dis68_ is a disassembler that will disassemble Microware OS9-68K code.  It
 will disassemble the code into source code that should rebuild the code into
 a module identical to that from which it is disassembled.
 
@@ -12,5 +14,4 @@ can be used to define the names of labels.  The method of disassembly usually
 require disassembly, inspecing the result, adding commands, redisassembly,
 and so forth until a satisfactory output is obtained.
 
-This program can be built and run on Microware OS9-68K, Linux, or Windows
-systems.
+##### This program can be built and run on Microware OS9-68K, Linux, or Windows systems.
