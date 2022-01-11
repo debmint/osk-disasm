@@ -18,7 +18,7 @@ cat <<"EOP" > proto_h
 #ifdef __STDC__
 EOP
 
-cproto *.c >> proto_h
+cproto -I. *.c >> proto_h
 echo -e "\n#else\n" >> proto_h
 cproto -f1 *.c >> proto_h
 echo -e "#endif   /* __STDC__*/\n" >> proto_h
